@@ -57,5 +57,11 @@ TestResult.xml
 nunit-*.xml
 
 
+# IDE
+.idea/
+.vscode/
+*.user
+*.suo
+
 # Flameshot src (ignore whole embedded repo)
 flameshot
