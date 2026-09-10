@@ -1,5 +1,3 @@
-:
-
 # Geometry — Tổng quan thiết kế
 
 > Thư mục này thiết kế các kiểu dữ liệu hình học cơ bản của F-Shot.  
