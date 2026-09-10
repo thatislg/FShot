@@ -13,7 +13,11 @@ type Point =
     }
 
     /// Điểm gốc (0, 0), tương ứng với góc trên bên trái của Virtual Screen.
-    static member Zero = { X = 0.0; Y = 0.0 }
+    static member Zero =
+        {
+          X = 0.0
+          Y = 0.0
+        }
 
 /// Vector dịch chuyển giữa các điểm.
 /// Tương tự Point nhưng mang ý nghĩa là sự thay đổi vị trí, không phải vị trí tuyệt đối.
@@ -25,7 +29,11 @@ type Vector =
     }
 
     /// Vector không đổi (0, 0).
-    static member Zero = { Dx = 0.0; Dy = 0.0 }
+    static member Zero =
+        {
+          Dx = 0.0
+          Dy = 0.0
+        }
 
 /// Hình chữ nhật trong Virtual Screen space.
 /// Lưu dưới dạng gốc trên bên trái (X, Y) và kích thước (Width, Height).
@@ -54,11 +62,19 @@ type Rect =
     member this.Bottom = this.Y + this.Height
 
     /// Góc trên bên trái của hình chữ nhật, là một Point.
-    member this.TopLeft = { X = this.X; Y = this.Y }
+    member this.TopLeft =
+        {
+          X = this.X
+          Y = this.Y
+        }
 
     /// Góc dưới bên phải của hình chữ nhật.
     /// Công thức: (X + Width, Y + Height).
-    member this.BottomRight = { X = this.X + this.Width; Y = this.Y + this.Height }
+    member this.BottomRight =
+        {
+          X = this.X + this.Width
+          Y = this.Y + this.Height
+        }
 
     /// Trung tâm của hình chữ nhật.
     /// Công thức: (X + Width / 2, Y + Height / 2).
@@ -81,13 +97,31 @@ type Color =
     }
 
     /// Màu trong suốt hoàn toàn.
-    static member Transparent = { R = 0uy; G = 0uy; B = 0uy; A = 0uy }
+    static member Transparent =
+        {
+          R = 0uy
+          G = 0uy
+          B = 0uy
+          A = 0uy
+        }
 
     /// Màu đen đậm.
-    static member Black = { R = 0uy; G = 0uy; B = 0uy; A = 255uy }
+    static member Black =
+        {
+          R = 0uy
+          G = 0uy
+          B = 0uy
+          A = 255uy
+        }
 
     /// Màu trắng đậm.
-    static member White = { R = 255uy; G = 255uy; B = 255uy; A = 255uy }
+    static member White =
+        {
+          R = 255uy
+          G = 255uy
+          B = 255uy
+          A = 255uy
+        }
 
     /// Chuyển màu sang chuỗi hex dạng #RRGGBBAA.
     /// Công thức: ghép từng kênh thành hai chữ số thập lục phân theo thứ tự R, G, B, A.

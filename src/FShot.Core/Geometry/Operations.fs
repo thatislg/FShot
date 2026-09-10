@@ -14,22 +14,28 @@ module Operations =
     /// Công thức: (X1 + X2, Y1 + Y2).
     /// Xem tài liệu 01_02_Point.md, mục 4.1.
     let pointAdd (a: Point) (b: Point) : Point =
-        { X = a.X + b.X
-          Y = a.Y + b.Y }
+        {
+          X = a.X + b.X
+          Y = a.Y + b.Y
+        }
 
     /// Trừ hai điểm, cho ra vector dịch chuyển.
     /// Công thức: (X2 - X1, Y2 - Y1).
     /// Xem tài liệu 01_02_Point.md, mục 4.1.
     let pointSubtract (a: Point) (b: Point) : Vector =
-        { Dx = a.X - b.X
-          Dy = a.Y - b.Y }
+        {
+          Dx = a.X - b.X
+          Dy = a.Y - b.Y
+        }
 
     /// Nhân điểm với một hệ số.
     /// Công thức: (X * k, Y * k).
     /// Dùng khi chuyển đổi logical → physical pixels. Xem 01_02_Point.md, mục 4.2.
     let pointScale (k: float) (p: Point) : Point =
-        { X = p.X * k
-          Y = p.Y * k }
+        {
+          X = p.X * k
+          Y = p.Y * k
+        }
 
     /// Chia điểm cho một hệ số.
     /// Công thức: (X / k, Y / k), với k <> 0.
@@ -37,8 +43,10 @@ module Operations =
     let pointUnscale (k: float) (p: Point) : Point =
         if k = 0.0 then
             invalidArg (nameof k) "Hệ số chia phải khác 0."
-        { X = p.X / k
-          Y = p.Y / k }
+        {
+          X = p.X / k
+          Y = p.Y / k
+        }
 
     /// Tính khoảng cách giữa hai điểm.
     /// Công thức: sqrt((X2 - X1)^2 + (Y2 - Y1)^2).
@@ -52,8 +60,10 @@ module Operations =
     /// Công thức: A + (B - A) * t, hay ((1 - t) * A + t * B).
     /// Khi t = 0.5 cho điểm chính giữa. Xem 01_02_Point.md, mục 4.4.
     let pointLerp (a: Point) (b: Point) (t: float) : Point =
-        { X = a.X + (b.X - a.X) * t
-          Y = a.Y + (b.Y - a.Y) * t }
+        {
+          X = a.X + (b.X - a.X) * t
+          Y = a.Y + (b.Y - a.Y) * t
+        }
 
     /// So sánh hai điểm có gần nhau không, dùng ngưỡng sai số epsilon.
     /// Kiểm tra |X1 - X2| <= epsilon và |Y1 - Y2| <= epsilon.
@@ -68,13 +78,18 @@ module Operations =
     /// Cộng vector vào điểm để di chuyển điểm.
     /// Công thức: (X + Dx, Y + Dy).
     let pointAddVector (p: Point) (v: Vector) : Point =
-        { X = p.X + v.Dx
-          Y = p.Y + v.Dy }
+        {
+          X = p.X + v.Dx
+          Y = p.Y + v.Dy
+        }
 
     /// Chuyển vector thành điểm bằng cách cộng vào gốc tọa độ.
     /// Công thức: (Dx, Dy).
     let vectorAsPoint (v: Vector) : Point =
-        { X = v.Dx; Y = v.Dy }
+        {
+          X = v.Dx
+          Y = v.Dy
+        }
 
     // --------------------------------------------------------
     // Rect operations
@@ -87,10 +102,12 @@ module Operations =
     let rectCreate (x: float) (y: float) (width: float) (height: float) : Rect =
         let x' = if width < 0.0 then x + width else x
         let y' = if height < 0.0 then y + height else y
-        { X = x'
+        {
+          X = x'
           Y = y'
           Width = Math.Abs(width)
-          Height = Math.Abs(height) }
+          Height = Math.Abs(height)
+        }
 
     /// Tạo Rect từ hai điểm đối diện (thường là điểm bắt đầu và kết thúc khi kéo chuột).
     /// Công thức: X = min(X1, X2), Y = min(Y1, Y2),
@@ -100,7 +117,12 @@ module Operations =
         let y = Math.Min(a.Y, b.Y)
         let width = Math.Abs(b.X - a.X)
         let height = Math.Abs(b.Y - a.Y)
-        { X = x; Y = y; Width = width; Height = height }
+        {
+          X = x
+          Y = y
+          Width = width
+          Height = height
+        }
 
     /// Kiểm tra điểm có nằm trong Rect hay không.
     /// Công thức: x >= L && x <= R && y >= T && y <= B.
@@ -129,20 +151,24 @@ module Operations =
         let top = Math.Min(a.Top, b.Top)
         let right = Math.Max(a.Right, b.Right)
         let bottom = Math.Max(a.Bottom, b.Bottom)
-        { X = left
+        {
+          X = left
           Y = top
           Width = right - left
-          Height = bottom - top }
+          Height = bottom - top
+        }
 
     /// Phóng to hoặc thu nhỏ Rect đều theo khoảng d.
     /// Công thức: X' = X - d, Y' = Y - d,
     /// Width' = Width + 2d, Height' = Height + 2d.
     /// Xem tài liệu 01_03_Rect.md, mục 3.4.
     let rectInflate (d: float) (rect: Rect) : Rect =
-        { X = rect.X - d
+        {
+          X = rect.X - d
           Y = rect.Y - d
           Width = rect.Width + 2.0 * d
-          Height = rect.Height + 2.0 * d }
+          Height = rect.Height + 2.0 * d
+        }
 
     /// Giới hạn Rect nằm hoàn toàn bên trong một Rect giới hạn.
     /// Công thức:
@@ -156,7 +182,12 @@ module Operations =
         let y = Math.Max(bounds.Top, Math.Min(rect.Y, bounds.Bottom - rect.Height))
         let width = Math.Min(rect.Width, bounds.Right - bounds.Left)
         let height = Math.Min(rect.Height, bounds.Bottom - bounds.Top)
-        { X = x; Y = y; Width = width; Height = height }
+        {
+          X = x
+          Y = y
+          Width = width
+          Height = height
+        }
 
     /// Di chuyển Rect theo vector dịch chuyển.
     /// Công thức: X' = X + dx, Y' = Y + dy, kích thước giữ nguyên.
@@ -177,7 +208,12 @@ module Operations =
         let bottom = Math.Min(a.Bottom, b.Bottom)
         let width = Math.Max(0.0, right - left)
         let height = Math.Max(0.0, bottom - top)
-        { X = left; Y = top; Width = width; Height = height }
+        {
+          X = left
+          Y = top
+          Width = width
+          Height = height
+        }
 
     // --------------------------------------------------------
     // Color operations
@@ -202,10 +238,12 @@ module Operations =
                 let outF = (sF * sourceA + dF * destA * (1.0 - sourceA)) / outA
                 byte (Math.Round(outF * 255.0))
 
-            { R = blendChannel source.R destination.R
+            {
+              R = blendChannel source.R destination.R
               G = blendChannel source.G destination.G
               B = blendChannel source.B destination.B
-              A = byte (Math.Round(outA * 255.0)) }
+              A = byte (Math.Round(outA * 255.0))
+            }
 
     /// Làm sáng hoặc tối màu bằng cách nhân các kênh R, G, B với hệ số.
     /// Công thức: R' = clamp(R * factor, 0, 255), tương tự G, B.
@@ -229,19 +267,33 @@ module Operations =
             | _ -> None
 
         if normalized.Length = 6 then
-            let r = parseByte normalized.[0..1]
-            let g = parseByte normalized.[2..3]
-            let b = parseByte normalized.[4..5]
+            let r = parseByte normalized[0..1]
+            let g = parseByte normalized[2..3]
+            let b = parseByte normalized[4..5]
             match r, g, b with
-            | Some r, Some g, Some b -> Some { R = r; G = g; B = b; A = 255uy }
+            | Some r, Some g, Some b ->
+                Some
+                    {
+                      R = r
+                      G = g
+                      B = b
+                      A = 255uy
+                    }
             | _ -> None
         elif normalized.Length = 8 then
-            let r = parseByte normalized.[0..1]
-            let g = parseByte normalized.[2..3]
-            let b = parseByte normalized.[4..5]
-            let a = parseByte normalized.[6..7]
+            let r = parseByte normalized[0..1]
+            let g = parseByte normalized[2..3]
+            let b = parseByte normalized[4..5]
+            let a = parseByte normalized[6..7]
             match r, g, b, a with
-            | Some r, Some g, Some b, Some a -> Some { R = r; G = g; B = b; A = a }
+            | Some r, Some g, Some b, Some a ->
+                Some
+                    {
+                      R = r
+                      G = g
+                      B = b
+                      A = a
+                    }
             | _ -> None
         else
             None
@@ -283,16 +335,20 @@ module Operations =
     /// Công thức: physical = logical * scaleFactor.
     /// Xem tài liệu 01_07_DpiAndScaling.md, mục 2.3.
     let logicalToPhysicalPoint (scale: ScaleFactor) (p: Point) : Point =
-        { X = p.X * scale.Value
-          Y = p.Y * scale.Value }
+        {
+          X = p.X * scale.Value
+          Y = p.Y * scale.Value
+        }
 
     /// Chuyển điểm từ physical pixels sang logical pixels.
     /// Công thức: logical = physical / scaleFactor.
     let physicalToLogicalPoint (scale: ScaleFactor) (p: Point) : Point =
         if scale.Value = 0.0 then
             invalidArg (nameof scale) "Hệ số phóng to phải khác 0."
-        { X = p.X / scale.Value
-          Y = p.Y / scale.Value }
+        {
+          X = p.X / scale.Value
+          Y = p.Y / scale.Value
+        }
 
     /// Chuyển Rect từ logical sang physical, làm tròn từng cạnh.
     /// Công thức: round(L * s), round(T * s), round(R * s), round(B * s).
@@ -302,10 +358,12 @@ module Operations =
         let top = Math.Round(rect.Top * scale.Value)
         let right = Math.Round(rect.Right * scale.Value)
         let bottom = Math.Round(rect.Bottom * scale.Value)
-        { X = left
+        {
+          X = left
           Y = top
           Width = right - left
-          Height = bottom - top }
+          Height = bottom - top
+        }
 
     /// Chuyển Rect từ physical sang logical.
     /// Công thức: L / s, T / s, R / s, B / s.
@@ -316,10 +374,12 @@ module Operations =
         let top = rect.Top / scale.Value
         let right = rect.Right / scale.Value
         let bottom = rect.Bottom / scale.Value
-        { X = left
+        {
+          X = left
           Y = top
           Width = right - left
-          Height = bottom - top }
+          Height = bottom - top
+        }
 
     // --------------------------------------------------------
     // Hit-testing helpers
@@ -345,8 +405,10 @@ module Operations =
 
             // Điểm hình chiếu: A + t * (B - A)
             let projection =
-                { X = a.X + tClamped * dx
-                  Y = a.Y + tClamped * dy }
+                {
+                  X = a.X + tClamped * dx
+                  Y = a.Y + tClamped * dy
+                }
 
             pointDistance p projection
 
