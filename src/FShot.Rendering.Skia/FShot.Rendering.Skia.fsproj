@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Converters\DomainToSkia.fs" />
+    <Compile Include="Renderers\ScreenshotRenderer.fs" />
+    <Compile Include="Renderers\SelectionRenderer.fs" />
+    <Compile Include="Renderers\AnnotationRenderer.fs" />
+    <Compile Include="Renderers\ToolbarRenderer.fs" />
+    <Compile Include="Renderers\MagnifierRenderer.fs" />
+    <Compile Include="Renderers\SceneComposer.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FShot.Core\FShot.Core.fsproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="4.152.0" />
+  </ItemGroup>
+
+</Project>

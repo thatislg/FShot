@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Capture\GraphicsCapture.fs" />
+    <Compile Include="Capture\BitmapAdapter.fs" />
+    <Compile Include="Hotkeys\GlobalHotkey.fs" />
+    <Compile Include="Tray\TrayIcon.fs" />
+    <Compile Include="Clipboard\ClipboardService.fs" />
+    <Compile Include="FileSystem\SaveDialog.fs" />
+    <Compile Include="Config\ConfigStore.fs" />
+    <Compile Include="Startup\StartupRegistration.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FShot.Core\FShot.Core.fsproj" />
+  </ItemGroup>
+
+</Project>

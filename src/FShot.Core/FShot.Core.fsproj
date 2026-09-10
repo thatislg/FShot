@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Geometry\Types.fs" />
+    <Compile Include="Domain\Capture.fs" />
+    <Compile Include="Domain\Selection.fs" />
+    <Compile Include="Domain\Annotation.fs" />
+    <Compile Include="Domain\History.fs" />
+    <Compile Include="Domain\Export.fs" />
+    <Compile Include="Domain\Config.fs" />
+    <Compile Include="State\OverlayState.fs" />
+  </ItemGroup>
+
+</Project>
