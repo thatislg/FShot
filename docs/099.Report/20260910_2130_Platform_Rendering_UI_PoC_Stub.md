@@ -55,10 +55,12 @@ Triển khai toàn bộ pipeline PoC từ capture giả lập đến hiển th�
 - **Build Status:** Pass (`dotnet build FShot.sln` — 0 warning, 0 error)
 - **Unit Tests:** 43 passed, 0 failed in `FShot.Core.Tests`; 1 passed, 0 failed in `FShot.Rendering.Skia.Tests` (`dotnet test`)
 - **Manual Verification:**
-  - [x] Chạy thử binary: `FShot.UI.exe` và `dotnet run` đều khởi động được (build thành công), nhưng môi trường hiện tại không có desktop GUI nên cửa sổ overlay không hiển thị. Cần chạy trên Windows desktop thực tế để kiểm tra visual render và input handling.
-  - [ ] Kiểm tra hiển thị trực quan (Visual render / Window layout) — cần chạy trên Windows desktop
-  - [ ] Kiểm tra tương tác chuột/bàn phím (Input Handling) — cần chạy trên Windows desktop
-  - [ ] Hiệu năng đạt chuẩn (FPS ≥ 60) — cần chạy trên Windows desktop
+  - [x] Chạy thử binary: `FShot.UI.exe` và `dotnet run` đều build thành công và cố gắng khởi động, nhưng môi trường hiện tại không có desktop GUI nên cửa sổ overlay không hiển thị.
+  - [~] **P0.6** Mở cửa sổ borderless topmost — code đã triển khai, chưa verify trên Windows desktop.
+  - [~] **P0.7** Xử lý chuột kéo vùng chọn — code đã triển khai, chưa verify trên Windows desktop.
+  - [ ] **P0.8** Đo FPS ≥ 60 — chưa thực hiện, cần chạy trên Windows desktop.
+
+---
 
 ---
 

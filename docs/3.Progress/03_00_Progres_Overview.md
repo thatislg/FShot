@@ -1,7 +1,7 @@
 # F-Shot Master Progress Tracking
 
 - **Cập nhật gần nhất:** 2026-09-10
-- **Tiến độ tổng quan:** `[ 8 / 64 ] Tasks hoàn thành (~12.5%)`
+- **Tiến độ tổng quan:** `[ 5 / 64 ] Tasks hoàn thành (~7.8%)` (Code sẵn sàng, 3 task chưa verify trên desktop)
 - **Mục tiêu hiện tại:** Hoàn tất Phase 0 (Kiểm chứng kỹ thuật nền tảng - PoC)
 
 ---
@@ -10,7 +10,7 @@
 
 | Phase | Mục tiêu | Trạng thái | Hoàn thành |
 | :--- | :--- | :---: | :---: |
-| **Phase 0: PoC** | Khung Solution, Screen Capture, Overlay Canvas, đo 60 FPS | **IN-PROGRESS** | **8 / 8** (100%) |
+| **Phase 0: PoC** | Khung Solution, Screen Capture, Overlay Canvas, đo 60 FPS | **IN-PROGRESS** | **5 / 8** (Code xong, 3 task cần verify trên Windows desktop) |
 | **Phase 1: MVP Core** | Bounding box, 8 Annotation tools, Undo/Redo, Save/Clipboard | **PENDING** | 0 / 29 (0%) |
 | **Phase 2: Windows v1.0** | Tray, Hotkeys, Config UI, Pin Widget, Mixed DPI | **PENDING** | 0 / 19 (0%) |
 | **Phase 3: Advanced** | Imgur upload, Snap-to-grid, Tùy biến nâng cao | **PENDING** | 0 / 8 (0%) |
@@ -24,9 +24,9 @@
 - [x] **P0.3** Triển khai `ScreenEnumeration` lấy thông số Virtual Desktop và danh sách màn hình.
 - [x] **P0.4** Triển khai `CaptureAdapterStub` trả về raw byte frame giả lập phục vụ thông luồng.
 - [x] **P0.5** Xây dựng `SkiaCanvas` control trong Avalonia bọc `SKCanvas` hiển thị frame ảnh.
-- [x] **P0.6** Mở cửa sổ Avalonia Window không viền (`Borderless Topmost`) bao trọn Virtual Screen.
-- [x] **P0.7** Tích hợp xử lý chuột (`PointerPressed/Moved/Released`) kéo vùng chọn Selection giả lập.
-- [x] **P0.8** Đo kiểm hiệu năng render canvas đạt chuẩn $\ge$ 60 FPS khi kéo chuột.
+- [~] **P0.6** Mở cửa sổ Avalonia Window không viền (`Borderless Topmost`) bao trọn Virtual Screen — **code đã viết, chưa verify trên desktop Windows**.
+- [~] **P0.7** Tích hợp xử lý chuột (`PointerPressed/Moved/Released`) kéo vùng chọn Selection giả lập — **code đã viết, chưa verify trên desktop Windows**.
+- [ ] **P0.8** Đo kiểm hiệu năng render canvas đạt chuẩn $\ge$ 60 FPS khi kéo chuột — **chưa thực hiện**.
 
 ---
 
