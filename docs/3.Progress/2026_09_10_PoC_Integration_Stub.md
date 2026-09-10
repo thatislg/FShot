@@ -23,6 +23,7 @@ Agent triển khai theo yêu cầu.
 
 - `dotnet build FShot.sln`: 0 warning, 0 error.
 - `dotnet test`: 44 tests passed (43 Core + 1 Skia).
+- Chạy thử binary `FShot.UI.exe` và `dotnet run --project src/FShot.UI`: ứng dụng build và cố gắng khởi động, nhưng môi trường hiện tại không có desktop GUI nên overlay không hiển thị. Cần chạy trên Windows desktop thực tế.
 
 ## Tiếp theo
 
