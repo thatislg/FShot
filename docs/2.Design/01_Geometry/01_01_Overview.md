@@ -33,14 +33,23 @@ Các kiểu này phải:
 | `Color` | Màu RGBA | Không dùng `System.Drawing.Color` hay `SkiaSharp.SKColor` |
 | `StrokeWidth` | Độ dày nét vẽ | Có thể là single-case DU để phân biệt với float thường |
 
-### 2.2 Các phép toán cần thiết
+### 2.2 Chủ đề liên quan đến geometry
+
+| Chủ đề | Vai trò | Ghi chú |
+|--------|---------|---------|
+| `HitTesting` | Xác định con trỏ/tranh vùng nào | Dùng cho handles, annotations, toolbar |
+| `DpiAndScaling` | Xử lý Mixed DPI | Chuyển đổi giữa logical pixels và physical pixels |
+
+### 2.3 Các phép toán cần thiết
 
 - **Point**: cộng, trừ, nhân với scalar, khoảng cách, lerp.
 - **Rect**: left/top/right/bottom/center, contains point, intersect, union, inflate, clamp inside another rect, aspect-ratio lock.
 - **Color**: blend alpha, lighten/darken, convert to/from hex string.
 - **StrokeWidth**: min/max constraint, tăng/giảm theo bước.
+- **HitTesting**: bán kính dung sai, point-in-rect, point-near-line.
+- **DpiAndScaling**: scale point/rect theo DPI, convert virtual/physical coords.
 
-### 2.3 Không thuộc phạm vi
+### 2.5 Không thuộc phạm vi
 
 - Không chứa logic render.
 - Không chứa logic input handling.
