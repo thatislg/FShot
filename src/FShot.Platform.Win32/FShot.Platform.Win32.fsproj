@@ -6,8 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="Capture\GraphicsCapture.fs" />
+    <Compile Include="Screen\ScreenInfo.fs" />
+    <Compile Include="Screen\ScreenEnumeration.fs" />
     <Compile Include="Capture\BitmapAdapter.fs" />
+    <Compile Include="Capture\GraphicsCapture.fs" />
     <Compile Include="Hotkeys\GlobalHotkey.fs" />
     <Compile Include="Tray\TrayIcon.fs" />
     <Compile Include="Clipboard\ClipboardService.fs" />

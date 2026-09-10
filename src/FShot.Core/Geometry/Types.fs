@@ -114,6 +114,33 @@ type Color =
           A = 255uy
         }
 
+    /// Màu đỏ đậm.
+    static member Red =
+        {
+          R = 255uy
+          G = 0uy
+          B = 0uy
+          A = 255uy
+        }
+
+    /// Màu xanh lục đậm.
+    static member Green =
+        {
+          R = 0uy
+          G = 255uy
+          B = 0uy
+          A = 255uy
+        }
+
+    /// Màu xanh lam đậm.
+    static member Blue =
+        {
+          R = 0uy
+          G = 0uy
+          B = 255uy
+          A = 255uy
+        }
+
     /// Màu trắng đậm.
     static member White =
         {
