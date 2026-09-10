@@ -13,14 +13,14 @@ module BitmapAdapter =
     /// Công thức: totalBytes = width * height * 4.
     /// Xem 10_02_CaptureAdapter.md, mục 4.
     let createBgra32Pixels (width: int) (height: int) (fillColor: byte * byte * byte * byte) : byte[] =
-        let (b, g, r, a) = fillColor
+        let b, g, r, a = fillColor
         let pixels = Array.zeroCreate (width * height * 4)
 
         for i in 0 .. width * height - 1 do
-            pixels.[i * 4 + 0] <- b
-            pixels.[i * 4 + 1] <- g
-            pixels.[i * 4 + 2] <- r
-            pixels.[i * 4 + 3] <- a
+            pixels[i * 4 + 0] <- b
+            pixels[i * 4 + 1] <- g
+            pixels[i * 4 + 2] <- r
+            pixels[i * 4 + 3] <- a
 
         pixels
 

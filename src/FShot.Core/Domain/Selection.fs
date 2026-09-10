@@ -36,8 +36,9 @@ type Selection =
     }
 
     /// Kích thước tối thiểu của vùng chọn.
-    static member MinWidth = 20.0
-    static member MinHeight = 20.0
+    /// Trong PoC để 10x10 để dễ test; MVP sẽ tăng lại 20x20 nếu cần.
+    static member MinWidth = 10.0
+    static member MinHeight = 10.0
 
     /// Bán kính dung sai khi hit-test handle.
     static member HandleTolerance = 6.0

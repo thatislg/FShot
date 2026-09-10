@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Logging\FShotLog.fs" />
     <Compile Include="SkiaCanvas\CaptureCanvas.axaml.fs" />
     <Compile Include="Windows\CaptureOverlayWindow.axaml.fs" />
     <Compile Include="ViewModels\PlaceholderViewModel.fs" />

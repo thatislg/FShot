@@ -3,10 +3,13 @@
         xmlns:controls="clr-namespace:FShot.UI.SkiaCanvas"
         x:Class="FShot.UI.Windows.CaptureOverlayWindow"
         Title="F-Shot Capture"
-        SystemDecorations="None"
+        WindowDecorations="None"
         Topmost="True"
         CanResize="False"
-        Background="Transparent"
-        ShowInTaskbar="False">
-    <controls:CaptureCanvas x:Name="CaptureCanvas" />
+        Background="#66000000"
+        ShowInTaskbar="False"
+        Focusable="True"
+        IsVisible="False"
+        IsHitTestVisible="True">
+    <controls:CaptureCanvas x:Name="CaptureCanvas" IsHitTestVisible="True" />
 </Window>
