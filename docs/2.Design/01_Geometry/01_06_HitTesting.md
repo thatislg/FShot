@@ -34,21 +34,78 @@ Vùng lân cận này được gọi là **bán kính dung sai**. Bán kính cà
 
 Đây là loại hit-test đơn giản nhất. Dùng để kiểm tra con trỏ có đang nằm trong vùng chọn hay không. Cũng dùng để kiểm tra con trỏ có đang nằm trong bounding box của một chú thích hay không.
 
+Công thức: cho một hình chữ nhật với cạnh trái `L`, cạnh phải `R`, cạnh trên `T`, cạnh dưới `B`, và con trỏ tại `(x, y)`. Điểm nằm trong hình chữ nhật khi cả bốn điều kiện sau đúng:
+
+- `x >= L`
+- `x <= R`
+- `y >= T`
+- `y <= B`
+
+Ví dụ: hình chữ nhật có `L = 100`, `T = 80`, `R = 300`, `B = 230`.
+
+- Con trỏ tại `(150, 150)`: `150 >= 100`, `150 <= 300`, `150 >= 80`, `150 <= 230` — cả bốn điều kiện đúng, nên điểm nằm trong.
+- Con trỏ tại `(50, 150)`: `50 >= 100` sai, nên điểm nằm ngoài.
+- Con trỏ tại `(300, 230)`: tất cả điều kiện đúng nếu dùng `<=`, nên điểm nằm trên biên cũng được coi là trong.
+
 ### 3.2 Kiểm tra điểm gần đường thẳng
 
 Dùng cho đường nét vẽ, mũi tên, và đường viền vùng chọn. Thay vì kiểm tra điểm nằm trong vùng, hệ thống tính khoảng cách từ con trỏ đến đường thẳng gần nhất. Nếu khoảng cách nhỏ hơn bán kính dung sai, hit-test thành công.
+
+Cho đường thẳng đi qua hai điểm `A = (x1, y1)` và `B = (x2, y2)`, và con trỏ tại `P = (x0, y0)`. Khoảng cách từ P đến đường thẳng vô hạn qua A, B được tính bằng công thức:
+
+`distance = |(y2 - y1) × x0 - (x2 - x1) × y0 + x2 × y1 - y2 × x1| / sqrt((y2 - y1)^2 + (x2 - x1)^2)`
+
+Tuy nhiên, trong thực tế, đường nét vẽ là một đoạn thẳng có hạn, không phải đường thẳng vô hạn. Nếu hình chiếu của P lên đường thẳng nằm ngoài đoạn AB, hệ thống nên tính khoảng cách đến điểm gần nhất trong hai đầu mút A hoặc B.
+
+Ví dụ: đoạn thẳng từ `A = (100, 100)` đến `B = (400, 100)`, con trỏ tại `P = (250, 110)`.
+- `(y2 - y1) = 0`, `(x2 - x1) = 300`.
+- `distance = |0 × 250 - 300 × 110 + 400 × 100 - 100 × 100| / sqrt(0 + 300^2)`
+- `distance = |0 - 33000 + 40000 - 10000| / 300 = |-3000| / 300 = 10`
+
+Khoảng cách là 10 pixel. Nếu bán kính dung sai là 8, hit-test thất bại. Nếu bán kính dung sai là 12, hit-test thành công.
 
 ### 3.3 Kiểm tra điểm gần đường cong
 
 Dùng cho bút chì tự do. Đường nét vẽ là một chuỗi các đoạn thẳng nhỏ. Hệ thống kiểm tra từng đoạn nhỏ và tìm đoạn gần con trỏ nhất.
 
+Với mỗi đoạn nhỏ, hệ thống tính khoảng cách từ con trỏ đến đoạn thẳng bằng cách tương tự mục 3.2. Sau đó chọn khoảng cách nhỏ nhất trong tất cả các đoạn. Nếu khoảng cách nhỏ nhất nhỏ hơn bán kính dung sai, hit-test thành công.
+
+Ví dụ: đường cong gồm hai đoạn: đoạn 1 từ `(100, 100)` đến `(200, 150)`, đoạn 2 từ `(200, 150)` đến `(300, 100)`. Con trỏ tại `(205, 155)`.
+
+Với đoạn 1, khoảng cách đến điểm `(200, 150)` là:
+- `sqrt((205 - 200)^2 + (155 - 150)^2) = sqrt(25 + 25) = sqrt(50) ≈ 7.07`
+
+Với đoạn 2, khoảng cách đến điểm `(200, 150)` cũng tương tự, khoảng 7.07.
+
+Nếu bán kính dung sai là 8, hit-test thành công vì khoảng cách nhỏ nhất nhỏ hơn 8.
+
 ### 3.4 Kiểm tra điểm neo
 
 Mỗi điểm neo là một hình chữ nhật nhỏ xung quanh góc hoặc cạnh của vùng chọn. Hit-test mở rộng điểm neo ra thêm bán kính dung sai để dễ bắt.
 
+Công thức đơn giản: điểm neo được mở rộng đều ra `tolerance` pixel theo bốn hướng. Nếu con trỏ nằm trong hình chữ nhật mở rộng, hit-test thành công.
+
+Cho điểm neo gốc có `L = 200`, `T = 200`, `R = 210`, `B = 210`, và bán kính dung sai `tolerance = 6`.
+
+Hình chữ nhật mở rộng:
+- `L' = L - 6 = 194`
+- `T' = T - 6 = 194`
+- `R' = R + 6 = 216`
+- `B' = B + 6 = 216`
+
+Con trỏ tại `(215, 215)` nằm trong hình chữ nhật mở rộng vì `215 >= 194`, `215 <= 216`, `215 >= 194`, `215 <= 216`. Hit-test thành công. Nếu không mở rộng, con trỏ này nằm ngoài điểm neo gốc.
+
 ### 3.5 Kiểm tra nút thanh công cụ
 
 Nút thanh công cụ cũng là các hình chữ nhật hoặc hình tròn. Hit-test cho nút thường đơn giản hơn vì nút lớn và có ranh giới rõ ràng.
+
+Với nút hình chữ nhật, công thức giống mục 3.1. Với nút hình tròn có tâm `(cx, cy)` và bán kính `r`, con trỏ `(x, y)` nằm trong nút nếu:
+
+`sqrt((x - cx)^2 + (y - cy)^2) <= r`
+
+Ví dụ: nút tròn có tâm `(500, 100)`, bán kính `20`. Con trỏ tại `(515, 115)`.
+- `sqrt((515 - 500)^2 + (115 - 100)^2) = sqrt(225 + 225) = sqrt(450) ≈ 21.21`
+- 21.21 > 20, nên con trỏ nằm ngoài nút.
 
 ---
 

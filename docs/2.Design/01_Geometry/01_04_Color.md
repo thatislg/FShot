@@ -33,17 +33,93 @@ F-Shot cần quyết định cách lưu chính trong domain model. Quyết đị
 
 Người dùng thường nhìn thấy màu dưới dạng chuỗi như `#FF5733`. Hệ thống cần có cách chuyển đổi từ Color sang chuỗi hex và ngược lại. Điều này quan trọng khi lưu màu vào file config hoặc hiển thị giá trị màu trong kính lúp.
 
+Công thức chuyển từ bốn kênh số nguyên R, G, B, A (mỗi kênh 0–255) sang chuỗi hex là ghép từng kênh thành hai chữ số thập lục phân theo thứ tự R, G, B, A.
+
+Ví dụ: một màu có `R = 255`, `G = 87`, `B = 51`, `A = 255`.
+- `255` trong hệ thập lục phân là `FF`.
+- `87` trong hệ thập lục phân là `57`.
+- `51` trong hệ thập lục phân là `33`.
+- `255` trong hệ thập lục phân là `FF`.
+
+Ghép lại ta được chuỗi `#FF5733FF`. Nếu alpha bằng 255, có thể rút gọn thành `#FF5733`.
+
+Chiều ngược lại, từ chuỗi hex `#AABBCCDD`, hệ thống tách chuỗi thành bốn nhóm hai ký tự: `AA` cho red, `BB` cho green, `CC` cho blue, `DD` cho alpha. Sau đó chuyển mỗi nhóm từ thập lục phân sang thập phân.
+
+Ví dụ: chuỗi `#80A0C0FF`.
+- `80` (hex) = 8 × 16 + 0 = 128, nên red = 128.
+- `A0` (hex) = 10 × 16 + 0 = 160, nên green = 160.
+- `C0` (hex) = 12 × 16 + 0 = 192, nên blue = 192.
+- `FF` (hex) = 255, nên alpha = 255.
+
 ### 3.2 Pha trộn hai màu theo alpha
 
 Pha trộn là cách tính màu khi một màu trong suốt đè lên một màu khác. Thao tác này dùng trong Marker tool, khi nét bán trong suốt phủ lên ảnh gốc, và trong overlay tối, khi lớp mờ đè lên screenshot.
+
+Giả sử có màu nguồn (source) `S` với alpha `As` và màu đích (destination) `D` với alpha `Ad`. Khi `S` đè lên `D`, kết quả `R` được tính theo công thức pha trộn alpha chuẩn:
+
+- `Ao = As + Ad × (1 - As)`
+- `Ro = (S × As + D × Ad × (1 - As)) / Ao`
+
+Trong đó `Ao` là alpha đầu ra, `Ro` là giá trị kênh màu đầu ra. Công thức này áp dụng riêng cho từng kênh red, green, blue.
+
+Ví dụ: màu nguồn là đỏ đậm với `R = 255`, `G = 0`, `B = 0`, `A = 0.5` (nửa trong suốt). Màu đích là xám với `R = 128`, `G = 128`, `B = 128`, `A = 1.0` (đậm).
+
+Tính kênh red đầu ra:
+- `Ao = 0.5 + 1.0 × (1 - 0.5) = 0.5 + 0.5 = 1.0`
+- `Ro = (255 × 0.5 + 128 × 1.0 × (1 - 0.5)) / 1.0 = (127.5 + 64) / 1.0 = 191.5`
+
+Tương tự, kênh green đầu ra:
+- `Go = (0 × 0.5 + 128 × 1.0 × 0.5) / 1.0 = 64`
+
+Kênh blue đầu ra:
+- `Bo = (0 × 0.5 + 128 × 1.0 × 0.5) / 1.0 = 64`
+
+Kết quả là một màu có red ≈ 191.5, green = 64, blue = 64, alpha = 1.0. Khi chuyển sang số nguyên, red làm tròn thành 192, tức màu đỏ-xám.
 
 ### 3.3 Làm sáng hoặc tối màu
 
 Hệ thống có thể cần điều chỉnh độ sáng của một màu để tạo hiệu ứng hover, đổ bóng, hoặc đảm bảo độ tương phản. Ví dụ, màu của thanh công cụ có thể cần được làm sáng khi con trỏ di qua.
 
+Cách đơn giản nhất để làm sáng hoặc tối là nhân từng kênh R, G, B với một hệ số. Hệ số lớn hơn 1 làm sáng, hệ số nhỏ hơn 1 làm tối. Sau khi nhân, kết quả được giới hạn trong khoảng 0 đến 255 (hoặc 0 đến 1 nếu dùng float).
+
+Ví dụ: màu gốc có `R = 100`, `G = 150`, `B = 200`.
+
+Làm sáng với hệ số 1.2:
+- `R = 100 × 1.2 = 120`
+- `G = 150 × 1.2 = 180`
+- `B = 200 × 1.2 = 240`
+
+Làm tối với hệ số 0.7:
+- `R = 100 × 0.7 = 70`
+- `G = 150 × 0.7 = 105`
+- `B = 200 × 0.7 = 140`
+
+Nếu kết quả vượt quá 255, ví dụ `R = 100 × 3.0 = 300`, hệ thống sẽ kéo về 255 để tránh giá trị không hợp lệ.
+
 ### 3.4 Kiểm tra độ sáng
 
 Biết một màu sáng hay tối giúp hệ thống chọn màu chữ hoặc biểu tượng phù hợp. Ví dụ, nền tối thì nên dùng biểu tượng sáng, và ngược lại. Thao tác này dùng trong toolbar khi tự động chọn icon sáng/tối.
+
+Công thức tính độ sáng tương đối chuẩn (luminance) theo công thức Rec. 601:
+
+`L = 0.299 × R + 0.587 × G + 0.114 × B`
+
+Trong đó R, G, B được tính trong khoảng 0 đến 1. Nếu dùng khoảng 0–255, công thức tương đương:
+
+`L = (0.299 × R + 0.587 × G + 0.114 × B) / 255`
+
+Kết quả L nằm trong khoảng 0 đến 1. Nếu L gần 0, màu rất tối. Nếu L gần 1, màu rất sáng. Ngưỡng thường dùng để phân loại sáng/tối là 0.5.
+
+Ví dụ: màu đen `R = 0`, `G = 0`, `B = 0`.
+- `L = (0.299 × 0 + 0.587 × 0 + 0.114 × 0) / 255 = 0`
+
+Ví dụ: màu trắng `R = 255`, `G = 255`, `B = 255`.
+- `L = (0.299 × 255 + 0.587 × 255 + 0.114 × 255) / 255 = 255 / 255 = 1`
+
+Ví dụ: màu vàng `R = 255`, `G = 255`, `B = 0`.
+- `L = (0.299 × 255 + 0.587 × 255 + 0.114 × 0) / 255 = (76.245 + 149.685 + 0) / 255 ≈ 225.93 / 255 ≈ 0.886`
+
+Màu vàng được coi là sáng, nên nếu dùng làm nền, biểu tượng nên dùng màu tối.
 
 ---
 

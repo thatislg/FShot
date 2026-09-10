@@ -29,9 +29,45 @@ Physical pixel là điểm ảnh thực sự trên màn hình. Một màn hình 
 
 DPI scale factor là tỉ lệ giữa logical pixel và physical pixel. Ví dụ, tỉ lệ 1.5 nghĩa là 1 logical pixel = 1.5 physical pixel. Trong thực tế, tỉ lệ thường là 1.0, 1.25, 1.5, 1.75, hoặc 2.0.
 
+Công thức chuyển đổi:
+
+`physicalPixels = logicalPixels × scaleFactor`
+
+`logicalPixels = physicalPixels / scaleFactor`
+
+Ví dụ: màn hình có tỉ lệ 150%, tức `scaleFactor = 1.5`.
+
+- Một logical pixel tương đương với `1 × 1.5 = 1.5` physical pixel.
+- Một logical Rect có chiều rộng 200 sẽ tương đương `200 × 1.5 = 300` physical pixel.
+- Một physical bitmap có chiều rộng 3000 pixel trên màn hình này tương đương `3000 / 1.5 = 2000` logical pixel.
+
 ### 2.4 Virtual Screen
 
 Virtual Screen là hệ tọa độ bao phủ tất cả các màn hình. Nếu bạn có hai màn hình 1920x1080 đặt cạnh nhau, Virtual Screen có thể rộng 3840 pixel. Nhưng với Mixed DPI, mỗi màn hình có thể đóng góp một số logical pixel khác nhau.
+
+Công thức tính Virtual Screen bounds:
+
+`virtualLeft = min(left của tất cả màn hình)`
+`virtualTop = min(top của tất cả màn hình)`
+`virtualRight = max(right của tất cả màn hình)`
+`virtualBottom = max(bottom của tất cả màn hình)`
+
+`virtualWidth = virtualRight - virtualLeft`
+`virtualHeight = virtualBottom - virtualTop`
+
+Trong đó `left`, `top`, `right`, `bottom` của mỗi màn hình đều tính trong logical pixels.
+
+Ví dụ: có hai màn hình.
+- Màn hình A: `left = 0`, `top = 0`, `right = 1920`, `bottom = 1080`.
+- Màn hình B: `left = 1920`, `top = 0`, `right = 4480`, `bottom = 1440`.
+
+Tính Virtual Screen:
+- `virtualLeft = min(0, 1920) = 0`
+- `virtualTop = min(0, 0) = 0`
+- `virtualRight = max(1920, 4480) = 4480`
+- `virtualBottom = max(1080, 1440) = 1440`
+
+Virtual Screen bounds là `(0, 0, 4480, 1440)`, rộng 4480 logical pixel và cao 1440 logical pixel.
 
 ---
 
@@ -57,17 +93,58 @@ Khi con trỏ di chuyển từ màn hình 100% sang màn hình 150%, Virtual Scr
 
 Tất cả tọa độ trong domain model, bao gồm Point và Rect, đều dùng Virtual Screen space ở mức logical pixel. Điều này giúp code domain đơn giản và không phụ thuộc DPI.
 
+Ví dụ: một Point trong domain model có tọa độ `(X = 2000, Y = 500)`. Con số này là logical pixel, tính từ góc trên bên trái của Virtual Screen. Nó không nói rõ điểm này nằm trên màn hình nào; việc xác định màn hình sẽ do phần Platform.Win32 thực hiện khi cần.
+
 ### 4.2 Capture trả về physical bitmap
 
 Khi chụp màn hình, backend capture trả về một bitmap với kích thước physical pixel, cùng với thông tin scale factor và Virtual Bounds. Bitmap này có thể lớn hơn logical bounds, nhưng tỉ lệ được ghi rõ.
+
+Ví dụ: chụp một màn hình có logical bounds `(0, 0, 1920, 1080)` và scale factor 1.5.
+
+- Chiều rộng physical = `1920 × 1.5 = 2880` pixel.
+- Chiều cao physical = `1080 × 1.5 = 1620` pixel.
+
+Bitmap thu được có kích thước 2880 × 1620 physical pixel. CaptureResult sẽ lưu kèm `scaleFactor = 1.5` và `virtualBounds = (0, 0, 1920, 1080)` để UI có thể căn chỉnh.
 
 ### 4.3 Chuyển đổi khi render
 
 Khi render bitmap lên màn hình, UI biết scale factor và có thể vẽ đúng kích thước. Khi vẽ các hình học như vùng chọn, hệ thống vẽ trong logical space rồi để render engine phóng to theo scale factor.
 
+Ví dụ: một Rect vùng chọn có logical bounds `(100, 100, 400, 300)`, tức góc trên bên trái `(100, 100)` và kích thước `300 × 200`. Trên màn hình có scale factor 1.5, render engine sẽ vẽ vùng chọn này với:
+
+- Góc trên bên trái physical = `(100 × 1.5, 100 × 1.5) = (150, 150)`.
+- Kích thước physical = `(300 × 1.5, 200 × 1.5) = (450, 300)`.
+
 ### 4.4 Crop ảnh cuối theo logical Rect
 
 Khi xuất ảnh, vùng crop được tính trong logical space. Sau đó, vùng này được nhân với scale factor để cắt đúng số physical pixel từ bitmap gốc.
+
+Cho logical Rect vùng chọn `L`, `T`, `R`, `B` và scale factor `s`. Physical crop bounds tính như sau:
+
+- `physicalLeft = round(L × s)`
+- `physicalTop = round(T × s)`
+- `physicalRight = round(R × s)`
+- `physicalBottom = round(B × s)`
+
+`round` là phép làm tròn đến số nguyên gần nhất. Cần làm tròn cẩn thận vì sai lệch 1 pixel ở logical space có thể thành 1–2 pixel ở physical space.
+
+Ví dụ: vùng chọn logical có `L = 100.5`, `T = 80.25`, `R = 400.75`, `B = 300.5`, scale factor `s = 1.5`.
+
+- `physicalLeft = round(100.5 × 1.5) = round(150.75) = 151`
+- `physicalTop = round(80.25 × 1.5) = round(120.375) = 120`
+- `physicalRight = round(400.75 × 1.5) = round(601.125) = 601`
+- `physicalBottom = round(300.5 × 1.5) = round(450.75) = 451`
+
+Physical crop bounds là `(151, 120, 601, 451)`, rộng `601 - 151 = 450` pixel và cao `451 - 120 = 331` pixel.
+
+Để tránh lệch dần khi kích thước lớn, có thể tính kích thước physical bằng cách nhân kích thước logical với scale factor rồi cộng vào góc bắt đầu, thay vì làm tròn từng cạnh riêng lẻ:
+
+- `physicalWidth = round((R - L) × s)`
+- `physicalHeight = round((B - T) × s)`
+- `physicalRight = physicalLeft + physicalWidth`
+- `physicalBottom = physicalTop + physicalHeight`
+
+Cách này giúp giữ đúng tổng kích thước, tránh trường hợp làm tròn hai cạnh đối diện làm tăng hoặc giảm kích thước ảnh crop.
 
 ---
 
