@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <Compile Include="Geometry\Types.fs" />
+    <Compile Include="Geometry\Operations.fs" />
     <Compile Include="Domain\Capture.fs" />
     <Compile Include="Domain\Selection.fs" />
     <Compile Include="Domain\Annotation.fs" />
