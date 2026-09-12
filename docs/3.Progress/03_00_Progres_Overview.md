@@ -34,9 +34,27 @@
 
 ### Epic 1: Core Domain & State Machine
 - [ ] **P1.01** Domain model đầy đủ (`Annotation` DU, `CaptureMode`, `ExportTarget`).
+  - [ ] Hoàn thiện `docs/2.Design/04_Annotation/04_03_Pencil.md` (thiết kế Pencil + smoothing).
+  - [ ] Hoàn thiện `docs/2.Design/04_Annotation/04_06_MarkerAndPixelate.md` (thiết kế Marker + Pixelate).
+  - [ ] Hoàn thiện `docs/2.Design/04_Annotation/04_07_TextTool.md` (thiết kế Text tool + commit).
+  - [ ] Rà soát `docs/2.Design/02_Capture/02_03_CaptureRequest.md` (đảm bảo đủ cho `CaptureMode`, `OutputTarget`).
+  - [ ] Rà soát `docs/2.Design/06_Export/06_02_ExportTarget.md` (đảm bảo đủ cho `ExportTarget`).
 - [ ] **P1.02** Immutable `HistoryStack` phục vụ hoàn tác không giới hạn.
+  - [ ] Hoàn thiện `docs/2.Design/05_History/05_02_Snapshot.md`.
+  - [ ] Hoàn thiện `docs/2.Design/05_History/05_03_HistoryStack.md`.
+  - [ ] Hoàn thiện `docs/2.Design/05_History/05_04_Integration.md`.
+  - [ ] Bỏ qua `05_05_CounterRestoration.md` trong MVP (dành cho v1.x).
 - [ ] **P1.03** F# Overlay State Machine (`Idle` → `Selecting` → `Selected` → `Annotating`).
+  - [ ] Hoàn thiện `docs/2.Design/08_OverlayState/08_02_States.md`.
+  - [ ] Hoàn thiện `docs/2.Design/08_OverlayState/08_03_Events.md`.
+  - [ ] Hoàn thiện `docs/2.Design/08_OverlayState/08_04_Transitions.md`.
+  - [ ] Hoàn thiện `docs/2.Design/08_OverlayState/08_05_RenderModel.md`.
+  - [ ] Hoàn thiện `docs/2.Design/08_OverlayState/08_06_Integration.md`.
 - [ ] **P1.04** Unit tests cho Geometry (Nudge, Resize, Clamp) & History trong `FShot.Core.Tests`.
+  - [ ] Bổ sung / cập nhật `tests/FShot.Core.Tests/Domain/AnnotationTests.fs`.
+  - [ ] Bổ sung `tests/FShot.Core.Tests/Domain/ConfigTests.fs`.
+  - [ ] Bổ sung `tests/FShot.Core.Tests/Domain/HistoryTests.fs`.
+  - [ ] Bổ sung `tests/FShot.Core.Tests/State/OverlayStateTests.fs`.
 
 ### Epic 2: Vùng chọn (Selection Engine)
 - [ ] **P1.05** Lớp phủ tối mờ Skia (`FR-SEL-01`) ngoài vùng chọn.
