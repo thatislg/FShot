@@ -1,7 +1,7 @@
 # F-Shot Master Progress Tracking
 
 - **Cập nhật gần nhất:** 2026-09-12
-- **Tiến độ tổng quan:** `[ 8 / 88 ] Tasks hoàn thành (~9.1%)` (Phase 0 PoC đã verify xong trên desktop Windows)
+- **Tiến độ tổng quan:** `[ 8 / 84 ] Tasks hoàn thành (~9.5%)` (Phase 0 PoC đã verify xong trên desktop Windows)
 - **Mục tiêu hiện tại:** Hoàn thiện thiết kế nền tảng Phase 1 (P1.01–P1.04) trước khi viết code
 
 ---
@@ -12,7 +12,7 @@
 | :--- | :--- | :---: | :---: |
 | **Phase 0: PoC** | Khung Solution, Screen Capture, Overlay Canvas, đo 60 FPS | **DONE** | **8 / 8** (đã verify trên desktop Windows) |
 | **Phase 1: MVP Core** | Bounding box, 8 Annotation tools, Undo/Redo, Save/Clipboard | **PENDING** | 0 / 29 (0%) |
-| **Phase 2: Windows v1.0** | Tray, Hotkeys, Real Capture, Config UI, Pin Widget, Advanced tools | **PENDING** | 0 / 43 (0%) |
+| **Phase 2: Windows v1.0** | Tray, Hotkeys, Real Capture, Config UI, Pin Widget, Advanced tools | **PENDING** | 0 / 39 (0%) |
 | **Phase 3: Advanced** | Imgur upload, Snap-to-grid, Tùy biến nâng cao | **PENDING** | 0 / 8 (0%) |
 
 ---
@@ -175,3 +175,7 @@
 ---
 
 *Cập nhật gần nhất: 2026-09-12*
+
+---
+
+> **Ghi chú về số lượng task:** `03_00_Progres_Overview.md` liệt kê chi tiết 84 task cấp `P` (Phase 0: 8, Phase 1: 29, Phase 2: 39, Phase 3: 8). Các số `P` bị khuyết (P2.18, P2.19, P2.40, P2.41) chưa được gán tính năng cụ thể trong SRS, do đó chưa tính vào tổng số. Nếu sau này bổ sung, tổng số sẽ được điều chỉnh lại.
