@@ -1,8 +1,8 @@
 # F-Shot Master Progress Tracking
 
-- **Cập nhật gần nhất:** 2026-09-10
-- **Tiến độ tổng quan:** `[ 8 / 64 ] Tasks hoàn thành (~12.5%)` (Phase 0 PoC đã verify xong trên desktop Windows)
-- **Mục tiêu hiện tại:** Bắt đầu Phase 1 (MVP Core)
+- **Cập nhật gần nhất:** 2026-09-12
+- **Tiến độ tổng quan:** `[ 8 / 88 ] Tasks hoàn thành (~9.1%)` (Phase 0 PoC đã verify xong trên desktop Windows)
+- **Mục tiêu hiện tại:** Hoàn thiện thiết kế nền tảng Phase 1 (P1.01–P1.04) trước khi viết code
 
 ---
 
@@ -12,7 +12,7 @@
 | :--- | :--- | :---: | :---: |
 | **Phase 0: PoC** | Khung Solution, Screen Capture, Overlay Canvas, đo 60 FPS | **DONE** | **8 / 8** (đã verify trên desktop Windows) |
 | **Phase 1: MVP Core** | Bounding box, 8 Annotation tools, Undo/Redo, Save/Clipboard | **PENDING** | 0 / 29 (0%) |
-| **Phase 2: Windows v1.0** | Tray, Hotkeys, Config UI, Pin Widget, Mixed DPI | **PENDING** | 0 / 19 (0%) |
+| **Phase 2: Windows v1.0** | Tray, Hotkeys, Real Capture, Config UI, Pin Widget, Advanced tools | **PENDING** | 0 / 43 (0%) |
 | **Phase 3: Advanced** | Imgur upload, Snap-to-grid, Tùy biến nâng cao | **PENDING** | 0 / 8 (0%) |
 
 ---
@@ -88,3 +88,90 @@
 - [ ] **P1.27** Parser lệnh dòng lệnh bằng Argu (`fshot gui`, `fshot full`) (`FR-CLI-01/02`).
 - [ ] **P1.28** Cấu hình độ trễ chụp (`-d / --delay`) (`FR-CAP-05`).
 - [ ] **P1.29** Lưu trữ và nạp cấu hình cơ bản từ JSON tại `%APPDATA%\FShot\config.json`.
+
+---
+
+## 4. Checklist chi tiết Phase 2: Windows v1.0 (Target: 11/10 → 07/11/2026)
+
+### Epic 6: System Tray & App Lifecycle
+- [ ] **P2.01** Biểu tượng tray liên tục với menu ngữ cảnh: chụp GUI, chụp màn hình, mở cài đặt, mở thư mục lưu, thoát (`FR-SYS-001`–`FR-SYS-008`).
+- [ ] **P2.02** Giới hạn single-instance và khởi động cùng Windows (`FR-SYS-010`, `FR-CFG-006`, `FR-WIN-005`).
+- [ ] **P2.03** Thoát graceful, thông báo thành công / hủy, tùy chọn ẩn tray icon (`FR-CFG-007`, `FR-CFG-008`).
+
+### Epic 7: Global Hotkeys
+- [ ] **P2.04** Đăng ký phím nóng toàn hệ thống `Win+Shift+X` để kích hoạt chụp (`FR-SYS-009`, `FR-WIN-002`, `FR-SH-028`).
+- [ ] **P2.05** Tích hợp phím `PrintScreen` và xử lý xung đột với Windows Snipping Tool (`FR-SYS-020`, `FR-WIN-003`, `FR-SH-030`).
+- [ ] **P2.06** Cho phép cấu hình và thay đổi các phím tắt toàn cục (`FR-SH-028`–`FR-SH-030`).
+
+### Epic 8: Real Capture Backend & Mixed DPI
+- [ ] **P2.07** Triển khai backend `Windows.Graphics.Capture` cho chụp đa màn hình đúng mixed-DPI (`FR-WIN-001`).
+- [ ] **P2.08** Hỗ trợ chụp một màn hình cụ thể và màn hình có con trỏ qua WinRT.
+- [ ] **P2.09** Fallback `BitBlt` khi `Windows.Graphics.Capture` không khả dụng hoặc bị từ chối quyền (`FR-WIN-001`, fallback).
+- [ ] **P2.10** Xử lý đúng Mixed DPI và Per-Monitor V2 DPI Awareness cho cả chụp và UI (`FR-SYS-017`, `FR-SYS-018`, `FR-WIN-001`).
+
+### Epic 9: Config Persistence & Editor
+- [ ] **P2.11** Đọc/ghi cấu hình dạng JSON tại `%APPDATA%\FShot\config.json` (`FR-CFG-001`, `FR-CFG-003`–`FR-CFG-005`).
+- [ ] **P2.12** Migrate hoặc đọc cấu hình cũ từ `flameshot.ini` (`FR-WIN-006`, migration).
+- [ ] **P2.13** Cửa sổ cài đặt (Config Editor) cho các tùy chọn chung, giao diện và giá trị mặc định công cụ (`FR-SYS-006`, `FR-CFG-100`–`FR-CFG-209`).
+- [ ] **P2.14** Trình chỉnh sửa mẫu tên file có preview token strftime (`FR-CFG-003`).
+
+### Epic 10: Pin Widget
+- [ ] **P2.15** Cửa sổ ghim ảnh Topmost không viền (`FR-PIN-01`).
+- [ ] **P2.16** Di chuyển, thu phóng, điều chỉnh độ trong suốt và xoay ảnh ghim (`FR-PIN-02`–`FR-PIN-05`).
+- [ ] **P2.17** Menu ngữ cảnh của cửa sổ ghim: copy, save, close (`FR-PIN-06`–`FR-PIN-08`).
+
+### Epic 11: Annotation Tools Advanced
+- [ ] **P2.20** Công cụ đảo ngược màu (Invert) trong vùng chỉ định (`FR-ANN-09`).
+- [ ] **P2.21** Bong bóng đếm số tự động tăng (Circle Counter) (`FR-ANN-10`, `FR-UNDO-005`).
+- [ ] **P2.22** Ràng buộc góc 45°/90° khi vẽ line/arrow/marker bằng `Ctrl` (`FR-ANN-11`).
+- [ ] **P2.23** Giữ tỉ lệ 1:1 khi vẽ rectangle/circle bằng `Ctrl` (`FR-ANN-12`).
+- [ ] **P2.24** Nhập số để đặt chính xác kích thước công cụ (`FR-ANN-13`).
+- [ ] **P2.25** Lăn chuột để tăng/giảm độ dày nét vẽ (`FR-ANN-14`).
+- [ ] **P2.26** Chọn, di chuyển hoặc sửa chú thích cũ (`FR-ANN-18`, `FR-ANN-19`, `FR-ANN-20`, `FR-ANN-21`).
+
+### Epic 12: Selection Engine Advanced
+- [ ] **P2.27** Co giãn đối xứng 2 px bằng `Ctrl+Shift+Arrow` (`FR-SEL-07`).
+- [ ] **P2.28** Ngăn vùng chọn thu nhỏ quá mức và giới hạn trong phạm vi chụp (`FR-SEL-08`, `FR-SEL-09`).
+- [ ] **P2.29** Chọn toàn bộ màn hình chụp bằng `Ctrl+A` (`FR-SEL-10`).
+- [ ] **P2.30** Hiển thị tọa độ và kích thước vùng chọn `WxH+X+Y` (`FR-SEL-12`).
+- [ ] **P2.31** Co giãn đối xứng điểm đối diện khi giữ Shift kéo handle (`FR-SEL-16`).
+
+### Epic 13: Undo/Redo Advanced
+- [ ] **P2.32** Cấu hình giới hạn số bước lưu lịch sử (`FR-UNDO-03`).
+- [ ] **P2.33** Lưu toàn bộ danh sách chú thích vào mỗi snapshot (`FR-UNDO-04`).
+- [ ] **P2.34** Hoàn tác việc di chuyển lớp lên/xuống (`FR-UNDO-06`).
+
+### Epic 14: Export & Shortcuts Full
+- [ ] **P2.35** Double-click vùng chọn để copy, lưu sau khi copy, copy đường dẫn file (`FR-OUT-06`–`FR-OUT-08`).
+- [ ] **P2.36** Xuất byte PNG thô ra stdout và in geometry ra stdout (`FR-OUT-09`, `FR-OUT-10`).
+- [ ] **P2.37** Mở ảnh bằng ứng dụng mặc định và chọn định dạng lưu PNG/JPG (`FR-OUT-11`, `FR-OUT-13`).
+- [ ] **P2.38** Hiển thị thông báo Windows Toast khi lưu/copy thành công (`FR-OUT-15`, `FR-CFG-008`).
+- [ ] **P2.39** Hỗ trợ đầy đủ các phím tắt còn lại: mở app khác, upload Imgur, side panel, color picker, select-all, delete, commit (`FR-SH-017`–`FR-SH-027`, `FR-SH-029`).
+
+### Epic 16: Windows Integration & CLI Polish
+- [ ] **P2.42** Console output cho các lệnh CLI, tray launcher, mở thư mục lưu (`FR-WIN-004`, `FR-SYS-004`, `FR-SYS-007`, `FR-SYS-021`).
+- [ ] **P2.43** Import/export/reset cấu hình và hot-reload khi file thay đổi (`FR-SYS-011`, `FR-SYS-013`, `FR-SYS-014`).
+
+---
+
+## 5. Checklist chi tiết Phase 3: Advanced (Target: 08/11 → 28/11/2026)
+
+### Epic 12: Cloud Upload
+- [ ] **P3.01** Upload ảnh ẩn danh lên Imgur, xác nhận trước khi upload, tự động copy URL (`FR-UP-01`–`FR-UP-04`, `FR-CFG-025`, `FR-CFG-026`).
+- [ ] **P3.02** Lịch sử upload, cấu hình API key Imgur, xóa mục lịch sử (`FR-UP-05`–`FR-UP-07`, `FR-CFG-023`, `FR-CFG-024`, `FR-CFG-027`).
+
+### Epic 13: Precision Tools
+- [ ] **P3.03** Snap-to-grid / pixel-perfect selection, tỷ lệ cố định, co giãn đối xứng (`FR-SH-022`–`FR-SH-025`, `FR-SH-011`).
+- [ ] **P3.04** Kính lúp và công cụ lấy màu từ màn hình (`FR-MAG`, `FR-SH-021`, `FR-CFG-011`, `FR-CFG-012`).
+
+### Epic 14: Customization
+- [ ] **P3.05** Bảng màu tùy chỉnh, thêm/xóa/sắp xếp màu (`FR-CFG-103`, `FR-CFG-104`, `FR-CFG-200`).
+- [ ] **P3.06** Tùy chỉnh thanh công cụ: ẩn/hiện nút, sắp xếp công cụ (`FR-CFG-105`, `FR-TB-01`).
+- [ ] **P3.07** Ngôn ngữ giao diện, font mặc định, màu accent, độ mờ ngoài vùng chọn (`FR-CFG-100`–`FR-CFG-107`, `FR-CFG-102`).
+
+### Epic 15: Advanced Settings
+- [ ] **P3.08** Các tùy chọn nâng cao: kiểm tra cập nhật, thông báo chào mừng, cho phép nhiều instance GUI, copy JPG vào clipboard, tự động đóng daemon (`FR-CFG-006`, `FR-CFG-016`–`FR-CFG-022`, `FR-CFG-028`).
+
+---
+
+*Cập nhật gần nhất: 2026-09-12*
