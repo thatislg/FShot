@@ -113,9 +113,9 @@ Người dùng đã thả chuột. Vùng chọn hoàn tất. 8 handle xuất hi�
 | Layer | Loại | Mô tả |
 | :--- | :--- | :--- |
 | `Background_Screenshot` | Image | Ảnh nền full board. |
-| `Dimmed_Mask` | Rectangle / Mask | Lớp phủ tối với lỗ khoét vùng chọn. |
+| `Dimmed_Mask` | Rectangle / Mask hoặc 4 rectangles | Lớp phủ tối với lỗ khoét vùng chọn. Có thể dùng 4 rectangles tối đơn giản. |
 | `Selection_Border` | Rectangle | Viền liền `2px` màu trắng bao quanh vùng chọn. |
-| `Selection_Handles` | Group | 8 instance của `ResizeHandle` đặt tại 8 vị trí quanh vùng chọn. |
+| `Selection_Handles` | Group | 8 instance của `ResizeHandle` đặt tại 8 vị trí quanh vùng chọn. Vị trí ước lượng gần đúng, không cần chính xác từng pixel trong design mock. |
 | `DimensionBadge` | Component | Badge `Width × Height` ở góc trên-phải. |
 | `BottomToolbar` | Component | Instance của `BottomToolbar_Container`, đặt sát mép dưới vùng chọn, lệch phải. |
 
@@ -135,11 +135,30 @@ Nếu `Toolbar.Y + Toolbar.Height > ScreenHeight - 8px` thì chuyển toolbar l�
 Toolbar.Y = R.Top - Toolbar.Height - 8px
 ```
 
-### 4.4. Handle z-order
+### 4.4. Đặt 8 handle đơn giản
+
+Trong Penpot, bạn kéo 8 instance của `ResizeHandle` và đặt xung quanh vùng chọn. Không cần nhập tọa độ chính xác từng pixel. Chỉ cần đặt gần đúng 4 góc và 4 trung điểm cạnh của `Selection_Border`.
+
+Ví dụ với vùng chọn `(400, 300, 600, 400)`, bạn đặt 8 handle tại các vị trí tương đối:
+
+| Handle | Vị trí tương đối |
+| :--- | :--- |
+| TopLeft | Góc trên-trái của Selection_Border |
+| TopCenter | Giữa cạnh trên |
+| TopRight | Góc trên-phải |
+| MiddleLeft | Giữa cạnh trái |
+| MiddleRight | Giữa cạnh phải |
+| BottomLeft | Góc dưới-trái |
+| BottomCenter | Giữa cạnh dưới |
+| BottomRight | Góc dưới-phải |
+
+Do `ResizeHandle` là Board `8×8`, tâm handle nằm ở góc trên-trái của instance. Có thể để lệch một chút, design mock không yêu cầu pixel-perfect.
+
+### 4.5. Handle z-order
 
 Handle phải nằm trên viền vùng chọn. Trong Penpot, group `Selection_Handles` đặt ở layer trên `Selection_Border`.
 
-### 4.5. Cursor
+### 4.6. Cursor
 
 - Khi chuột nằm trong vùng chọn: `move`.
 - Khi chuột nằm trên handle: cursor tương ứng theo hướng resize (xem `12_02_CommonComponents.md`).
