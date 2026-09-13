@@ -252,6 +252,25 @@ Bước 4: Chọn Board → `Ctrl+K` tạo component.
 Bước 5: Tạo properties: `FillColor`, `StrokeColor`, `StrokeWidth` với giá trị mặc định theo token.
 
 Bước 6: (Tùy chọn) Trong Board màn hình, khi đặt 8 handle instance, có thể vẽ thêm `Rectangle 16 × 16px` trong suốt centered để minh họa vùng bắt chuột.
+
+---
+
+## 4. Component `DimensionBadge`
+
+### 4.1. Mục đích
+
+`DimensionBadge` hiển thị kích thước vùng chọn `Width × Height` hoặc `Width × Height @ X,Y` khi đang kéo hoặc co giãn.
+
+### 4.2. Cấu trúc layer
+
+```text
+DimensionBadge (Board auto-width × 18px)
+├── DimensionBadge_Background (Rectangle full Board, bo góc 4px)
+└── DimensionBadge_Text (Text, 11px, màu trắng, weight 600)
+```
+
+### 4.3. Properties của DimensionBadge
+
 | Property | Áp dụng cho | Mô tả |
 | :--- | :--- | :--- |
 | `BackgroundColor` | `DimensionBadge_Background` | Màu nền + opacity của badge. |
@@ -270,12 +289,30 @@ Bước 6: (Tùy chọn) Trong Board màn hình, khi đặt 8 handle instance, c
 - Khi đã chọn xong và cần thông tin đầy đủ (tùy chọn): `"{Width} × {Height} @ {X},{Y}"`.
 - Font: `Text.FontFamily`, size `Text.Badge.FontSize`, weight `Text.Weight.Semibold`.
 
-### 4.4. Vị trí
+### 4.6. Vị trí
 
 - Mặc định đặt ở góc trên-phải của vùng chọn.
 - Khoảng cách từ góc vùng chọn: `4px` về phía trên và `4px` về phía phải.
 - Nếu vùng chọn nằm sát biên trên màn hình, badge chuyển xuống góc dưới-phải.
 - Padding ngang: `6px`, padding dọc: `2px`.
+
+### 4.7. Cách tạo trong Penpot
+
+Bước 1: Tạo Board tên `DimensionBadge`, chiều cao `Size.Badge.Height = 18px`, chiều rộng tự động.
+
+Bước 2: Vẽ Rectangle nền tên `DimensionBadge_Background`, bo góc `Radius.Badge = 4px`.
+
+Bước 3: Fill `Badge.BackgroundColor` với opacity `Badge.BackgroundOpacity`.
+
+Bước 4: Thêm Text tên `DimensionBadge_Text`, nội dung mẫu `"800 × 500"`.
+
+Bước 5: Font: `Text.FontFamily`, size `Text.Badge.FontSize`, weight `Text.Weight.Semibold`, màu `Badge.TextColor`, opacity `Badge.TextOpacity`.
+
+Bước 6: Padding ngang `Size.Badge.PaddingX`, padding dọc `Size.Badge.PaddingY`.
+
+Bước 7: Chọn Board → `Ctrl+K` tạo component.
+
+Bước 8: Tạo properties: `BackgroundColor`, `TextColor`. Mỗi property bao gồm cả màu và opacity. Không cần tạo property opacity riêng.
 
 ---
 
@@ -334,16 +371,44 @@ Khi width = height, ellipse trở thành hình tròn.
 ### 6.2. Cấu trúc layer
 
 ```text
-TooltipHint (auto-width × 24px)
-├── Background (nền đen `#000000`, opacity 0.85, bo góc 4px)
-└── Text (13px, trắng)
+TooltipHint (Board auto-width × 24px)
+└── TooltipHint_Background (Rectangle full Board, bo góc 4px)
+    └── TooltipHint_Text (Text, 13px, trắng)
 ```
 
-### 6.3. Nội dung
+### 6.3. Properties của TooltipHint
+
+| Property | Áp dụng cho | Mô tả |
+| :--- | :--- | :--- |
+| `BackgroundColor` | `TooltipHint_Background` | Màu nền + opacity. |
+| `TextColor` | `TooltipHint_Text` | Màu chữ + opacity. |
+
+### 6.4. Giá trị mặc định
+
+| Property | Giá trị điền vào Penpot | Token/Giá trị |
+| :--- | :--- | :--- |
+| `BackgroundColor` | `#000000` opacity `0.85` | Nền đen mờ. |
+| `TextColor` | `#FFFFFF` opacity `1.00` | Chữ trắng. |
+
+### 6.5. Nội dung
 
 Dạng `"Tên công cụ (Shortcut)"`, ví dụ `"Bút vẽ (P)"`.
 
----
+### 6.6. Cách tạo trong Penpot
+
+Bước 1: Tạo Board `auto-width × 24px` tên `TooltipHint`.
+
+Bước 2: Vẽ Rectangle `TooltipHint_Background` full Board, bo góc `Radius.Badge = 4px`.
+
+Bước 3: Fill `#000000` opacity `0.85`.
+
+Bước 4: Thêm Text `TooltipHint_Text`, nội dung mẫu `"Bút vẽ (P)"`.
+
+Bước 5: Font: `Text.FontFamily`, size `Text.Toolbar.FontSize`, màu trắng opacity `1.00`.
+
+Bước 6: Chọn Board → `Ctrl+K` tạo component.
+
+Bước 7: Tạo properties: `BackgroundColor`, `TextColor`.
 
 ## 7. Quan hệ giữa các component
 
