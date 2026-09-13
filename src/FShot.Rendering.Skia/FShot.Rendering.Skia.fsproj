@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="Converters\DomainToSkia.fs" />
     <Compile Include="Renderers\ScreenshotRenderer.fs" />
+    <Compile Include="Renderers\DimmingRenderer.fs" />
     <Compile Include="Renderers\SelectionRenderer.fs" />
     <Compile Include="Renderers\AnnotationRenderer.fs" />
     <Compile Include="Renderers\ToolbarRenderer.fs" />

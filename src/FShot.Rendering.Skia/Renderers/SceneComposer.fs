@@ -16,30 +16,9 @@ module SceneComposer =
         canvas.DrawBitmap(bitmap, SKPoint(0.0f, 0.0f))
 
     /// Vẽ lớp tối ngoài vùng chọn.
-    /// Xem 09_07_SceneComposer.md, mục 4.
+    /// Xem 03_07_OverlayDimming.md và 09_07_SceneComposer.md, mục 4.
     let private renderDimming (canvas: SKCanvas) (selection: Selection) (captureResult: CaptureResult) =
-        let screenRect =
-            DomainToSkia.rectToSkPhysical captureResult.ScaleFactor captureResult.VirtualBounds
-
-        let selectionRect =
-            DomainToSkia.rectToSkPhysical captureResult.ScaleFactor selection.Bounds
-
-        use paint =
-            new SKPaint(
-                Color = SKColor(0uy, 0uy, 0uy, 128uy),
-                IsStroke = false
-            )
-
-        // Vẽ toàn màn hình.
-        canvas.DrawRect(screenRect, paint)
-
-        // Cắt (clear) phần vùng chọn bằng cách vẽ trong chế độ clear.
-        use clearPaint =
-            new SKPaint(
-                BlendMode = SKBlendMode.Clear
-            )
-
-        canvas.DrawRect(selectionRect, clearPaint)
+        DimmingRenderer.renderDefault canvas captureResult selection.Bounds
 
     /// Vẽ đường viền vùng chọn.
     let private renderSelectionBorder

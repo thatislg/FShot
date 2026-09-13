@@ -64,11 +64,11 @@
   - [x] Bổ sung `tests/FShot.Core.Tests/State/OverlayStateTests.fs`.
 
 ### Epic 2: Vùng chọn (Selection Engine)
-- [ ] **P1.05** Lớp phủ tối mờ Skia (`FR-SEL-01`) ngoài vùng chọn.
-  - [ ] Rà soát / hoàn thiện `docs/2.Design/03_Selection/03_07_OverlayDimming.md` (mô tả cách vẽ lớp tối ngoài vùng chọn).
-  - [ ] Triển khai hoặc cập nhật `src/FShot.Rendering.Skia/Renderers/DimmingRenderer.fs` để vẽ full-screen dimming với khoét lỗ vùng chọn.
-  - [ ] Cập nhật `src/FShot.Rendering.Skia/Renderers/SceneComposer.fs` gọi `DimmingRenderer` đúng thứ tự.
-  - [ ] Kiểm thử render dimming trong `tests/FShot.Rendering.Skia.Tests`.
+- [x] **P1.05** Lớp phủ tối mờ Skia (`FR-SEL-01`) ngoài vùng chọn.
+  - [x] Hoàn thiện `docs/2.Design/03_Selection/03_07_OverlayDimming.md`.
+  - [x] Triển khai `src/FShot.Rendering.Skia/Renderers/DimmingRenderer.fs`.
+  - [x] Cập nhật `src/FShot.Rendering.Skia/Renderers/SceneComposer.fs` gọi `DimmingRenderer`.
+  - [x] Thêm tests `tests/FShot.Rendering.Skia.Tests/DimmingTests.fs`.
 - [ ] **P1.06** Kéo bounding box tự do (`FR-SEL-02`).
   - [ ] Rà soát `docs/2.Design/03_Selection/03_04_MouseOperations.md` mục tạo vùng chọn.
   - [ ] Đảm bảo `Selection.StartSelecting` + `UpdateSelecting` + `FinishSelecting` hoạt động đúng với mọi hướng kéo.
@@ -216,7 +216,8 @@
 ## 6. Báo cáo chi tiết theo task
 
 - **P1.01:** `docs/3.Progress/03_02_P1.01_Design_Report.md`
-- **P1.03:** `docs/3.Progress/03_02_P1.03_Design_Report.md` (thiết kế Overlay State Machine)
+- **P1.03:** `docs/3.Progress/03_02_P1.03_Design_Report.md` (thiết kế + triển khai Overlay State Machine)
+- **P1.05:** `docs/3.Progress/03_02_P1.05_Design_Report.md` (thiết kế + triển khai Dimming Overlay)
 
 ---
 
