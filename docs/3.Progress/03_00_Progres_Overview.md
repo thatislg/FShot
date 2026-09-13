@@ -34,11 +34,11 @@
 
 ### Epic 1: Core Domain & State Machine
 - [ ] **P1.01** Domain model đầy đủ (`Annotation` DU, `CaptureMode`, `ExportTarget`).
-  - [ ] Hoàn thiện `docs/2.Design/04_Annotation/04_03_Pencil.md` (thiết kế Pencil + smoothing).
-  - [ ] Hoàn thiện `docs/2.Design/04_Annotation/04_06_MarkerAndPixelate.md` (thiết kế Marker + Pixelate).
-  - [ ] Hoàn thiện `docs/2.Design/04_Annotation/04_07_TextTool.md` (thiết kế Text tool + commit).
-  - [ ] Rà soát `docs/2.Design/02_Capture/02_03_CaptureRequest.md` (đảm bảo đủ cho `CaptureMode`, `OutputTarget`).
-  - [ ] Rà soát `docs/2.Design/06_Export/06_02_ExportTarget.md` (đảm bảo đủ cho `ExportTarget`).
+  - [x] Hoàn thiện `docs/2.Design/04_Annotation/04_03_Pencil.md` (thiết kế Pencil + smoothing).
+  - [x] Hoàn thiện `docs/2.Design/04_Annotation/04_06_MarkerAndPixelate.md` (thiết kế Marker + Pixelate).
+  - [x] Hoàn thiện `docs/2.Design/04_Annotation/04_07_TextTool.md` (thiết kế Text tool + commit).
+  - [x] Rà soát `docs/2.Design/02_Capture/02_03_CaptureRequest.md` (đảm bảo đủ cho `CaptureMode`, `OutputTarget`).
+  - [x] Rà soát `docs/2.Design/06_Export/06_02_ExportTarget.md` (đảm bảo đủ cho `ExportTarget`).
 - [ ] **P1.02** Immutable `HistoryStack` phục vụ hoàn tác không giới hạn.
   - [ ] Hoàn thiện `docs/2.Design/05_History/05_02_Snapshot.md`.
   - [ ] Hoàn thiện `docs/2.Design/05_History/05_03_HistoryStack.md`.
