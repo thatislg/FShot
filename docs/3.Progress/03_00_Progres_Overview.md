@@ -74,11 +74,11 @@
   - [x] Đảm bảo `Selection.StartSelecting` + `UpdateSelecting` + `FinishSelecting` hoạt động đúng với mọi hướng kéo.
   - [x] Kiểm thử kéo vùng chọn từ mọi hướng (trái→phải, phải→trái, trên→dưới, dưới→trên).
   - [x] Kiểm thử clamp và kích thước tối thiểu khi hoàn tất.
-- [ ] **P1.07** 8 điểm neo co giãn vùng chọn (`FR-SEL-03`).
-  - [ ] Rà soát `docs/2.Design/03_Selection/03_03_ResizeHandles.md` (vị trí, hit-test, thứ tự ưu tiên).
-  - [ ] Đảm bảo `Selection.HandleCenters`, `HitTestHandle`, `StartResizing`, `UpdateResizing`, `FinishInteraction` hỗ trợ đủ 8 handles.
-  - [ ] Kiểm thử hit-test tolerance và resize theo 8 hướng.
-  - [ ] Kiểm thử kích thước tối thiểu sau khi resize.
+- [x] **P1.07** 8 điểm neo co giãn vùng chọn (`FR-SEL-03`).
+  - [x] Rà soát `docs/2.Design/03_Selection/03_03_ResizeHandles.md` (vị trí, hit-test, thứ tự ưu tiên).
+  - [x] Đảm bảo `Selection.HandleCenters`, `HitTestHandle`, `StartResizing`, `UpdateResizing`, `FinishInteraction` hỗ trợ đủ 8 handles.
+  - [x] Kiểm thử hit-test tolerance và resize theo 8 hướng.
+  - [x] Kiểm thử kích thước tối thiểu sau khi resize.
 - [ ] **P1.08** Kéo rê di chuyển toàn bộ vùng chọn (`FR-SEL-04`).
   - [ ] Rà soát `docs/2.Design/03_Selection/03_04_MouseOperations.md` mục di chuyển vùng chọn.
   - [ ] Đảm bảo `Selection.StartMoving` + `UpdateMoving` + clamp hoạt động trong `OverlayState`.

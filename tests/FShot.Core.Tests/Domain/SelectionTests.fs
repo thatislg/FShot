@@ -239,15 +239,213 @@ let ``Co giãn vùng chọn BottomRight`` () =
     Assert.Equal(350.0, finished.Bounds.Width)
     Assert.Equal(270.0, finished.Bounds.Height)
 
-/// Kiểm tra hit-test handle.
+/// Kiểm tra co giãn bằng handle TopLeft.
+/// Công thức: X = mx, Y = my, W = right - mx, H = bottom - my.
 [<Fact>]
-let ``Hit-test handle BottomRight`` () =
+let ``Co giãn vùng chọn TopLeft`` () =
     let sel =
         { Selection.Empty with
             State = Selected
             Bounds = rect 100.0 80.0 300.0 200.0 }
-    let handle = sel.HitTestHandle(point 405.0 285.0)
-    Assert.Equal(Some BottomRight, handle)
+    let resizing = sel.StartResizing TopLeft (point 100.0 80.0)
+    let updated = resizing.UpdateResizing(point 50.0 30.0)
+    let finished = updated.FinishInteraction()
+    Assert.Equal(50.0, finished.Bounds.X)
+    Assert.Equal(30.0, finished.Bounds.Y)
+    Assert.Equal(350.0, finished.Bounds.Width)
+    Assert.Equal(250.0, finished.Bounds.Height)
+
+/// Kiểm tra co giãn bằng handle Top.
+/// Công thức: Y = my, H = bottom - my.
+[<Fact>]
+let ``Co giãn vùng chọn Top`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let resizing = sel.StartResizing Top (point 250.0 80.0)
+    let updated = resizing.UpdateResizing(point 250.0 30.0)
+    let finished = updated.FinishInteraction()
+    Assert.Equal(100.0, finished.Bounds.X)
+    Assert.Equal(30.0, finished.Bounds.Y)
+    Assert.Equal(300.0, finished.Bounds.Width)
+    Assert.Equal(250.0, finished.Bounds.Height)
+
+/// Kiểm tra co giãn bằng handle Bottom.
+/// Công thức: H = my - Y.
+[<Fact>]
+let ``Co giãn vùng chọn Bottom`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let resizing = sel.StartResizing Bottom (point 250.0 280.0)
+    let updated = resizing.UpdateResizing(point 250.0 350.0)
+    let finished = updated.FinishInteraction()
+    Assert.Equal(100.0, finished.Bounds.X)
+    Assert.Equal(80.0, finished.Bounds.Y)
+    Assert.Equal(300.0, finished.Bounds.Width)
+    Assert.Equal(270.0, finished.Bounds.Height)
+
+/// Kiểm tra co giãn bằng handle Left.
+/// Công thức: X = mx, W = right - mx.
+[<Fact>]
+let ``Co giãn vùng chọn Left`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let resizing = sel.StartResizing Left (point 100.0 180.0)
+    let updated = resizing.UpdateResizing(point 50.0 180.0)
+    let finished = updated.FinishInteraction()
+    Assert.Equal(50.0, finished.Bounds.X)
+    Assert.Equal(80.0, finished.Bounds.Y)
+    Assert.Equal(350.0, finished.Bounds.Width)
+    Assert.Equal(200.0, finished.Bounds.Height)
+
+/// Kiểm tra co giãn bằng handle Right.
+/// Công thức: W = mx - X.
+[<Fact>]
+let ``Co giãn vùng chọn Right`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let resizing = sel.StartResizing Right (point 400.0 180.0)
+    let updated = resizing.UpdateResizing(point 450.0 180.0)
+    let finished = updated.FinishInteraction()
+    Assert.Equal(100.0, finished.Bounds.X)
+    Assert.Equal(80.0, finished.Bounds.Y)
+    Assert.Equal(350.0, finished.Bounds.Width)
+    Assert.Equal(200.0, finished.Bounds.Height)
+
+/// Kiểm tra co giãn bằng handle TopRight.
+/// Công thức: X = orig.X, Y = my, W = mx - X, H = bottom - my.
+[<Fact>]
+let ``Co giãn vùng chọn TopRight`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let resizing = sel.StartResizing TopRight (point 400.0 80.0)
+    let updated = resizing.UpdateResizing(point 450.0 30.0)
+    let finished = updated.FinishInteraction()
+    Assert.Equal(100.0, finished.Bounds.X)
+    Assert.Equal(30.0, finished.Bounds.Y)
+    Assert.Equal(350.0, finished.Bounds.Width)
+    Assert.Equal(250.0, finished.Bounds.Height)
+
+/// Kiểm tra co giãn bằng handle BottomLeft.
+/// Công thức: X = mx, Y = orig.Y, W = right - mx, H = my - Y.
+[<Fact>]
+let ``Co giãn vùng chọn BottomLeft`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let resizing = sel.StartResizing BottomLeft (point 100.0 280.0)
+    let updated = resizing.UpdateResizing(point 50.0 350.0)
+    let finished = updated.FinishInteraction()
+    Assert.Equal(50.0, finished.Bounds.X)
+    Assert.Equal(80.0, finished.Bounds.Y)
+    Assert.Equal(350.0, finished.Bounds.Width)
+    Assert.Equal(270.0, finished.Bounds.Height)
+
+/// Kiểm tra hit-test tất cả 8 handle tại trung tâm.
+[<Fact>]
+let ``Hit-test tất cả 8 handle`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+
+    let cases =
+        [
+            (point 100.0 80.0, TopLeft)
+            (point 250.0 80.0, Top)
+            (point 400.0 80.0, TopRight)
+            (point 100.0 180.0, Left)
+            (point 400.0 180.0, Right)
+            (point 100.0 280.0, BottomLeft)
+            (point 250.0 280.0, Bottom)
+            (point 400.0 280.0, BottomRight)
+        ]
+
+    for (p, expected) in cases do
+        let actual = sel.HitTestHandle p
+        Assert.Equal(Some expected, actual)
+
+/// Kiểm tra hit-test tolerance mở rộng vùng hiệu lực.
+[<Fact>]
+let ``Hit-test tolerance mở rộng vùng hiệu lực`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+
+    // BottomRight center (400, 280), halfSize = 4, tolerance = 6 => effective radius = 10
+    let inside = point 405.0 285.0
+    let outside = point 411.0 281.0
+
+    Assert.Equal(Some BottomRight, sel.HitTestHandle inside)
+    Assert.Equal(None, sel.HitTestHandle outside)
+
+/// Kiểm tra hit-test ưu tiên góc trước cạnh.
+[<Fact>]
+let ``Hit-test ưu tiên góc trước cạnh`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+
+    // Điểm (100, 80) nằm trong vùng hiệu lực của cả TopLeft, Top và Left
+    // Nhưng HandleCenters duyệt TopLeft đầu tiên nên phải trả về TopLeft.
+    Assert.Equal(Some TopLeft, sel.HitTestHandle(point 100.0 80.0))
+
+/// Kiểm tra resize vùng chọn quá nhỏ bị hủy khi hoàn tất.
+[<Fact>]
+let ``Resize quá nhỏ bị hủy khi hoàn tất`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let resizing = sel.StartResizing Right (point 400.0 180.0)
+    let updated = resizing.UpdateResizing(point 105.0 180.0)
+    let finished = updated.FinishInteraction()
+    Assert.Equal(Idle, finished.State)
+
+/// Kiểm tra resize ra ngoài capture area bị clamp.
+[<Fact>]
+let ``Resize ra ngoài capture area bị clamp`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 1800.0 900.0 100.0 100.0 }
+    let resizing = sel.StartResizing BottomRight (point 1900.0 1000.0)
+    let updated = resizing.UpdateResizing(point 2000.0 1200.0)
+    let clamped = updated.ApplyConstraints captureBounds
+    let finished = clamped.FinishInteraction()
+    Assert.Equal(Selected, finished.State)
+    Assert.Equal(1720.0, finished.Bounds.X)
+    Assert.Equal(780.0, finished.Bounds.Y)
+    Assert.Equal(200.0, finished.Bounds.Width)
+    Assert.Equal(300.0, finished.Bounds.Height)
+
+/// Kiểm tra UpdateResizing bỏ qua khi không ở trạng thái Resizing.
+[<Fact>]
+let ``UpdateResizing bỏ qua khi không ở trạng thái Resizing`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let updated = sel.UpdateResizing(point 500.0 500.0)
+    Assert.Equal(Selected, updated.State)
+    Assert.Equal(100.0, updated.Bounds.X)
+    Assert.Equal(80.0, updated.Bounds.Y)
+    Assert.Equal(300.0, updated.Bounds.Width)
+    Assert.Equal(200.0, updated.Bounds.Height)
+
+/// Kiểm tra hit-test handle.
 
 /// Kiểm tra ràng buộc giới hạn capture area trực tiếp qua ApplyConstraints.
 [<Fact>]
