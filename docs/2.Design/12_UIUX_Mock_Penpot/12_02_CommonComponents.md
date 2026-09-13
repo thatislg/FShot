@@ -19,11 +19,18 @@
 ### 1.2. Cấu trúc layer
 
 ```text
-ToolButton (Board 32×32px, Flex layout căn giữa)
-├── Container (32×32px, bo góc 6px)
-│   ├── Icon (18×18px, SVG vector)
-│   └── ShortcutLabel (10px, nằm dưới icon — chỉ hiển thị khi tooltip/không nằm trong toolbar chính)
+ToolButton (Board 32×32px)
+└── Container (Rectangle 32×32px, bo góc 6px)
+    └── Icon (18×18px, SVG vector, căn giữa)
 ```
+
+Thực tế trong Penpot, bạn tạo:
+
+1. Board `32 × 32px` tên `ToolButton`.
+2. Rectangle `32 × 32px` tên `ToolButton_Background`, bo góc `Radius.ToolButton = 6px`.
+3. Import SVG icon `18 × 18px`, đặt tên `ToolButton_Icon`, căn giữa trong Board.
+
+Không cần layer shortcut label trong toolbar chính. Phím tắt chỉ hiển thị trong tooltip (tùy chọn, không bắt buộc MVP).
 
 ### 1.3. Variants
 
