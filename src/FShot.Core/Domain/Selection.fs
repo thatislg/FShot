@@ -260,16 +260,11 @@ type Selection =
     member this.Cancel() =
         Selection.Empty
 
-    /// Áp dụng ràng buộc kích thước tối thiểu và giới hạn trong capture area.
+    /// Áp dụng ràng buộc giới hạn trong capture area.
+    /// Trong khi đang kéo, chỉ clamp vị trí vào phạm vi chụp;
+    /// không ép kích thước tối thiểu để cho phép người dùng thả chuột ở vùng nhỏ.
+    /// Kích thước tối thiểu được kiểm tra khi hoàn tất tương tác.
     /// Xem 03_06_Constraints.md.
     member this.ApplyConstraints(captureBounds: Rect) : Selection =
-        let clamped =
-            let minBounds =
-                {
-                  this.Bounds with
-                      Width = Math.Max(this.Bounds.Width, Selection.MinWidth)
-                      Height = Math.Max(this.Bounds.Height, Selection.MinHeight)
-                }
-            rectClamp captureBounds minBounds
-
+        let clamped = rectClamp captureBounds this.Bounds
         { this with Bounds = clamped }

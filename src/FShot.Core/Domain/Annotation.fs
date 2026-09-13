@@ -32,6 +32,22 @@ type FontStyle =
 type ArrowStyle =
     | Standard
 
+/// Loại công cụ annotation được chọn trong toolbar.
+/// Đây là phiên bản không có payload, dùng để chuyển đổi công cụ trong OverlayState.
+/// Xem tài liệu 08_03_Events.md, mục 5.1.
+type ToolKind =
+    /// Công cụ mặc định: di chuyển và điều chỉnh vùng chọn.
+    | SelectionTool
+
+    | PencilTool
+    | LineTool
+    | ArrowTool
+    | RectangleTool
+    | CircleTool
+    | MarkerTool
+    | TextTool
+    | PixelateTool
+
 /// Tập hợp các thuộc tính hình ảnh chung cho một Annotation.
 /// Thay vì mỗi tool tự lưu màu sắc và độ dày, tất cả các tool dùng chung
 /// một style container để tránh lặp lại dữ liệu và logic.
