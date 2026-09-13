@@ -198,6 +198,68 @@ let ``Selected KeyDown Down bị giới hạn ở biên dưới`` () =
     Assert.Equal(1700.0, result.State.Selection.Bounds.X)
     Assert.Equal(901.0, result.State.Selection.Bounds.Y)
 
+/// Kiểm tra Selected + Shift + KeyDown Left mở rộng sang trái.
+[<Fact>]
+let ``Selected Shift KeyDown Left mở rộng sang trái`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    let result = state |> update (KeyDown "Shift+Left")
+    Assert.Equal(SelectionState.Selected, result.State.Selection.State)
+    Assert.Equal(99.0, result.State.Selection.Bounds.X)
+    Assert.Equal(100.0, result.State.Selection.Bounds.Y)
+    Assert.Equal(201.0, result.State.Selection.Bounds.Width)
+    Assert.Equal(100.0, result.State.Selection.Bounds.Height)
+
+/// Kiểm tra Selected + Shift + KeyDown Down mở rộng xuống dưới.
+[<Fact>]
+let ``Selected Shift KeyDown Down mở rộng xuống dưới`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    Assert.Equal(SelectionState.Selected, state.Selection.State)
+    let result = state |> update (KeyDown "Shift+Down")
+    Assert.Equal(SelectionState.Selected, result.State.Selection.State)
+    Assert.Equal(100.0, result.State.Selection.Bounds.X)
+    Assert.Equal(100.0, result.State.Selection.Bounds.Y)
+    Assert.Equal(200.0, result.State.Selection.Bounds.Width)
+    Assert.Equal(101.0, result.State.Selection.Bounds.Height)
+
+/// Kiểm tra Selected + Shift + KeyDown Down mở rộng xuống dưới với vùng nhỏ.
+[<Fact>]
+let ``Selected Shift KeyDown Down mở rộng xuống dưới vùng nhỏ`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 110.0 110.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    Assert.Equal(SelectionState.Selected, state.Selection.State)
+    Assert.Equal(10.0, state.Selection.Bounds.Width)
+    Assert.Equal(10.0, state.Selection.Bounds.Height)
+
+    let result = state |> update (KeyDown "Shift+Down")
+    Assert.Equal(SelectionState.Selected, result.State.Selection.State)
+    Assert.Equal(100.0, result.State.Selection.Bounds.X)
+    Assert.Equal(100.0, result.State.Selection.Bounds.Y)
+    Assert.Equal(10.0, result.State.Selection.Bounds.Width)
+    Assert.Equal(11.0, result.State.Selection.Bounds.Height)
+
 /// Kiểm tra KeyDown không phải mũi tên giữ nguyên trạng thái.
 [<Fact>]
 let ``Selected KeyDown không phải mũi tên giữ nguyên`` () =

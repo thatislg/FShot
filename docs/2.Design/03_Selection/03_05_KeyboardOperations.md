@@ -63,13 +63,15 @@ Sau khi tính `Bounds'`, áp dụng `ApplyConstraints`.
 
 ### 3.3 Tính chất
 
-- Kéo cạnh ra xa tâm vùng chọn khi nhấn Shift + Arrow theo hướng tương ứng.
-- Nếu cần co vào trong (thu nhỏ) thì dùng Shift + Arrow ngược hướng; công thức tương tự nhưng `W'`/`H'` giảm 1px và `X'`/`Y'` tăng 1px tùy cạnh.
+- Shift + Arrow kéo cạnh ở hướng mũi tên ra xa tâm vùng chọn, làm vùng mở rộng 1px theo hướng đó.
+- Trong MVP, keyboard resize chỉ hỗ trợ **mở rộng** vùng. Việc thu nhỏ (co vào trong) bằng bàn phím thuộc enhancement có thể xem xét ở P2.
+- Giữ Shift + phím mũi tên liên tục sẽ tạo nhiều sự kiện; mỗi sự kiện mở rộng thêm 1px.
 
 ### 3.4 Trường hợp biên
 
-- Vùng đã ở biên capture area + Shift + Left/Up: `X'`/`Y'` bị clamp, `W'`/`H'` có thể không tăng đủ 1px.
-- Vùng đạt kích thước tối thiểu + Shift + Arrow ngược hướng: `FinishInteraction` sẽ hủy vùng nếu nhỏ hơn min; nhưng với keyboard resize trực tiếp, ta không gọi `FinishInteraction`, nên cần kiểm tra `IsValid` sau mỗi bước.
+- Vùng đã ở biên capture area + Shift + Arrow ra ngoài: `ApplyConstraints` giữ vùng trong phạm vi; nếu kéo cạnh trái/trên ra ngoài, `X'`/`Y'` bị clamp và `W'`/`H'` có thể không tăng đủ 1px.
+- Vùng có kích thước tối thiểu: keyboard resize làm mở rộng vùng nên không bao giờ làm vùng nhỏ hơn min. Do đó không cần kiểm tra `IsValid` để hủy vùng trong P1.10.
+- Trong `OverlayState`, nếu sau `ApplyConstraints` vùng không hợp lệ (trường hợp hiếm do clamp), vùng được reset về `Idle` để duy trì invariant.
 
 ---
 

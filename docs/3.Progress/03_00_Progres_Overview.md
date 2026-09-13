@@ -88,11 +88,11 @@
   - [x] Thêm xử lý `KeyDown` cho phím mũi tên trong `OverlayState.update`.
   - [x] Triển khai nudge trong `OverlayState`: dịch vùng chọn 1px theo hướng, clamp vào capture bounds.
   - [x] Kiểm thử từng phím mũi tên và kết hợp với modifier.
-- [ ] **P1.10** Co giãn 1px bằng `Shift + Arrow` (`FR-SEL-06`).
-  - [ ] Hoàn thiện `docs/2.Design/03_Selection/03_05_KeyboardOperations.md` (keyboard resize bằng Shift + Arrow).
-  - [ ] Xử lý `KeyDown` kèm Shift trong `OverlayState.update`.
-  - [ ] Triển khai resize 1px theo hướng mũi tên, điều chỉnh cạnh tương ứng của vùng chọn.
-  - [ ] Kiểm thử 4 hướng co giãn với Shift.
+- [x] **P1.10** Co giãn 1px bằng `Shift + Arrow` (`FR-SEL-06`).
+  - [x] Hoàn thiện `docs/2.Design/03_Selection/03_05_KeyboardOperations.md` (keyboard resize bằng Shift + Arrow).
+  - [x] Xử lý `KeyDown` kèm Shift trong `OverlayState.update`.
+  - [x] Triển khai resize 1px theo hướng mũi tên, điều chỉnh cạnh tương ứng của vùng chọn.
+  - [x] Kiểm thử 4 hướng co giãn với Shift.
 - [ ] **P1.11** Phím tắt `Esc` / `Ctrl+Backspace` hủy vùng chọn hoặc thoát app (`FR-SEL-11`).
   - [ ] Rà soát xử lý `Cancel` trong `OverlayState.update` và `Selection.Cancel`.
   - [ ] Đảm bảo Esc ở `Idle` đóng overlay, ở `Selected` hủy vùng chọn về `Idle`, ở `Selecting` hủy tạo vùng.

@@ -606,3 +606,62 @@ let ``Keyboard resize bị giới hạn ở biên phải`` () =
     Assert.Equal(Selected, resized.State)
     Assert.Equal(1799.0, resized.Bounds.X)
     Assert.Equal(121.0, resized.Bounds.Width)
+
+/// Kiểm tra keyboard resize mở rộng sang trái.
+[<Fact>]
+let ``Keyboard resize mở rộng sang trái`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let resized = sel.KeyboardResize(-1.0, 0.0).ApplyConstraints captureBounds
+    Assert.Equal(Selected, resized.State)
+    Assert.Equal(99.0, resized.Bounds.X)
+    Assert.Equal(301.0, resized.Bounds.Width)
+
+/// Kiểm tra keyboard resize mở rộng xuống dưới.
+[<Fact>]
+let ``Keyboard resize mở rộng xuống dưới`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let resized = sel.KeyboardResize(0.0, 1.0).ApplyConstraints captureBounds
+    Assert.Equal(Selected, resized.State)
+    Assert.Equal(100.0, resized.Bounds.X)
+    Assert.Equal(80.0, resized.Bounds.Y)
+    Assert.Equal(300.0, resized.Bounds.Width)
+    Assert.Equal(201.0, resized.Bounds.Height)
+
+/// Kiểm tra keyboard resize mở rộng xuống dưới với vùng nhỏ.
+[<Fact>]
+let ``Keyboard resize mở rộng xuống dưới với vùng nhỏ`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 100.0 10.0 10.0 }
+    let resized = sel.KeyboardResize(0.0, 1.0).ApplyConstraints captureBounds
+    Assert.Equal(Selected, resized.State)
+    Assert.Equal(100.0, resized.Bounds.X)
+    Assert.Equal(100.0, resized.Bounds.Y)
+    Assert.Equal(10.0, resized.Bounds.Width)
+    Assert.Equal(11.0, resized.Bounds.Height)
+
+/// Kiểm tra keyboard resize nhiều lần cộng dồn.
+[<Fact>]
+let ``Keyboard resize nhiều lần cộng dồn`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let resized =
+        sel
+            .KeyboardResize(1.0, 0.0)
+            .KeyboardResize(1.0, 0.0)
+            .KeyboardResize(0.0, 1.0)
+            .ApplyConstraints captureBounds
+    Assert.Equal(Selected, resized.State)
+    Assert.Equal(100.0, resized.Bounds.X)
+    Assert.Equal(80.0, resized.Bounds.Y)
+    Assert.Equal(302.0, resized.Bounds.Width)
+    Assert.Equal(201.0, resized.Bounds.Height)

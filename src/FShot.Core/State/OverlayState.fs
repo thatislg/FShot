@@ -388,14 +388,10 @@ module OverlayStateLogic =
                     result commands newState
 
         | SelectionState.Selected, NoAnnotation, KeyDown key ->
-            let normalized = key.ToLowerInvariant()
-
-            let isShift =
-                normalized.Contains("shift")
-                || key.Contains("Shift")
+            let isShift = key.IndexOf("Shift", StringComparison.OrdinalIgnoreCase) >= 0
 
             let arrowDxDy =
-                match normalized with
+                match key.ToLowerInvariant() with
                 | k when k.Contains("left") -> Some(-1.0, 0.0)
                 | k when k.Contains("right") -> Some(1.0, 0.0)
                 | k when k.Contains("up") -> Some(0.0, -1.0)
@@ -411,7 +407,13 @@ module OverlayStateLogic =
                         state.Selection.Nudge(dx, dy)
 
                 let clamped = rawSelection.ApplyConstraints state.Capture.VirtualBounds
-                emptyResult { state with Selection = clamped }
+                let finalSelection =
+                    if clamped.IsValid then
+                        clamped
+                    else
+                        Selection.Empty
+
+                emptyResult { state with Selection = finalSelection }
             | None ->
                 emptyResult state
 
