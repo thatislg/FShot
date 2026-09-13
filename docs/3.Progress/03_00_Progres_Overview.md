@@ -65,12 +65,40 @@
 
 ### Epic 2: Vùng chọn (Selection Engine)
 - [ ] **P1.05** Lớp phủ tối mờ Skia (`FR-SEL-01`) ngoài vùng chọn.
+  - [ ] Rà soát / hoàn thiện `docs/2.Design/03_Selection/03_07_OverlayDimming.md` (mô tả cách vẽ lớp tối ngoài vùng chọn).
+  - [ ] Triển khai hoặc cập nhật `src/FShot.Rendering.Skia/Renderers/DimmingRenderer.fs` để vẽ full-screen dimming với khoét lỗ vùng chọn.
+  - [ ] Cập nhật `src/FShot.Rendering.Skia/Renderers/SceneComposer.fs` gọi `DimmingRenderer` đúng thứ tự.
+  - [ ] Kiểm thử render dimming trong `tests/FShot.Rendering.Skia.Tests`.
 - [ ] **P1.06** Kéo bounding box tự do (`FR-SEL-02`).
+  - [ ] Rà soát `docs/2.Design/03_Selection/03_04_MouseOperations.md` mục tạo vùng chọn.
+  - [ ] Đảm bảo `Selection.StartSelecting` + `UpdateSelecting` + `FinishSelecting` hoạt động đúng với mọi hướng kéo.
+  - [ ] Kiểm thử kéo vùng chọn từ mọi hướng (trái→phải, phải→trái, trên→dưới, dưới→trên).
+  - [ ] Kiểm thử clamp và kích thước tối thiểu khi hoàn tất.
 - [ ] **P1.07** 8 điểm neo co giãn vùng chọn (`FR-SEL-03`).
+  - [ ] Rà soát `docs/2.Design/03_Selection/03_03_ResizeHandles.md` (vị trí, hit-test, thứ tự ưu tiên).
+  - [ ] Đảm bảo `Selection.HandleCenters`, `HitTestHandle`, `StartResizing`, `UpdateResizing`, `FinishInteraction` hỗ trợ đủ 8 handles.
+  - [ ] Kiểm thử hit-test tolerance và resize theo 8 hướng.
+  - [ ] Kiểm thử kích thước tối thiểu sau khi resize.
 - [ ] **P1.08** Kéo rê di chuyển toàn bộ vùng chọn (`FR-SEL-04`).
+  - [ ] Rà soát `docs/2.Design/03_Selection/03_04_MouseOperations.md` mục di chuyển vùng chọn.
+  - [ ] Đảm bảo `Selection.StartMoving` + `UpdateMoving` + clamp hoạt động trong `OverlayState`.
+  - [ ] Kiểm thử di chuyển vùng chọn ra sát biên và bị giới hạn.
 - [ ] **P1.09** Dịch chuyển vùng chọn 1px bằng phím mũi tên (`FR-SEL-05`).
+  - [ ] Hoàn thiện `docs/2.Design/03_Selection/03_05_KeyboardOperations.md` (nudge bằng phím mũi tên).
+  - [ ] Thêm xử lý `KeyDown` cho phím mũi tên trong `OverlayState.update`.
+  - [ ] Triển khai nudge trong `OverlayState`: dịch vùng chọn 1px theo hướng, clamp vào capture bounds.
+  - [ ] Kiểm thử từng phím mũi tên và kết hợp với modifier.
 - [ ] **P1.10** Co giãn 1px bằng `Shift + Arrow` (`FR-SEL-06`).
+  - [ ] Hoàn thiện `docs/2.Design/03_Selection/03_05_KeyboardOperations.md` (keyboard resize bằng Shift + Arrow).
+  - [ ] Xử lý `KeyDown` kèm Shift trong `OverlayState.update`.
+  - [ ] Triển khai resize 1px theo hướng mũi tên, điều chỉnh cạnh tương ứng của vùng chọn.
+  - [ ] Kiểm thử 4 hướng co giãn với Shift.
 - [ ] **P1.11** Phím tắt `Esc` / `Ctrl+Backspace` hủy vùng chọn hoặc thoát app (`FR-SEL-11`).
+  - [ ] Rà soát xử lý `Cancel` trong `OverlayState.update` và `Selection.Cancel`.
+  - [ ] Đảm bảo Esc ở `Idle` đóng overlay, ở `Selected` hủy vùng chọn về `Idle`, ở `Selecting` hủy tạo vùng.
+  - [ ] Thêm / cập nhật kiểm thử cho từng trường hợp.
+  - [ ] `Ctrl+Backspace` tương đương Cancel khi có vùng chọn.
+  - [ ] `Ctrl+Backspace` trong `Annotating` hủy preview và quay về `Selected`.
 
 ### Epic 3: Bộ công cụ chú thích (Annotations)
 - [ ] **P1.12** Bút vẽ tự do (Pencil) tích hợp thuật toán làm mịn Bézier (`FR-ANN-01`).
