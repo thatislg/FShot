@@ -169,25 +169,41 @@ Trong Penpot, hành vi responsive không thể thể hiện bằng prototype. Th
 
 `ResizeHandle` là điểm neo vuông nhỏ xuất hiện quanh vùng chọn khi đã hoàn tất. Dùng để bắt chuột co giãn.
 
+Trong Penpot, component này chỉ cần thể hiện phần **visual** (`8 × 8px`). Vùng bắt chuột mở rộng (`16 × 16px`) là khái niệm runtime, do code xử lý, không cần thể hiện đúng nghĩa trong Penpot.
+
 ### 3.2. Cấu trúc layer
 
 ```text
-ResizeHandle (Board 16×16px)
-├── ResizeHandle_VisibleSquare (Rectangle 8×8px, fill cyan, stroke đen 1px, căn giữa Board)
-└── ResizeHandle_HitTestArea (Rectangle 16×16px, trong suốt, nằm dưới VisibleSquare hoặc phía trên)
+ResizeHandle (Board 8×8px)
+└── ResizeHandle_Visual (Rectangle 8×8px, fill cyan, stroke đen 1px)
 ```
 
-Lưu ý: `HitTestArea` là hình chữ nhật trong suốt full Board để designer thấy vùng bắt chuột. Layer này không hiển thị khi render.
+Thực tế trong Penpot, bạn tạo:
 
-### 3.3. Properties của ResizeHandle
+1. Board `8 × 8px` tên `ResizeHandle`.
+2. Rectangle `8 × 8px` tên `ResizeHandle_Visual`, fill và stroke theo token.
+
+**Tùy chọn minh họa hit area:** Bên ngoài component, trong Board màn hình, bạn có thể vẽ thêm một Rectangle `16 × 16px` trong suốt centered tại vị trí handle để minh họa vùng bắt chuột. Layer này chỉ là guide, không phải component.
+
+### 3.3. Kích thước
+
+| Phần tử | Kích thước | Ý nghĩa |
+| :--- | :--- | :--- |
+| Board component | `8 × 8px` | Kích thước hiển thị thực tế. |
+| Hình vuông visual | `8 × 8px` | Phần nhìn thấy. |
+| Vùng bắt chuột (runtime) | `16 × 16px` | Mở rộng `4px` mỗi bên, do code tính toán. |
+| Stroke | `1px` | Viền đen bao quanh. |
+| Fill | `#00E5FF` opacity `1.00` | Màu cyan nổi bật. |
+
+### 3.4. Properties của ResizeHandle
 
 | Property | Áp dụng cho | Mô tả |
 | :--- | :--- | :--- |
-| `FillColor` | `ResizeHandle_VisibleSquare` | Màu nền + opacity của hình vuông hiển thị. |
-| `StrokeColor` | `ResizeHandle_VisibleSquare` | Màu viền + opacity. |
-| `StrokeWidth` | `ResizeHandle_VisibleSquare` | Độ dày viền. |
+| `FillColor` | `ResizeHandle_Visual` | Màu nền + opacity. |
+| `StrokeColor` | `ResizeHandle_Visual` | Màu viền + opacity. |
+| `StrokeWidth` | `ResizeHandle_Visual` | Độ dày viền. |
 
-### 3.4. Giá trị mặc định
+### 3.5. Giá trị mặc định
 
 | Property | Giá trị điền vào Penpot | Token tương ứng |
 | :--- | :--- | :--- |
@@ -195,24 +211,26 @@ Lưu ý: `HitTestArea` là hình chữ nhật trong suốt full Board để desi
 | `StrokeColor` | `#000000` opacity `1.00` | `Handle.StrokeColor` + `Handle.StrokeOpacity` |
 | `StrokeWidth` | `1px` | `Handle.StrokeWidth` |
 
-### 3.4. Vị trí 8 handle
+### 3.6. Vị trí 8 handle khi đặt instance
 
-Gọi vùng chọn là `R` với `Left = R.X`, `Top = R.Y`, `Right = R.X + R.Width`, `Bottom = R.Y + R.Height`. Tọa độ tâm của 8 handle:
+Gọi vùng chọn là `R` với `Left = R.X`, `Top = R.Y`, `Right = R.X + R.Width`, `Bottom = R.Y + R.Height`.
 
-| Handle | Tọa độ tâm (CenterX, CenterY) |
+Vì Board component là `8 × 8px`, góc trên-trái của Board trùng với tâm handle. Do đó tọa độ đặt instance là:
+
+| Handle | Góc trên-trái của Board instance |
 | :--- | :--- |
-| TopLeft | `(R.Left, R.Top)` |
-| TopCenter | `(R.Left + R.Width / 2, R.Top)` |
-| TopRight | `(R.Right, R.Top)` |
-| MiddleLeft | `(R.Left, R.Top + R.Height / 2)` |
-| MiddleRight | `(R.Right, R.Top + R.Height / 2)` |
-| BottomLeft | `(R.Left, R.Bottom)` |
-| BottomCenter | `(R.Left + R.Width / 2, R.Bottom)` |
-| BottomRight | `(R.Right, R.Bottom)` |
+| TopLeft | `(R.Left - 4, R.Top - 4)` |
+| TopCenter | `(R.Left + R.Width / 2 - 4, R.Top - 4)` |
+| TopRight | `(R.Right - 4, R.Top - 4)` |
+| MiddleLeft | `(R.Left - 4, R.Top + R.Height / 2 - 4)` |
+| MiddleRight | `(R.Right - 4, R.Top + R.Height / 2 - 4)` |
+| BottomLeft | `(R.Left - 4, R.Bottom - 4)` |
+| BottomCenter | `(R.Left + R.Width / 2 - 4, R.Bottom - 4)` |
+| BottomRight | `(R.Right - 4, R.Bottom - 4)` |
 
-Mỗi handle được vẽ sao cho tâm của nó trùng với tọa độ trên. Do kích thước hiển thị là `8 × 8px`, góc trên-trái của hình vuông hiển thị sẽ lệch `-4px` so với tâm.
+Số `-4` là vì handle visual `8 × 8px`, tâm cách góc trên-trái `4px`.
 
-### 3.5. Cursor tương ứng
+### 3.7. Cursor tương ứng
 
 | Handle | Con trỏ chuột |
 | :--- | :--- |
@@ -221,24 +239,19 @@ Mỗi handle được vẽ sao cho tâm của nó trùng với tọa độ trên
 | TopCenter, BottomCenter | `ns-resize` |
 | MiddleLeft, MiddleRight | `ew-resize` |
 
----
+### 3.8. Cách tạo trong Penpot
 
-## 4. Component `DimensionBadge`
+Bước 1: Tạo Board `8 × 8px` tên `ResizeHandle`.
 
-### 4.1. Mục đích
+Bước 2: Vẽ Rectangle `8 × 8px` tên `ResizeHandle_Visual`, fill `Handle.FillColor` opacity `Handle.FillOpacity`.
 
-`DimensionBadge` hiển thị kích thước vùng chọn `Width × Height` hoặc `Width × Height + X + Y` khi đang kéo hoặc co giãn.
+Bước 3: Stroke `Handle.StrokeWidth`, màu `Handle.StrokeColor`, opacity `Handle.StrokeOpacity`.
 
-### 4.2. Cấu trúc layer
+Bước 4: Chọn Board → `Ctrl+K` tạo component.
 
-```text
-DimensionBadge (Board auto-width × 18px)
-├── DimensionBadge_Background (Rectangle full Board, bo góc 4px)
-└── DimensionBadge_Text (Text 11px, màu trắng, weight 600)
-```
+Bước 5: Tạo properties: `FillColor`, `StrokeColor`, `StrokeWidth` với giá trị mặc định theo token.
 
-### 4.3. Properties của DimensionBadge
-
+Bước 6: (Tùy chọn) Trong Board màn hình, khi đặt 8 handle instance, có thể vẽ thêm `Rectangle 16 × 16px` trong suốt centered để minh họa vùng bắt chuột.
 | Property | Áp dụng cho | Mô tả |
 | :--- | :--- | :--- |
 | `BackgroundColor` | `DimensionBadge_Background` | Màu nền + opacity của badge. |
@@ -275,25 +288,40 @@ DimensionBadge (Board auto-width × 18px)
 ### 5.2. Cấu trúc layer
 
 ```text
-ColorSwatch (20×20px, hình tròn)
-├── FillCircle (18×18px, màu annotation)
-└── OuterRing (20×20px, viền trắng 1px, hiển thị khi swatch đang active)
+ColorSwatch (Board 18×18px)
+└── ColorSwatch_Fill (Ellipse 18×18px, màu annotation)
 ```
 
-### 5.3. Properties của ColorSwatch
+Trong Penpot, bạn tạo:
+
+1. Board `18 × 18px` tên `ColorSwatch`.
+2. Ellipse `18 × 18px` tên `ColorSwatch_Fill`, căn giữa Board.
+
+Khi width = height, ellipse trở thành hình tròn.
+
+### 5.3. Kích thước
+
+| Phần tử | Kích thước | Ý nghĩa |
+| :--- | :--- | :--- |
+| Board component | `18 × 18px` | Kích thước hiển thị thực tế. |
+| Ellipse fill | `18 × 18px` | Hình tròn tô màu annotation. |
+| Stroke (viền active) | `2px` | Viền trắng đậm khi active. |
+
+### 5.4. Properties của ColorSwatch
 
 | Property | Áp dụng cho | Mô tả |
 | :--- | :--- | :--- |
-| `FillColor` | `ColorSwatch_FillCircle` | Màu của ô màu. |
-| `RingOpacity` | `ColorSwatch_OuterRing` | Độ đục viền active. |
+| `FillColor` | `ColorSwatch_Fill` | Màu + opacity của hình tròn. |
+| `StrokeColor` | `ColorSwatch_Fill` | Màu + opacity của viền. |
+| `StrokeWidth` | `ColorSwatch_Fill` | Độ dày viền. |
 
-### 5.4. Giá trị mặc định
+### 5.5. Giá trị theo trạng thái
 
-| Trạng thái | `FillColor` | `RingOpacity` |
-| :--- | :--- | :--- |
-| Default | `Annotation.Red` opacity `1.00` | viền trắng `0.30` |
-| Hover | `Annotation.Red` opacity `1.00` + overlay trắng `0.10` | viền trắng `0.50` |
-| Active | `Annotation.Red` opacity `1.00` | viền trắng `1.00` |
+| Trạng thái | `FillColor` | `StrokeColor` | `StrokeWidth` |
+| :--- | :--- | :--- | :--- |
+| Default | `Annotation.Red` opacity `1.00` | Trắng opacity `0.30` | `1px` |
+| Hover | `Annotation.Red` opacity `1.00` | Trắng opacity `0.50` | `1px` |
+| Active | `Annotation.Red` opacity `1.00` | Trắng opacity `1.00` | `2px` |
 
 ---
 
@@ -436,20 +464,23 @@ Bước 7: Chọn Board → `Ctrl+K` tạo component.
 Bước 8: Tạo properties: `BackgroundColor`, `TextColor`. Mỗi property bao gồm cả màu và opacity. Không cần tạo property opacity riêng.
 
 ### 9.5. Tạo `ColorSwatch`
+### 5.6. Cách tạo trong Penpot
 
-Bước 1: Tạo Board `20 × 20px` tên `ColorSwatch`.
+Bước 1: Tạo Board `18 × 18px` tên `ColorSwatch`.
 
-Bước 2: Vẽ Ellipse `18 × 18px` tên `ColorSwatch_FillCircle`, căn giữa.
+Bước 2: Chọn **Ellipse tool** (biểu tượng hình tròn hoặc nhấn `E`).
 
-Bước 3: Fill binding về `Annotation.Red` (hoặc màu annotation tương ứng).
+Bước 3: Vẽ Ellipse `18 × 18px` tên `ColorSwatch_Fill`, căn giữa Board. Vì width = height, đây là hình tròn.
 
-Bước 4: Vẽ Ellipse `20 × 20px` tên `ColorSwatch_OuterRing`, nằm dưới FillCircle, màu trắng opacity `0.30`.
+Bước 4: Fill `Annotation.Red` opacity `1.00`.
 
-Bước 5: Chọn Board → `Ctrl+K` tạo component.
+Bước 5: Stroke trắng opacity `0.30`, width `1px`.
 
-Bước 8: Tạo properties: `FillColor`, `RingOpacity`. `FillColor` bao gồm cả màu và opacity; `RingOpacity` là độ đục của viền trắng.
+Bước 6: Chọn Board → `Ctrl+K` tạo component.
 
-Bước 7: Khi dùng instance, override `FillColor` theo màu mong muốn.
+Bước 7: Tạo properties: `FillColor`, `StrokeColor`, `StrokeWidth`.
+
+Bước 8: Khi dùng instance trong Color Picker, override `FillColor` theo màu mong muốn (Red, Yellow, Green, Blue, White, Black).
 
 ---
 
