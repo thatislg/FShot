@@ -291,17 +291,25 @@ Penpot hỗ trợ import token theo chuẩn DTCG (Design Tokens Community Group)
 ### 9.2. Lưu ý khi import
 
 - File JSON phải đúng định dạng DTCG với các key `$type`, `$value`, `$description`.
+- Bản web Penpot hiện tại (09/2026) chỉ có nút **Create token**, chưa có **Import**. Nếu dùng bản web, hãy dùng file `assets/fshot_tokens_flat.txt` để tạo thủ công nhanh hơn.
 - Penpot có thể chưa hỗ trợ đầy đủ tất cả các type; nếu gặp lỗi, hãy kiểm tra các token kiểu `string` hoặc `number` không có đơn vị.
 - Nếu Penpot báo lỗi alias/reference, đảm bảo không dùng cú pháp `{token.path}` trong `$value`.
 - Sau khi import, kiểm tra lại nhóm token để đảm bảo không bị lệch cấu trúc.
 
-### 9.3. Fallback nếu import không hoạt động
+### 9.3. Fallback: tạo thủ công từ danh sách phẳng
 
-Nếu Penpot tại thời điểm sử dụng chưa hỗ trợ import JSON:
+Nếu Penpot của bạn chưa hỗ trợ import JSON (phổ biến ở bản web hiện tại):
 
-- Dùng file `fshot_tokens.json` làm bảng tra cứu.
-- Tạo từng nhóm token trong Penpot theo cây đã định nghĩa.
-- Có thể copy tên token từ file JSON để tránh nhầm lẫn.
+- Mở file `assets/fshot_tokens_flat.txt`.
+- Đặt cửa sổ Penpot và cửa sổ file txt song song.
+- Click **Create token** trong Penpot, copy `Name`, chọn `Type`, nhập `Value`, dán `Description`.
+- Penpot sẽ tự nhóm token theo dấu `.` trong tên.
+
+Ví dụ một dòng trong file flat:
+
+```text
+Overlay.DimOpacity | number | 0.50 | Độ mờ mặc định của overlay
+```
 
 ### 9.4. Export ngược từ Penpot
 

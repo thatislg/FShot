@@ -1,0 +1,107 @@
+# F-Shot Tokens — Danh sách phẳng để tạo thủ công trong Penpot
+# Bản web Penpot hiện tại chỉ hỗ trợ Create token thủ công.
+# Copy từng dòng: Name | Type | Value | Description
+# Lưu ý: Name dùng dấu . phân cấp. Penpot sẽ nhóm tự động theo dấu chấm.
+
+Accent.Primary              | color     | #7C3AED   | Màu chính cho nút active, điểm nhấn toolbar
+Accent.Secondary            | color     | #FF0055   | Màu phụ cho trạng thái lỗi, hủy, warning nhẹ
+Accent.Hover                | color     | #9F6CF0   | Biến thể sáng hơn của Primary khi hover
+
+Overlay.DimColor            | color     | #000000   | Màu đen làm lớp phủ mờ toàn màn hình
+Overlay.DimOpacity          | number    | 0.50      | Độ mờ mặc định của overlay
+Overlay.DimOpacityStrong    | number    | 0.60      | Độ mờ cao hơn khi cần tương phản mạnh
+
+Selection.BorderColor       | color     | #FFFFFF   | Viền khung chọn, luôn nổi trên nền tối
+Selection.BorderOpacity     | number    | 1.00      | Viền không trong suốt
+Selection.BorderWidth       | dimension | 2px       | Độ dày viền khung chọn
+Selection.BorderDash        | string    | 4px on, 4px off | Nét đứt di chuyển tạo cảm giác đang kéo
+Selection.ClearFill         | color     | #FFFFFF   | Không tô màu bên trong vùng chọn, opacity = 0
+Selection.HoverTint         | color     | #FFFFFF   | Lớp tint khi di chuyển vùng chọn
+Selection.HoverTintOpacity  | number    | 0.05      | Tô nhẹ 5% để phân biệt vùng đang di chuyển
+
+Handle.FillColor            | color     | #00E5FF   | Màu nền cyan nổi bật
+Handle.FillOpacity          | number    | 1.00      | Không trong suốt để dễ bắt chuột
+Handle.StrokeColor          | color     | #000000   | Viền đen bao quanh để handle nổi trên mọi nền
+Handle.StrokeOpacity        | number    | 1.00      | Viền đen đậm
+Handle.StrokeWidth          | dimension | 1px       | Viền mảnh, không lấn át viền vùng chọn
+
+Toolbar.BackgroundColor     | color     | #1E1E2E   | Nền tối gần đen-xanh
+Toolbar.BackgroundOpacity   | number    | 0.95      | Hơi trong suốt để hòa với overlay
+Toolbar.BorderColor         | color     | #FFFFFF   | Viền ngoài toolbar
+Toolbar.BorderOpacity       | number    | 0.10      | Viền rất mờ
+Toolbar.BorderWidth         | dimension | 1px       | Viền mảnh
+Toolbar.ShadowColor         | color     | #000000   | Bóng đổ
+Toolbar.ShadowOpacity       | number    | 0.40      | Bóng đổ 40%
+Toolbar.ShadowBlur          | dimension | 12px      | Độ mờ bóng
+Toolbar.ShadowOffsetY       | dimension | 4px       | Bóng lệch xuống dưới
+Toolbar.SeparatorColor      | color     | #FFFFFF   | Đường phân cách nhóm nút
+Toolbar.SeparatorOpacity    | number    | 0.15      | Mờ vừa đủ nhìn
+Toolbar.SeparatorWidth      | dimension | 1px       | Đường kẻ mảnh
+
+ToolButton.Default.Background     | color | #FFFFFF | Nền trong suốt, opacity = 0
+ToolButton.Default.IconColor      | color | #FFFFFF | Icon trắng
+ToolButton.Default.IconOpacity    | number | 0.85   | Hơi mờ để tránh chói
+ToolButton.Hover.Background       | color | #FFFFFF | Nền xám nhẹ
+ToolButton.Hover.BackgroundOpacity | number | 0.12 | Mờ vừa đủ thấy hover
+ToolButton.Hover.IconColor        | color | #FFFFFF | Icon trắng
+ToolButton.Hover.IconOpacity      | number | 1.00   | Đậm hơn khi hover
+ToolButton.Active.Background      | color | #7C3AED | Nền accent
+ToolButton.Active.BackgroundOpacity | number | 1.00 | Không trong suốt
+ToolButton.Active.IconColor       | color | #FFFFFF | Icon trắng trên nền tím
+ToolButton.Active.IconOpacity     | number | 1.00   | Icon đậm
+ToolButton.Disabled.Background    | color | #FFFFFF | Không nền
+ToolButton.Disabled.IconColor      | color | #FFFFFF | Icon trắng
+ToolButton.Disabled.IconOpacity   | number | 0.35   | Mờ đi rõ rệt
+
+Annotation.Red              | color     | #EF4444   | Màu đỏ mặc định
+Annotation.Yellow           | color     | #F59E0B   | Màu vàng
+Annotation.Green            | color     | #10B981   | Màu xanh lá
+Annotation.Blue             | color     | #3B82F6   | Màu xanh dương
+Annotation.White            | color     | #FFFFFF   | Màu trắng
+Annotation.Black            | color     | #000000   | Màu đen
+Annotation.StrokeWidth.Default | dimension | 2px    | Độ dày nét mặc định
+Annotation.StrokeWidth.Thick   | dimension | 4px    | Dùng cho marker hoặc nhấn mạnh
+Annotation.Marker.Opacity   | number    | 0.40      | Marker bán trong suốt
+Annotation.Text.Color       | color     | #EF4444   | Màu chữ mặc định
+Annotation.Text.Background  | color     | #000000   | Nền text box trong suốt khi edit
+Annotation.Text.BackgroundOpacity | number | 0.00   | Không nền khi edit
+
+Badge.BackgroundColor       | color     | #7C3AED   | Nền accent
+Badge.BackgroundOpacity     | number    | 0.95      | Gần như đục
+Badge.TextColor             | color     | #FFFFFF   | Chữ trắng
+Badge.TextOpacity           | number    | 1.00      | Không trong suốt
+Badge.BorderRadius          | dimension | 4px       | Bo góc nhỏ
+
+Text.FontFamily             | string    | Segoe UI, sans-serif | Font hệ thống Windows mặc định
+Text.FontFamilyMono         | string    | Consolas, monospace | Font monospace cho số liệu, tọa độ
+Text.Toolbar.FontSize       | dimension | 13px      | Font cho tooltip trên toolbar
+Text.Badge.FontSize         | dimension | 11px      | Font trong dimension badge
+Text.Shortcut.FontSize      | dimension | 10px      | Font phím tắt nhỏ bên dưới icon
+Text.Weight.Regular         | number    | 400       | Độ đậm thông thường
+Text.Weight.Semibold        | number    | 600       | Độ đậm nhấn mạnh
+
+Size.Toolbar.Height         | dimension | 40px      | Chiều cao thanh công cụ
+Size.Toolbar.MinWidth       | dimension | 200px     | Độ rộng tối thiểu toolbar
+Size.ToolButton.Width       | dimension | 32px      | Chiều rộng nút công cụ
+Size.ToolButton.Height      | dimension | 32px      | Chiều cao nút công cụ
+Size.Icon.Width             | dimension | 18px      | Chiều rộng icon trong nút
+Size.Icon.Height            | dimension | 18px      | Chiều cao icon trong nút
+Size.Handle.Width           | dimension | 8px       | Chiều rộng handle
+Size.Handle.Height          | dimension | 8px       | Chiều cao handle
+Size.Handle.HitPadding      | dimension | 4px       | Vùng mở rộng bắt chuột xung quanh handle
+Size.Badge.Height           | dimension | 18px      | Chiều cao badge kích thước
+Size.Badge.PaddingX         | dimension | 6px       | Padding ngang trong badge
+Size.Badge.PaddingY         | dimension | 2px       | Padding dọc trong badge
+Size.Separator.Height       | dimension | 20px      | Chiều cao đường phân cách trong toolbar
+
+Radius.Toolbar              | dimension | 8px       | Bo góc thanh công cụ
+Radius.ToolButton           | dimension | 6px       | Bo góc nút công cụ
+Radius.Badge                | dimension | 4px       | Bo góc badge
+Radius.Popup                | dimension | 10px      | Bo góc popup nhỏ
+
+Spacing.Toolbar.InnerGap    | dimension | 4px       | Khoảng cách giữa các nút trong cùng nhóm
+Spacing.Toolbar.GroupGap    | dimension | 8px       | Khoảng cách giữa 2 nhóm nút qua separator
+Spacing.Toolbar.PaddingX    | dimension | 8px       | Padding ngang toàn toolbar
+Spacing.Toolbar.PaddingY    | dimension | 4px       | Padding dọc toàn toolbar
+Spacing.Toolbar.OffsetFromSelection | dimension | 8px | Khoảng cách từ mép dưới vùng chọn đến toolbar
+Spacing.Popup.Offset        | dimension | 6px       | Khoảng cách từ nút kích hoạt đến popup
