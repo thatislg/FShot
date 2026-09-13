@@ -39,7 +39,25 @@ Overlay vừa mở. Chưa có vùng chọn. Toàn màn hình được phủ tố
 | :--- | :--- | :--- |
 | `Background_Screenshot` | Image | Ảnh desktop mẫu, kích thước full board. |
 | `Dimmed_Mask` | Rectangle | Hình chữ nhật full board, màu `#000000`, opacity `50%`. |
-| `Cursor_Crosshair` | Vector | Dấu thập nhỏ ở vị trí chuột, gợi ý kéo để chọn. Không bắt buộc, chỉ dùng để minh họa. |
+| `Cursor_Crosshair` | Group / Vector | Dấu thập nhỏ ở vị trí chuột, gợi ý kéo để chọn. Minh họa tĩnh, không bắt buộc. |
+
+### 2.3. Cách vẽ `Cursor_Crosshair`
+
+Tạo group tên `Cursor_Crosshair` gồm 2 line hoặc 1 path:
+
+- **Đường ngang:** dài `16px`, dày `2px`, màu trắng `#FFFFFF` opacity `1.00`, centered tại vị trí chuột.
+- **Đường dọc:** dài `16px`, dày `2px`, màu trắng `#FFFFFF` opacity `1.00`, centered tại vị trí chuột.
+
+Ví dụ vị trí chuột `(400, 300)`:
+
+```text
+Horizontal line: X = 400 - 8, Y = 300, Width = 16, Height = 2
+Vertical line:   X = 400, Y = 300 - 8, Width = 2, Height = 16
+```
+
+Đặt group `Cursor_Crosshair` ở layer trên cùng của Board 1.
+
+Lưu ý: đây chỉ là minh họa tĩnh. Cursor thực tế do Avalonia điều khiển khi chạy app.
 
 ### 2.3. Cursor
 
