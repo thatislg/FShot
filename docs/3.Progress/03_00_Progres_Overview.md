@@ -69,11 +69,11 @@
   - [x] Triển khai `src/FShot.Rendering.Skia/Renderers/DimmingRenderer.fs`.
   - [x] Cập nhật `src/FShot.Rendering.Skia/Renderers/SceneComposer.fs` gọi `DimmingRenderer`.
   - [x] Thêm tests `tests/FShot.Rendering.Skia.Tests/DimmingTests.fs`.
-- [ ] **P1.06** Kéo bounding box tự do (`FR-SEL-02`).
-  - [ ] Rà soát `docs/2.Design/03_Selection/03_04_MouseOperations.md` mục tạo vùng chọn.
-  - [ ] Đảm bảo `Selection.StartSelecting` + `UpdateSelecting` + `FinishSelecting` hoạt động đúng với mọi hướng kéo.
-  - [ ] Kiểm thử kéo vùng chọn từ mọi hướng (trái→phải, phải→trái, trên→dưới, dưới→trên).
-  - [ ] Kiểm thử clamp và kích thước tối thiểu khi hoàn tất.
+- [x] **P1.06** Kéo bounding box tự do (`FR-SEL-02`).
+  - [x] Rà soát `docs/2.Design/03_Selection/03_04_MouseOperations.md` mục tạo vùng chọn.
+  - [x] Đảm bảo `Selection.StartSelecting` + `UpdateSelecting` + `FinishSelecting` hoạt động đúng với mọi hướng kéo.
+  - [x] Kiểm thử kéo vùng chọn từ mọi hướng (trái→phải, phải→trái, trên→dưới, dưới→trên).
+  - [x] Kiểm thử clamp và kích thước tối thiểu khi hoàn tất.
 - [ ] **P1.07** 8 điểm neo co giãn vùng chọn (`FR-SEL-03`).
   - [ ] Rà soát `docs/2.Design/03_Selection/03_03_ResizeHandles.md` (vị trí, hit-test, thứ tự ưu tiên).
   - [ ] Đảm bảo `Selection.HandleCenters`, `HitTestHandle`, `StartResizing`, `UpdateResizing`, `FinishInteraction` hỗ trợ đủ 8 handles.
