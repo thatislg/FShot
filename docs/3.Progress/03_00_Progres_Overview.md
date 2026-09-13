@@ -1,8 +1,8 @@
 # F-Shot Master Progress Tracking
 
-- **Cập nhật gần nhất:** 2026-09-13
-- **Tiến độ tổng quan:** `[ 13 / 84 ] Tasks hoàn thành (~15.5%)` (Phase 0 PoC đã verify xong; P1.01–P1.04 core domain + state machine + tests đã hoàn thiện)
-- **Mục tiêu hiện tại:** Hoàn thiện thiết kế nền tảng Phase 1 (P1.03–P1.04) trước khi viết code tiếp theo
+- **Cập nhật gần nhất:** 2026-09-14
+- **Tiến độ tổng quan:** `[ 24 / 84 ] Tasks hoàn thành (~28.6%)` (Phase 0 PoC đã verify xong; Epic 1 P1.01–P1.04, Epic 2 P1.05–P1.11, và Epic 2.5 E2.5.01–E2.5.05 đã hoàn thiện)
+- **Mục tiêu hiện tại:** Bắt đầu Epic 3: triển khai bộ công cụ chú thích (Annotations) từ P1.12
 
 ---
 
@@ -11,7 +11,7 @@
 | Phase | Mục tiêu | Trạng thái | Hoàn thành |
 | :--- | :--- | :---: | :---: |
 | **Phase 0: PoC** | Khung Solution, Screen Capture, Overlay Canvas, đo 60 FPS | **DONE** | **8 / 8** (đã verify trên desktop Windows) |
-| **Phase 1: MVP Core** | Bounding box, 8 Annotation tools, Undo/Redo, Save/Clipboard | **IN PROGRESS** | 5 / 29 (~17%) |
+| **Phase 1: MVP Core** | Bounding box, 8 Annotation tools, Undo/Redo, Save/Clipboard | **IN PROGRESS** | 16 / 29 (~55%) |
 | **Phase 2: Windows v1.0** | Tray, Hotkeys, Real Capture, Config UI, Pin Widget, Advanced tools | **PENDING** | 0 / 39 (0%) |
 | **Phase 3: Advanced** | Imgur upload, Snap-to-grid, Tùy biến nâng cao | **PENDING** | 0 / 8 (0%) |
 
@@ -100,6 +100,23 @@
   - [x] `Ctrl+Backspace` tương đương Cancel khi có vùng chọn.
   - [x] `Ctrl+Backspace` trong `Annotating` hủy preview và quay về `Selected`.
   - [x] Tích hợp UI đúng nghĩa: `CaptureCanvas` dùng `OverlayState` cho input chuột/bàn phím, vẽ theo `RenderModel`, thực thi `CloseOverlay`.
+
+### Epic 2.5: UI/UX Design với Penpot
+- [x] **E2.5.01** Design tokens (màu sắc, spacing, typography, handle size).
+  - [x] Hoàn thiện `docs/2.Design/12_UIUX_Mock_Penpot/12_01_DesignTokens.md`.
+  - [x] Định nghĩa đủ tokens để map 1:1 sang Avalonia ResourceDictionary.
+- [x] **E2.5.02** Common components (ToolButton, BottomToolbar, ResizeHandle).
+  - [x] Hoàn thiện `docs/2.Design/12_UIUX_Mock_Penpot/12_02_CommonComponents.md`.
+  - [x] Mô tả variants: Default, Hover, Active, Disabled.
+- [x] **E2.5.03** Capture overlay states.
+  - [x] Hoàn thiện `docs/2.Design/12_UIUX_Mock_Penpot/12_03_CaptureOverlayStates.md`.
+  - [x] 5 boards: Idle Dimmed, Dragging Selection, Selected with Toolbar, Annotating Mode, Color Picker Popup.
+- [x] **E2.5.04** Toolbar layout.
+  - [x] Hoàn thiện `docs/2.Design/12_UIUX_Mock_Penpot/12_04_ToolbarLayout.md`.
+  - [x] Chi tiết vị trí, nhóm tool, icon, shortcut, hover/active state.
+- [x] **E2.5.05** Export guidelines.
+  - [x] Hoàn thiện `docs/2.Design/12_UIUX_Mock_Penpot/12_05_ExportGuidelines.md`.
+  - [x] Quy tắc xuất từ Penpot sang XAML / Skia rendering.
 
 ### Epic 3: Bộ công cụ chú thích (Annotations)
 - [ ] **P1.12** Bút vẽ tự do (Pencil) tích hợp thuật toán làm mịn Bézier (`FR-ANN-01`).
@@ -210,7 +227,7 @@
 
 ---
 
-*Cập nhật gần nhất: 2026-09-13*
+*Cập nhật gần nhất: 2026-09-14*
 
 ---
 
