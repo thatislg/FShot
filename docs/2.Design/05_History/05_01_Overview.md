@@ -19,6 +19,7 @@ History phải:
 - Immutable.
 - Dễ test.
 - Không phụ thuộc UI.
+- Có giới hạn kích thước undo stack cấu hình được.
 
 ---
 

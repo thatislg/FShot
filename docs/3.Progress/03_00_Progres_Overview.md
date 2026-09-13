@@ -1,8 +1,8 @@
 # F-Shot Master Progress Tracking
 
 - **Cập nhật gần nhất:** 2026-09-13
-- **Tiến độ tổng quan:** `[ 9 / 84 ] Tasks hoàn thành (~10.7%)` (Phase 0 PoC đã verify xong; P1.01 domain model đã refactor và pass tests)
-- **Mục tiêu hiện tại:** Hoàn thiện thiết kế nền tảng Phase 1 (P1.02–P1.04) trước khi viết code tiếp theo
+- **Tiến độ tổng quan:** `[ 10 / 84 ] Tasks hoàn thành (~11.9%)` (Phase 0 PoC đã verify xong; P1.01 domain model và P1.02 HistoryStack đã refactor và pass tests)
+- **Mục tiêu hiện tại:** Hoàn thiện thiết kế nền tảng Phase 1 (P1.03–P1.04) trước khi viết code tiếp theo
 
 ---
 
@@ -11,7 +11,7 @@
 | Phase | Mục tiêu | Trạng thái | Hoàn thành |
 | :--- | :--- | :---: | :---: |
 | **Phase 0: PoC** | Khung Solution, Screen Capture, Overlay Canvas, đo 60 FPS | **DONE** | **8 / 8** (đã verify trên desktop Windows) |
-| **Phase 1: MVP Core** | Bounding box, 8 Annotation tools, Undo/Redo, Save/Clipboard | **IN PROGRESS** | 1 / 29 (~3%) |
+| **Phase 1: MVP Core** | Bounding box, 8 Annotation tools, Undo/Redo, Save/Clipboard | **IN PROGRESS** | 2 / 29 (~7%) |
 | **Phase 2: Windows v1.0** | Tray, Hotkeys, Real Capture, Config UI, Pin Widget, Advanced tools | **PENDING** | 0 / 39 (0%) |
 | **Phase 3: Advanced** | Imgur upload, Snap-to-grid, Tùy biến nâng cao | **PENDING** | 0 / 8 (0%) |
 
@@ -41,11 +41,13 @@
   - [x] Rà soát `docs/2.Design/06_Export/06_02_ExportTarget.md` (đảm bảo đủ cho `ExportTarget`).
   - [x] Refactor `src/FShot.Core/Domain/Annotation.fs` theo P1.01: `AnnotationStyle` chung, `Marker` dùng `Point list`, `Text` mang `TextAlignment`.
   - [x] Cập nhật `tests/FShot.Core.Tests/Domain/AnnotationTests.fs` theo API mới; tất cả tests pass.
-- [ ] **P1.02** Immutable `HistoryStack` phục vụ hoàn tác không giới hạn.
-  - [ ] Hoàn thiện `docs/2.Design/05_History/05_02_Snapshot.md`.
-  - [ ] Hoàn thiện `docs/2.Design/05_History/05_03_HistoryStack.md`.
-  - [ ] Hoàn thiện `docs/2.Design/05_History/05_04_Integration.md`.
-  - [ ] Bỏ qua `05_05_CounterRestoration.md` trong MVP (dành cho v1.x).
+- [x] **P1.02** Immutable `HistoryStack` phục vụ hoàn tác không giới hạn.
+  - [x] Hoàn thiện `docs/2.Design/05_History/05_02_Snapshot.md`.
+  - [x] Hoàn thiện `docs/2.Design/05_History/05_03_HistoryStack.md`.
+  - [x] Hoàn thiện `docs/2.Design/05_History/05_04_Integration.md`.
+  - [x] Triển khai `src/FShot.Core/Domain/History.fs`: `Snapshot`, `HistoryStack`, Push/Undo/Redo/SetLimit.
+  - [x] Viết / cập nhật `tests/FShot.Core.Tests/Domain/HistoryTests.fs`; tất cả tests pass.
+  - [x] Bỏ qua `05_05_CounterRestoration.md` trong MVP (dành cho v1.x).
 - [ ] **P1.03** F# Overlay State Machine (`Idle` → `Selecting` → `Selected` → `Annotating`).
   - [ ] Hoàn thiện `docs/2.Design/08_OverlayState/08_02_States.md`.
   - [ ] Hoàn thiện `docs/2.Design/08_OverlayState/08_03_Events.md`.
@@ -177,6 +179,13 @@
 ---
 
 *Cập nhật gần nhất: 2026-09-13*
+
+---
+
+## 6. Báo cáo chi tiết theo task
+
+- **P1.01:** `docs/3.Progress/03_02_P1.01_Design_Report.md`
+- **P1.02:** `docs/3.Progress/03_02_P1.02_Design_Report.md` (bao gồm phân tích lỗi giới hạn và cách sửa)
 
 ---
 
