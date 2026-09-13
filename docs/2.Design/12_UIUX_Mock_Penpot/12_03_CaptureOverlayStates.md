@@ -219,7 +219,7 @@ Người dùng click chuột phải hoặc click nút chọn màu trên toolbar.
 | `Selection_Border` | Rectangle | Viền vùng chọn. |
 | `Selection_Handles` | Group | 8 handle. |
 | `BottomToolbar` | Component | Toolbar. |
-| `ColorPicker_Popup` | Group | Popup chứa bảng màu và các `ColorSwatch`. |
+| `ColorPicker_Popup` | Component | Instance của `ColorPicker_Popup` từ thư viện components. |
 
 ### 6.3. Cấu trúc Color Picker Popup
 

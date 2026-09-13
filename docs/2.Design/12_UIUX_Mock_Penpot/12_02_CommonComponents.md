@@ -443,7 +443,82 @@ Bước 9: Tạo properties: `BackgroundColor` từ Fill của Board, `TextColor
 
 **Lưu ý:** Không vẽ Rectangle nền riêng. Board chính là nền.
 
-## 7. Quan hệ giữa các component
+## 7. Component `ColorPicker_Popup`
+
+### 7.1. Mục đích
+
+`ColorPicker_Popup` là popup nhỏ hiển thị bảng màu annotation. Dùng trong Board `State_05_Color_Picker_Popup`. Không bắt buộc trong MVP nhưng nên thiết kế sẵn.
+
+### 7.2. Cấu trúc layer
+
+```text
+ColorPicker_Popup (Board auto-width × auto-height)
+└── ColorPicker_Popup_Background (Board chính là nền popup)
+    ├── ColorPicker_Popup_Header (Text "Chọn màu")
+    └── ColorPicker_Popup_SwatchGrid (Group)
+        ├── Row 1: ColorSwatch_Red, ColorSwatch_Yellow, ColorSwatch_Green, ColorSwatch_Blue
+        └── Row 2: ColorSwatch_White, ColorSwatch_Black
+```
+
+### 7.3. Cấu hình Board nền
+
+| Thuộc tính | Giá trị | Ý nghĩa |
+| :--- | :--- | :--- |
+| Width | Auto (theo nội dung) | Popup tự rộng theo số swatch. |
+| Height | Auto | Popup tự cao theo số hàng. |
+| Fill | `Toolbar.BackgroundColor` opacity `Toolbar.BackgroundOpacity` | Nền tối. |
+| Border radius | `Radius.Popup = 10px` | Bo góc. |
+| Padding | `12px` | Padding xung quanh. |
+| Shadow | `Toolbar.ShadowColor` opacity `Toolbar.ShadowOpacity`, blur `Toolbar.ShadowBlur`, offsetY `Toolbar.ShadowOffsetY` | Bóng đổ. |
+
+### 7.4. Cấu hình swatch grid
+
+| Thuộc tính | Giá trị |
+| :--- | :--- |
+| Layout | Grid hoặc Flex wrap |
+| Số cột | `4` |
+| Gap | `8px` |
+| Kích thước swatch | `18 × 18px` (instance của `ColorSwatch`) |
+
+### 7.5. Properties của ColorPicker_Popup
+
+| Property | Áp dụng cho | Mô tả |
+| :--- | :--- | :--- |
+| `BackgroundColor` | Board `ColorPicker_Popup_Background` | Màu nền + opacity. |
+| `HeaderTextColor` | `ColorPicker_Popup_Header` | Màu chữ tiêu đề. |
+
+### 7.6. Giá trị mặc định
+
+| Property | Giá trị điền vào Penpot | Token tương ứng |
+| :--- | :--- | :--- |
+| `BackgroundColor` | `#1E1E2E` opacity `0.95` | `Toolbar.BackgroundColor` + `Toolbar.BackgroundOpacity` |
+| `HeaderTextColor` | `#FFFFFF` opacity `1.00` | `Badge.TextColor` + `Badge.TextOpacity` |
+
+### 7.7. Cách tạo trong Penpot
+
+Bước 1: Tạo Board `auto-width × auto-height` tên `ColorPicker_Popup`.
+
+Bước 2: Chọn Board, gán Fill `Toolbar.BackgroundColor` opacity `Toolbar.BackgroundOpacity`, Border radius `Radius.Popup = 10px`, Padding `12px`.
+
+Bước 3: Thêm Text `ColorPicker_Popup_Header`, nội dung `"Chọn màu"`. Font: `Text.FontFamily`, size `Text.Toolbar.FontSize`, màu trắng opacity `1.00`.
+
+Bước 4: Tạo group `ColorPicker_Popup_SwatchGrid`, layout grid 4 cột, gap `8px`.
+
+Bước 5: Kéo 6 instance của `ColorSwatch` vào grid, đặt tên:
+- `ColorSwatch_Red`: override `FillColor = Annotation.Red`.
+- `ColorSwatch_Yellow`: override `FillColor = Annotation.Yellow`.
+- `ColorSwatch_Green`: override `FillColor = Annotation.Green`.
+- `ColorSwatch_Blue`: override `FillColor = Annotation.Blue`.
+- `ColorSwatch_White`: override `FillColor = Annotation.White`.
+- `ColorSwatch_Black`: override `FillColor = Annotation.Black`.
+
+Bước 6: Chọn Board → `Ctrl+K` tạo component.
+
+Bước 7: Tạo properties: `BackgroundColor`, `HeaderTextColor`.
+
+---
+
+## 8. Quan hệ giữa các component
 
 ```mermaid
 graph TD
