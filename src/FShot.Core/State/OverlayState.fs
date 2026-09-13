@@ -118,6 +118,14 @@ module OverlayStateLogic =
     /// Danh sách annotation đã commit từ snapshot hiện tại.
     let committedAnnotations (state: OverlayState) = state.History.Current.Annotations
 
+    /// Kiểm tra key có phải là phím Cancel (Esc / Ctrl+Backspace) hay không.
+    /// Chấp nhận các dạng: Escape, Esc, Ctrl+Backspace, Control+Backspace, Ctrl+Back.
+    let isCancelKey (key: string) : bool =
+        let normalized = key.ToLowerInvariant()
+        normalized.Contains("esc")
+        || normalized.Contains("ctrl+back")
+        || normalized.Contains("control+back")
+
     /// Tạo annotation style từ trạng thái hiện tại.
     let private currentAnnotationStyle (state: OverlayState) = {
         Color = state.CurrentStyle.Color
@@ -335,6 +343,10 @@ module OverlayStateLogic =
             let newState = { state with Selection = Selection.Empty; AnnotationInteraction = NoAnnotation }
             result [ CloseOverlay ] newState
 
+        | SelectionState.Idle, _, KeyDown key when isCancelKey key ->
+            let newState = { state with Selection = Selection.Empty; AnnotationInteraction = NoAnnotation }
+            result [ CloseOverlay ] newState
+
         | SelectionState.Idle, _, Save ->
             let fullScreen =
                 { X = 0.0
@@ -366,6 +378,9 @@ module OverlayStateLogic =
         | SelectionState.Selecting, _, Cancel ->
             emptyResult { state with Selection = Selection.Empty }
 
+        | SelectionState.Selecting, _, KeyDown key when isCancelKey key ->
+            emptyResult { state with Selection = Selection.Empty }
+
         // --- Selected ---
         | SelectionState.Selected, _, PointerPressed point ->
             match state.Selection.HitTestHandle point with
@@ -386,6 +401,10 @@ module OverlayStateLogic =
                         | EditingText(position, _) -> [ ShowTextInput position ]
                         | _ -> []
                     result commands newState
+
+        | SelectionState.Selected, NoAnnotation, KeyDown key when isCancelKey key ->
+            let newState = { state with Selection = Selection.Empty }
+            result [ CloseOverlay ] newState
 
         | SelectionState.Selected, NoAnnotation, KeyDown key ->
             let isShift = key.IndexOf("Shift", StringComparison.OrdinalIgnoreCase) >= 0
@@ -445,6 +464,13 @@ module OverlayStateLogic =
             result [ CloseOverlay ] newState
 
         // --- MovingSelection ---
+        | SelectionState.Moving, _, KeyDown key when isCancelKey key ->
+            let restored =
+                { state.Selection with
+                    State = SelectionState.Selected
+                    Bounds = state.Selection.OriginalBounds }
+            emptyResult { state with Selection = restored }
+
         | SelectionState.Moving, _, PointerMoved point ->
             let newSelection = state.Selection.UpdateMoving point
             let clamped = newSelection.ApplyConstraints state.Capture.VirtualBounds
@@ -455,6 +481,13 @@ module OverlayStateLogic =
             emptyResult { state with Selection = newSelection }
 
         // --- ResizingSelection ---
+        | SelectionState.Resizing _, _, KeyDown key when isCancelKey key ->
+            let restored =
+                { state.Selection with
+                    State = SelectionState.Selected
+                    Bounds = state.Selection.OriginalBounds }
+            emptyResult { state with Selection = restored }
+
         | SelectionState.Resizing _, _, PointerMoved point ->
             let newSelection = state.Selection.UpdateResizing point
             let clamped = newSelection.ApplyConstraints state.Capture.VirtualBounds
@@ -465,6 +498,14 @@ module OverlayStateLogic =
             emptyResult { state with Selection = newSelection }
 
         // --- Annotating ---
+        | _, DrawingPreview _, KeyDown key when isCancelKey key ->
+            let newState = cancelAnnotation state
+            emptyResult newState
+
+        | _, FreehandDrawing _, KeyDown key when isCancelKey key ->
+            let newState = cancelAnnotation state
+            emptyResult newState
+
         | _, DrawingPreview _, PointerMoved point ->
             let newState = { state with AnnotationInteraction = updatePreview point state.AnnotationInteraction }
             emptyResult newState
@@ -484,6 +525,10 @@ module OverlayStateLogic =
             emptyResult (cancelAnnotation state)
 
         // --- TextEditing ---
+        | _, EditingText _, KeyDown key when isCancelKey key ->
+            let newState = cancelAnnotation state
+            result [ HideTextInput ] newState
+
         | _, EditingText _, KeyDown key ->
             if key.Equals("Escape", StringComparison.OrdinalIgnoreCase) then
                 let newState = cancelAnnotation state

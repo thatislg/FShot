@@ -467,6 +467,159 @@ let ``Selected Copy tạo StartExport CopyToClipboard`` () =
     | [ StartExport CopyToClipboard ] -> ()
     | _ -> Assert.True(false, "Expected StartExport CopyToClipboard")
 
+/// Kiểm tra Idle + KeyDown Escape đóng overlay.
+[<Fact>]
+let ``Idle KeyDown Escape đóng overlay`` () =
+    let result = initResult() |> update (KeyDown "Escape")
+    match result.Commands with
+    | [ CloseOverlay ] -> ()
+    | _ -> Assert.True(false, "Expected CloseOverlay command")
+    Assert.Equal(SelectionState.Idle, result.State.Selection.State)
+
+/// Kiểm tra Idle + KeyDown Ctrl+Backspace đóng overlay.
+[<Fact>]
+let ``Idle KeyDown CtrlBackspace đóng overlay`` () =
+    let result = initResult() |> update (KeyDown "Ctrl+Backspace")
+    match result.Commands with
+    | [ CloseOverlay ] -> ()
+    | _ -> Assert.True(false, "Expected CloseOverlay command")
+
+/// Kiểm tra Selecting + KeyDown Escape hủy tạo vùng.
+[<Fact>]
+let ``Selecting KeyDown Escape hủy tạo vùng`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+
+    Assert.Equal(SelectionState.Selecting, state.Selection.State)
+    let result = state |> update (KeyDown "Escape")
+    Assert.Equal(SelectionState.Idle, result.State.Selection.State)
+    Assert.True(result.State.Selection.Bounds.Width = 0.0)
+
+/// Kiểm tra Selected + KeyDown Escape hủy vùng và đóng overlay.
+[<Fact>]
+let ``Selected KeyDown Escape hủy vùng và đóng overlay`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    Assert.Equal(SelectionState.Selected, state.Selection.State)
+    let result = state |> update (KeyDown "Escape")
+    Assert.Equal(SelectionState.Idle, result.State.Selection.State)
+    match result.Commands with
+    | [ CloseOverlay ] -> ()
+    | _ -> Assert.True(false, "Expected CloseOverlay command")
+
+/// Kiểm tra Moving + KeyDown Escape khôi phục vùng gốc.
+[<Fact>]
+let ``Moving KeyDown Escape khôi phục vùng gốc`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 400.0 400.0))
+        |> (fun r -> r.State)
+
+    Assert.Equal(SelectionState.Moving, state.Selection.State)
+    let result = state |> update (KeyDown "Escape")
+    Assert.Equal(SelectionState.Selected, result.State.Selection.State)
+    Assert.Equal(100.0, result.State.Selection.Bounds.X)
+    Assert.Equal(100.0, result.State.Selection.Bounds.Y)
+    Assert.Equal(200.0, result.State.Selection.Bounds.Width)
+    Assert.Equal(100.0, result.State.Selection.Bounds.Height)
+
+/// Kiểm tra Resizing + KeyDown Escape khôi phục vùng gốc.
+[<Fact>]
+let ``Resizing KeyDown Escape khôi phục vùng gốc`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 500.0 500.0))
+        |> (fun r -> r.State)
+
+    Assert.Equal(SelectionState.Resizing BottomRight, state.Selection.State)
+    let result = state |> update (KeyDown "Escape")
+    Assert.Equal(SelectionState.Selected, result.State.Selection.State)
+    Assert.Equal(100.0, result.State.Selection.Bounds.X)
+    Assert.Equal(100.0, result.State.Selection.Bounds.Y)
+    Assert.Equal(200.0, result.State.Selection.Bounds.Width)
+    Assert.Equal(100.0, result.State.Selection.Bounds.Height)
+
+/// Kiểm tra Annotating + KeyDown Escape hủy preview.
+[<Fact>]
+let ``Annotating KeyDown Escape hủy preview`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool LineTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+
+    match state.AnnotationInteraction with
+    | DrawingPreview _ -> ()
+    | _ -> Assert.True(false, "Expected DrawingPreview")
+
+    let result = state |> update (KeyDown "Escape")
+    Assert.Equal(NoAnnotation, result.State.AnnotationInteraction)
+    Assert.Equal(SelectionState.Selected, result.State.Selection.State)
+    Assert.True(result.RenderModel.Preview.IsNone)
+
+/// Kiểm tra TextEditing + KeyDown Escape hủy text input.
+[<Fact>]
+let ``TextEditing KeyDown Escape hủy text input`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool TextTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+
+    match state.AnnotationInteraction with
+    | EditingText _ -> ()
+    | _ -> Assert.True(false, "Expected EditingText")
+
+    let result = state |> update (KeyDown "Escape")
+    Assert.Equal(NoAnnotation, result.State.AnnotationInteraction)
+    Assert.Equal(SelectionState.Selected, result.State.Selection.State)
+    match result.Commands with
+    | [ HideTextInput ] -> ()
+    | _ -> Assert.True(false, "Expected HideTextInput command")
+
 /// Kiểm tra Cancel trong Idle đóng overlay.
 [<Fact>]
 let ``Idle Cancel đóng overlay`` () =

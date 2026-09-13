@@ -93,12 +93,12 @@
   - [x] Xử lý `KeyDown` kèm Shift trong `OverlayState.update`.
   - [x] Triển khai resize 1px theo hướng mũi tên, điều chỉnh cạnh tương ứng của vùng chọn.
   - [x] Kiểm thử 4 hướng co giãn với Shift.
-- [ ] **P1.11** Phím tắt `Esc` / `Ctrl+Backspace` hủy vùng chọn hoặc thoát app (`FR-SEL-11`).
-  - [ ] Rà soát xử lý `Cancel` trong `OverlayState.update` và `Selection.Cancel`.
-  - [ ] Đảm bảo Esc ở `Idle` đóng overlay, ở `Selected` hủy vùng chọn về `Idle`, ở `Selecting` hủy tạo vùng.
-  - [ ] Thêm / cập nhật kiểm thử cho từng trường hợp.
-  - [ ] `Ctrl+Backspace` tương đương Cancel khi có vùng chọn.
-  - [ ] `Ctrl+Backspace` trong `Annotating` hủy preview và quay về `Selected`.
+- [x] **P1.11** Phím tắt `Esc` / `Ctrl+Backspace` hủy vùng chọn hoặc thoát app (`FR-SEL-11`).
+  - [x] Rà soát xử lý `Cancel` trong `OverlayState.update` và `Selection.Cancel`.
+  - [x] Đảm bảo Esc ở `Idle` đóng overlay, ở `Selected` hủy vùng chọn về `Idle`, ở `Selecting` hủy tạo vùng.
+  - [x] Thêm / cập nhật kiểm thử cho từng trường hợp.
+  - [x] `Ctrl+Backspace` tương đương Cancel khi có vùng chọn.
+  - [x] `Ctrl+Backspace` trong `Annotating` hủy preview và quay về `Selected`.
 
 ### Epic 3: Bộ công cụ chú thích (Annotations)
 - [ ] **P1.12** Bút vẽ tự do (Pencil) tích hợp thuật toán làm mịn Bézier (`FR-ANN-01`).

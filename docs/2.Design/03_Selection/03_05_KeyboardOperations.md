@@ -87,10 +87,49 @@ Trong MVP, select all được xử lý gián tiếp qua các command `Save`/`Co
 
 ---
 
-## 5. Kết nối với code
+## 5. Cancel — Esc và Ctrl+Backspace
 
-- `src/FShot.Core/State/OverlayState.fs`: xử lý `KeyDown` cho phím mũi tên và Shift+Arrow trong trạng thái `Selected`.
-- `src/FShot.Core/Domain/Selection.fs`: cung cấp `ApplyConstraints` và `Bounds`.
+### 5.1 Kích hoạt
+
+Hai phím tắt `Esc` và `Ctrl+Backspace` đều được UI layer chuyển thành sự kiện `KeyDown` với chuỗi tương ứng. `OverlayState` nhận diện các chuỗi này và xử lý tương đương với `Cancel`.
+
+Các chuỗi được chấp nhận (không phân biệt hoa thường):
+
+- `"Escape"`, `"Esc"`
+- `"Ctrl+Backspace"`, `"Control+Backspace"`, `"Ctrl+Back"`
+
+### 5.2 Hành vi theo trạng thái
+
+| Trạng thái | Hành vi khi nhấn Esc / Ctrl+Backspace |
+|------------|--------------------------------------|
+| `Idle` | Đóng overlay (`CloseOverlay`). |
+| `Selecting` | Hủy vùng chọn đang tạo, quay về `Idle`. |
+| `Selected` | Hủy vùng chọn, quay về `Idle`. |
+| `Moving` | Hủy thao tác di chuyển, khôi phục `OriginalBounds`, quay về `Selected`. |
+| `Resizing` | Hủy thao tác co giãn, khôi phục `OriginalBounds`, quay về `Selected`. |
+| `Annotating` (DrawingPreview / FreehandDrawing) | Hủy preview annotation, quay về `Selected`. |
+| `TextEditing` (EditingText) | Hủy text input, ẩn text box, quay về `Selected`. |
+
+### 5.3 Phân biệt Esc và Ctrl+Backspace
+
+Trong MVP, cả hai tổ hợp có hành vi giống nhau. Sự khác biệt có thể được mở rộng trong tương lai:
+
+- `Esc`: hủy thao tác hiện tại nhưng không đóng app khi đang ở `Idle`.
+- `Ctrl+Backspace`: luôn đóng app khi ở `Idle`.
+
+Trong MVP, để đơn giản, cả hai đều tương đương `Cancel`.
+
+### 5.4 Kết nối với code
+
+- `src/FShot.Core/State/OverlayState.fs`: thêm hàm `isCancelKey` và xử lý `KeyDown` cancel ở tất cả các trạng thái.
+- UI layer: gửi `"Escape"` hoặc `"Ctrl+Backspace"` qua `OverlayEvent.KeyDown`.
+
+---
+
+## 6. Kết nối với code
+
+- `src/FShot.Core/State/OverlayState.fs`: xử lý `KeyDown` cho phím mũi tên, Shift+Arrow, Esc/Ctrl+Backspace.
+- `src/FShot.Core/Domain/Selection.fs`: cung cấp `ApplyConstraints`, `Bounds`, `Cancel`.
 - UI layer (Avalonia): chuyển đổi sự kiện phím thành `OverlayEvent.KeyDown` với chuỗi key.
 
 ---
