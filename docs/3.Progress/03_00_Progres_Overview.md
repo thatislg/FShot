@@ -1,7 +1,7 @@
 # F-Shot Master Progress Tracking
 
 - **Cập nhật gần nhất:** 2026-09-13
-- **Tiến độ tổng quan:** `[ 10 / 84 ] Tasks hoàn thành (~11.9%)` (Phase 0 PoC đã verify xong; P1.01 domain model và P1.02 HistoryStack đã refactor và pass tests)
+- **Tiến độ tổng quan:** `[ 13 / 84 ] Tasks hoàn thành (~15.5%)` (Phase 0 PoC đã verify xong; P1.01–P1.04 core domain + state machine + tests đã hoàn thiện)
 - **Mục tiêu hiện tại:** Hoàn thiện thiết kế nền tảng Phase 1 (P1.03–P1.04) trước khi viết code tiếp theo
 
 ---
@@ -11,7 +11,7 @@
 | Phase | Mục tiêu | Trạng thái | Hoàn thành |
 | :--- | :--- | :---: | :---: |
 | **Phase 0: PoC** | Khung Solution, Screen Capture, Overlay Canvas, đo 60 FPS | **DONE** | **8 / 8** (đã verify trên desktop Windows) |
-| **Phase 1: MVP Core** | Bounding box, 8 Annotation tools, Undo/Redo, Save/Clipboard | **IN PROGRESS** | 2 / 29 (~7%) |
+| **Phase 1: MVP Core** | Bounding box, 8 Annotation tools, Undo/Redo, Save/Clipboard | **IN PROGRESS** | 5 / 29 (~17%) |
 | **Phase 2: Windows v1.0** | Tray, Hotkeys, Real Capture, Config UI, Pin Widget, Advanced tools | **PENDING** | 0 / 39 (0%) |
 | **Phase 3: Advanced** | Imgur upload, Snap-to-grid, Tùy biến nâng cao | **PENDING** | 0 / 8 (0%) |
 
@@ -48,17 +48,20 @@
   - [x] Triển khai `src/FShot.Core/Domain/History.fs`: `Snapshot`, `HistoryStack`, Push/Undo/Redo/SetLimit.
   - [x] Viết / cập nhật `tests/FShot.Core.Tests/Domain/HistoryTests.fs`; tất cả tests pass.
   - [x] Bỏ qua `05_05_CounterRestoration.md` trong MVP (dành cho v1.x).
-- [ ] **P1.03** F# Overlay State Machine (`Idle` → `Selecting` → `Selected` → `Annotating`).
-  - [ ] Hoàn thiện `docs/2.Design/08_OverlayState/08_02_States.md`.
-  - [ ] Hoàn thiện `docs/2.Design/08_OverlayState/08_03_Events.md`.
-  - [ ] Hoàn thiện `docs/2.Design/08_OverlayState/08_04_Transitions.md`.
-  - [ ] Hoàn thiện `docs/2.Design/08_OverlayState/08_05_RenderModel.md`.
-  - [ ] Hoàn thiện `docs/2.Design/08_OverlayState/08_06_Integration.md`.
-- [ ] **P1.04** Unit tests cho Geometry (Nudge, Resize, Clamp) & History trong `FShot.Core.Tests`.
-  - [ ] Bổ sung / cập nhật `tests/FShot.Core.Tests/Domain/AnnotationTests.fs`.
-  - [ ] Bổ sung `tests/FShot.Core.Tests/Domain/ConfigTests.fs`.
-  - [ ] Bổ sung `tests/FShot.Core.Tests/Domain/HistoryTests.fs`.
-  - [ ] Bổ sung `tests/FShot.Core.Tests/State/OverlayStateTests.fs`.
+- [x] **P1.03** F# Overlay State Machine (`Idle` → `Selecting` → `Selected` → `Annotating`).
+  - [x] Hoàn thiện `docs/2.Design/08_OverlayState/08_02_States.md`.
+  - [x] Hoàn thiện `docs/2.Design/08_OverlayState/08_03_Events.md`.
+  - [x] Hoàn thiện `docs/2.Design/08_OverlayState/08_04_Transitions.md`.
+  - [x] Hoàn thiện `docs/2.Design/08_OverlayState/08_05_RenderModel.md`.
+  - [x] Hoàn thiện `docs/2.Design/08_OverlayState/08_06_Integration.md`.
+  - [x] Triển khai `src/FShot.Core/State/OverlayState.fs`: pure F# state machine, không phụ thuộc UI.
+  - [x] Bổ sung `ToolKind.SelectionTool` trong `src/FShot.Core/Domain/Annotation.fs` để phân biệt di chuyển vùng chọn và vẽ annotation.
+  - [x] Triển khai `ConfigSnapshot` trong `src/FShot.Core/Domain/Config.fs`.
+- [x] **P1.04** Unit tests cho Geometry (Nudge, Resize, Clamp) & History trong `FShot.Core.Tests`.
+  - [x] Bổ sung / cập nhật `tests/FShot.Core.Tests/Domain/AnnotationTests.fs`.
+  - [x] Bổ sung `tests/FShot.Core.Tests/Domain/ConfigTests.fs`.
+  - [x] Bổ sung `tests/FShot.Core.Tests/Domain/HistoryTests.fs`.
+  - [x] Bổ sung `tests/FShot.Core.Tests/State/OverlayStateTests.fs`.
 
 ### Epic 2: Vùng chọn (Selection Engine)
 - [ ] **P1.05** Lớp phủ tối mờ Skia (`FR-SEL-01`) ngoài vùng chọn.
@@ -185,7 +188,7 @@
 ## 6. Báo cáo chi tiết theo task
 
 - **P1.01:** `docs/3.Progress/03_02_P1.01_Design_Report.md`
-- **P1.02:** `docs/3.Progress/03_02_P1.02_Design_Report.md` (bao gồm phân tích lỗi giới hạn và cách sửa)
+- **P1.03:** `docs/3.Progress/03_02_P1.03_Design_Report.md` (thiết kế Overlay State Machine)
 
 ---
 
