@@ -1,6 +1,25 @@
 # UI/UX Mock Penpot — Common Components
 
-> Mô tả các Master Component dùng chung trong workspace Penpot. Mỗi component được thiết kế bằng Flex Layout để tái sử dụng qua các board trạng thái.
+> Trong Penpot (đặc biệt bản self-hosted hiện tại), Component được quản lý qua các **Properties** thay vì Variants truyền thống. Mỗi instance có thể override giá trị properties để thay đổi màu sắc, opacity.
+
+Do đó, thiết kế component trong tài liệu này được mô tả theo cơ chế **Properties**. Với mỗi component, liệt kê:
+- Các properties cần tạo.
+- Giá trị mặc định.
+- Giá trị override cho từng trạng thái (Default, Hover, Active, Disabled).
+
+### Quy tắc đặt tên property
+
+Sử dụng camelCase hoặc PascalCase, không dùng dấu chấm hay dấu gạch chéo vì Penpot có thể không hỗ trợ trong tên property.
+
+Ví dụ:
+- `Fill`
+- `SelectedColor`
+- `IconOpacity`
+- `BorderColor`
+
+### Cách binding với token
+
+Properties không binding trực tiếp vào token trong Penpot. Thay vào đó, khi tạo property bạn nhập giá trị tương ứng token. Tài liệu này cung cấp bảng mapping giá trị để điền vào Penpot.
 
 ## Phân loại component
 
@@ -20,43 +39,69 @@
 
 ```text
 ToolButton (Board 32×32px)
-└── Container (Rectangle 32×32px, bo góc 6px)
-    └── Icon (18×18px, SVG vector, căn giữa)
+└── ToolButton_Background (Rectangle 32×32px, bo góc 6px)
+    └── ToolButton_Icon (SVG 18×18px, vector, căn giữa)
 ```
 
-Thực tế trong Penpot, bạn tạo:
+### 1.3. Properties của ToolButton
 
-1. Board `32 × 32px` tên `ToolButton`.
-2. Rectangle `32 × 32px` tên `ToolButton_Background`, bo góc `Radius.ToolButton = 6px`.
-3. Import SVG icon `18 × 18px`, đặt tên `ToolButton_Icon`, căn giữa trong Board.
+Penpot self-hosted gộp màu và opacity thành một color property duy nhất. Do đó `ToolButton` chỉ cần 2 properties:
 
-Không cần layer shortcut label trong toolbar chính. Phím tắt chỉ hiển thị trong tooltip (tùy chọn, không bắt buộc MVP).
+| Property | Áp dụng cho | Mô tả |
+| :--- | :--- | :--- |
+| `Fill` | `ToolButton_Background` | Màu nền + opacity của nút. Penpot lưu cả hai trong cùng property. |
+| `IconColor` | `ToolButton_Icon` | Màu icon + opacity của icon. Penpot lưu cả hai trong cùng property. |
 
-### 1.3. Variants
+**Lưu ý:** Không tạo `FillOpacity` riêng. Khi thay đổi opacity của `Fill`, nó chỉ ảnh hưởng đến layer Background. Nếu bạn thấy opacity của `IconColor` cũng đổi theo, đó là do bạn đang dùng chung property hoặc Penpot đã gộp hai layer vào cùng property. Kiểm tra lại tên property của từng layer để đảm bảo tách biệt.
 
-Penpot tạo component với 4 variants chính:
+### 1.4. Giá trị properties theo trạng thái
 
-| Variant | Màu nền | Màu icon | Opacity icon | Dùng khi |
-| :--- | :--- | :--- | :--- | :--- |
-| `Default` | Trong suốt (`#FFFFFF`, alpha = 0) | `#FFFFFF` | `0.85` | Nút chưa được chọn, chuột chưa hover. |
-| `Hover` | `#FFFFFF`, alpha = `0.12` | `#FFFFFF` | `1.00` | Chuột đang nằm trên nút. |
-| `Active` | `#7C3AED`, alpha = `1.00` | `#FFFFFF` | `1.00` | Công cụ đang được kích hoạt. |
-| `Disabled` | Trong suốt | `#FFFFFF` | `0.35` | Nút bị vô hiệu hóa, ví dụ Undo khi không có lịch sử. |
+| Trạng thái | `Fill` | `IconColor` |
+| :--- | :--- | :--- |
+| Default | `#FFFFFF` opacity `0` | `#FFFFFF` opacity `0.85` |
+| Hover | `#FFFFFF` opacity `0.12` | `#FFFFFF` opacity `1.00` |
+| Active | `#7C3AED` opacity `1.00` | `#FFFFFF` opacity `1.00` |
+| Disabled | `#FFFFFF` opacity `0` | `#FFFFFF` opacity `0.35` |
 
-### 1.4. Khoảng cách và căn chỉnh
+Cột `Fill` bao gồm cả mã màu và opacity. Cột `IconColor` cũng vậy.
 
-- Board ngoài: `32 × 32px`.
-- Icon bên trong: `18 × 18px`, căn giữa theo cả hai chiều.
-- Container căn giữa icon bằng Flex với `justify-content: center`, `align-items: center`.
-- Không padding bên trong vì icon đã vừa khít vùng nút.
+### 1.5. Mapping với token
 
-### 1.5. Trạng thái transition
+| Property | Trạng thái | Giá trị điền vào Penpot | Token tương ứng |
+| :--- | :--- | :--- | :--- |
+| `Fill` | Default | `#FFFFFF` opacity `0` | `ToolButton.Default.Background` + opacity `0` |
+| `IconColor` | Default | `#FFFFFF` opacity `0.85` | `ToolButton.Default.IconColor` + `ToolButton.Default.IconOpacity` |
+| `Fill` | Hover | `#FFFFFF` opacity `0.12` | `ToolButton.Hover.Background` + `ToolButton.Hover.BackgroundOpacity` |
+| `IconColor` | Hover | `#FFFFFF` opacity `1.00` | `ToolButton.Hover.IconColor` + `ToolButton.Hover.IconOpacity` |
+| `Fill` | Active | `#7C3AED` opacity `1.00` | `ToolButton.Active.Background` + `ToolButton.Active.BackgroundOpacity` |
+| `IconColor` | Active | `#FFFFFF` opacity `1.00` | `ToolButton.Active.IconColor` + `ToolButton.Active.IconOpacity` |
+| `Fill` | Disabled | `#FFFFFF` opacity `0` | `ToolButton.Disabled.Background` + opacity `0` |
+| `IconColor` | Disabled | `#FFFFFF` opacity `0.35` | `ToolButton.Disabled.IconColor` + `ToolButton.Disabled.IconOpacity` |
 
-Khi chuyển variant, không dùng animation phức tạp. Chỉ thay đổi:
+### 1.6. Cách tạo trong Penpot
 
-- Màu nền.
-- Độ mờ icon.
-- Không thay đổi kích thước board để tránh layout shift.
+Bước 1: Tạo Board `32 × 32px` tên `ToolButton`.
+
+Bước 2: Vẽ Rectangle `32 × 32px` tên `ToolButton_Background`, bo góc `Radius.ToolButton = 6px`.
+
+Bước 3: Import SVG icon `18 × 18px`, đặt tên `ToolButton_Icon`, căn giữa trong Board.
+
+Bước 4: Chọn Board → `Ctrl+K` tạo component.
+
+Bước 5: Chọn `ToolButton_Background`, tạo property tên `Fill` từ fill hiện tại. Giá trị mặc định: `#FFFFFF` opacity `0`.
+
+Bước 6: Chọn `ToolButton_Icon`, tạo property tên `IconColor` từ fill hiện tại. Giá trị mặc định: `#FFFFFF` opacity `0.85`.
+
+Bước 7: Kiểm tra panel properties của component. Phải thấy 2 properties riêng biệt: `Fill` và `IconColor`. Nếu thấy tên khác hoặc chỉ có 1 property, kiểm tra lại việc tạo property từ đúng layer.
+
+### 1.7. Khi dùng instance
+
+Mỗi instance của `ToolButton` sẽ có 2 ô properties ở panel bên phải. Bạn nhập giá trị tương ứng trạng thái:
+
+- Nút chưa chọn: `Fill = #FFFFFF opacity 0`, `IconColor = #FFFFFF opacity 0.85`.
+- Nút hover: `Fill = #FFFFFF opacity 0.12`, `IconColor = #FFFFFF opacity 1.00`.
+- Nút active: `Fill = #7C3AED opacity 1.00`, `IconColor = #FFFFFF opacity 1.00`.
+- Nút disabled: `Fill = #FFFFFF opacity 0`, `IconColor = #FFFFFF opacity 0.35`.
 
 ---
 
@@ -94,10 +139,11 @@ BottomToolbar_Container (auto-width × 40px)
 
 - Chiều cao cố định: `40px`.
 - Chiều rộng tự động theo số lượng nút.
-- Padding ngang: `8px`; padding dọc: `4px`.
-- Khoảng cách giữa các nút trong cùng nhóm: `4px`.
-- Khoảng cách giữa hai nhóm qua separator: `8px` tính từ mép nút cuối nhóm 1 đến separator, và `8px` từ separator đến nút đầu nhóm 2.
+- Padding ngang: `Spacing.Toolbar.PaddingX = 8px`; padding dọc: `Spacing.Toolbar.PaddingY = 4px`.
+- Khoảng cách giữa các nút trong cùng nhóm: `Spacing.Toolbar.InnerGap = 4px`.
+- Khoảng cách giữa hai nhóm qua separator: `Spacing.Toolbar.GroupGap = 8px` tính từ mép nút cuối nhóm 1 đến separator, và `8px` từ separator đến nút đầu nhóm 2.
 - Separator là hình chữ nhật đứng `1px × 20px`, căn giữa theo chiều dọc trong toolbar.
+- Các ToolButton instance bên trong là instance của component `ToolButton`, mỗi instance override properties theo trạng thái.
 
 ### 2.4. Góc cạnh và bóng đổ
 
@@ -113,6 +159,8 @@ Khi vùng chọn nằm gần cạnh màn hình:
 - Nếu vùng chọn ở sát biên dưới màn hình, toolbar hiển thị ở mép trên vùng chọn thay vì mép dưới.
 - Khoảng cách tối thiểu từ toolbar đến biên màn hình: `8px`.
 
+Trong Penpot, hành vi responsive không thể thể hiện bằng prototype. Thiết kế tĩnh nên có thêm một board phụ `Toolbar_Positioning_Grid` minh họa 4 trường hợp đặt toolbar: bình thường, sát phải, sát dưới, góc dưới-phải.
+
 ---
 
 ## 3. Component `ResizeHandle`
@@ -124,17 +172,28 @@ Khi vùng chọn nằm gần cạnh màn hình:
 ### 3.2. Cấu trúc layer
 
 ```text
-ResizeHandle (8×8px)
-├── VisibleSquare (8×8px, fill cyan, stroke đen 1px)
-└── HitTestArea (16×16px, trong suốt, nằm centered xung quanh VisibleSquare)
+ResizeHandle (Board 16×16px)
+├── ResizeHandle_VisibleSquare (Rectangle 8×8px, fill cyan, stroke đen 1px, căn giữa Board)
+└── ResizeHandle_HitTestArea (Rectangle 16×16px, trong suốt, nằm dưới VisibleSquare hoặc phía trên)
 ```
 
-### 3.3. Kích thước
+Lưu ý: `HitTestArea` là hình chữ nhật trong suốt full Board để designer thấy vùng bắt chuột. Layer này không hiển thị khi render.
 
-- Hình vuông hiển thị: `8 × 8px`.
-- Vùng bắt chuột mở rộng: `16 × 16px`.
-- Stroke ngoài: `1px` màu đen.
-- Fill: màu cyan `#00E5FF` không trong suốt.
+### 3.3. Properties của ResizeHandle
+
+| Property | Áp dụng cho | Mô tả |
+| :--- | :--- | :--- |
+| `FillColor` | `ResizeHandle_VisibleSquare` | Màu nền + opacity của hình vuông hiển thị. |
+| `StrokeColor` | `ResizeHandle_VisibleSquare` | Màu viền + opacity. |
+| `StrokeWidth` | `ResizeHandle_VisibleSquare` | Độ dày viền. |
+
+### 3.4. Giá trị mặc định
+
+| Property | Giá trị điền vào Penpot | Token tương ứng |
+| :--- | :--- | :--- |
+| `FillColor` | `#00E5FF` opacity `1.00` | `Handle.FillColor` + `Handle.FillOpacity` |
+| `StrokeColor` | `#000000` opacity `1.00` | `Handle.StrokeColor` + `Handle.StrokeOpacity` |
+| `StrokeWidth` | `1px` | `Handle.StrokeWidth` |
 
 ### 3.4. Vị trí 8 handle
 
@@ -173,16 +232,30 @@ Mỗi handle được vẽ sao cho tâm của nó trùng với tọa độ trên
 ### 4.2. Cấu trúc layer
 
 ```text
-DimensionBadge (auto-width × 18px)
-├── Background (nền accent, bo góc 4px)
-└── TextLabel (font 11px, màu trắng, weight 600)
+DimensionBadge (Board auto-width × 18px)
+├── DimensionBadge_Background (Rectangle full Board, bo góc 4px)
+└── DimensionBadge_Text (Text 11px, màu trắng, weight 600)
 ```
 
-### 4.3. Nội dung văn bản
+### 4.3. Properties của DimensionBadge
+
+| Property | Áp dụng cho | Mô tả |
+| :--- | :--- | :--- |
+| `BackgroundColor` | `DimensionBadge_Background` | Màu nền + opacity của badge. |
+| `TextColor` | `DimensionBadge_Text` | Màu chữ + opacity. |
+
+### 4.4. Giá trị mặc định
+
+| Property | Giá trị điền vào Penpot | Token tương ứng |
+| :--- | :--- | :--- |
+| `BackgroundColor` | `#7C3AED` opacity `0.95` | `Badge.BackgroundColor` + `Badge.BackgroundOpacity` |
+| `TextColor` | `#FFFFFF` opacity `1.00` | `Badge.TextColor` + `Badge.TextOpacity` |
+
+### 4.5. Nội dung văn bản
 
 - Khi đang kéo tạo vùng chọn hoặc resize: `"{Width} × {Height}"`.
 - Khi đã chọn xong và cần thông tin đầy đủ (tùy chọn): `"{Width} × {Height} @ {X},{Y}"`.
-- Font: `Segoe UI`, `11px`, `weight 600`.
+- Font: `Text.FontFamily`, size `Text.Badge.FontSize`, weight `Text.Weight.Semibold`.
 
 ### 4.4. Vị trí
 
@@ -207,13 +280,20 @@ ColorSwatch (20×20px, hình tròn)
 └── OuterRing (20×20px, viền trắng 1px, hiển thị khi swatch đang active)
 ```
 
-### 5.3. Variants
+### 5.3. Properties của ColorSwatch
 
-| Variant | Mô tả |
-| :--- | :--- |
-| `Default` | Hình tròn tô màu, viền mờ `1px` trắng `30%` opacity. |
-| `Active` | Hình tròn tô màu, viền trắng `2px` đậm hơn, kích thước ngoài `20px`. |
-| `Hover` | Tô thêm lớp trắng mờ `10%` lên trên màu gốc. |
+| Property | Áp dụng cho | Mô tả |
+| :--- | :--- | :--- |
+| `FillColor` | `ColorSwatch_FillCircle` | Màu của ô màu. |
+| `RingOpacity` | `ColorSwatch_OuterRing` | Độ đục viền active. |
+
+### 5.4. Giá trị mặc định
+
+| Trạng thái | `FillColor` | `RingOpacity` |
+| :--- | :--- | :--- |
+| Default | `Annotation.Red` opacity `1.00` | viền trắng `0.30` |
+| Hover | `Annotation.Red` opacity `1.00` + overlay trắng `0.10` | viền trắng `0.50` |
+| Active | `Annotation.Red` opacity `1.00` | viền trắng `1.00` |
 
 ---
 
@@ -313,33 +393,37 @@ Bước 6: Tạo Flex Layout ngang tên `BottomToolbar_FlexGroup`:
 - Gap giữa các phần tử: tính theo `Spacing.Toolbar.InnerGap` và `Spacing.Toolbar.GroupGap`.
 - Padding: `Spacing.Toolbar.PaddingX` ngang, `Spacing.Toolbar.PaddingY` dọc.
 
-Bước 7: Tạo nhóm `Group_AnnotationTools`, thêm 8 instance của `ToolButton`.
+Bước 7: Tạo nhóm `Group_AnnotationTools`, thêm 8 instance của `ToolButton`. Mỗi instance override properties theo trạng thái Default.
 
 Bước 8: Tạo Separator: Rectangle `1 × 20px` tên `BottomToolbar_Separator`, màu `Toolbar.SeparatorColor`, opacity `Toolbar.SeparatorOpacity`.
 
-Bước 9: Tạo nhóm `Group_ActionTools`, thêm 5 instance của `ToolButton`.
+Bước 9: Tạo nhóm `Group_ActionTools`, thêm 5 instance của `ToolButton`. Mỗi instance override properties theo trạng thái Default.
 
 Bước 10: Đảm bảo khoảng cách giữa 2 nhóm qua separator là `2 × Spacing.Toolbar.GroupGap + Toolbar.SeparatorWidth`.
 
 ### 9.3. Tạo `ResizeHandle`
 
-Bước 1: Tạo Board mới tên `ResizeHandle`, kích thước `16 × 16px` (vùng bắt chuột). Board này là hit-test area.
+Bước 1: Tạo Board `16 × 16px` tên `ResizeHandle`.
 
 Bước 2: Vẽ Rectangle `8 × 8px` tên `ResizeHandle_VisibleSquare`, căn giữa trong Board.
 
-Bước 3: Fill `Handle.FillColor`, opacity `Handle.FillOpacity`.
+Bước 3: Fill `Handle.FillColor` với opacity `Handle.FillOpacity`.
 
 Bước 4: Stroke `Handle.StrokeWidth`, màu `Handle.StrokeColor`, opacity `Handle.StrokeOpacity`.
 
-Bước 5: (Tùy chọn) Thêm Rectangle `16 × 16px` tên `ResizeHandle_HitTestArea`, trong suốt hoàn toàn, nằm centered. Layer này giúp designer và developer thấy rõ vùng bắt chuột.
+Bước 5: (Tùy chọn) Vẽ Rectangle `16 × 16px` tên `ResizeHandle_HitTestArea`, trong suốt hoàn toàn. Layer này giúp designer thấy vùng bắt chuột.
+
+Bước 6: Chọn Board → `Ctrl+K` tạo component.
+
+Bước 7: Tạo các properties: `FillColor`, `StrokeColor`, `StrokeWidth` với giá trị mặc định theo token.
 
 ### 9.4. Tạo `DimensionBadge`
 
-Bước 1: Tạo Board mới tên `DimensionBadge`, chiều cao `Size.Badge.Height = 18px`, chiều rộng tự động.
+Bước 1: Tạo Board tên `DimensionBadge`, chiều cao `Size.Badge.Height = 18px`, chiều rộng tự động.
 
 Bước 2: Vẽ Rectangle nền tên `DimensionBadge_Background`, bo góc `Radius.Badge = 4px`.
 
-Bước 3: Fill `Badge.BackgroundColor`, opacity `Badge.BackgroundOpacity`.
+Bước 3: Fill `Badge.BackgroundColor` với opacity `Badge.BackgroundOpacity`.
 
 Bước 4: Thêm Text tên `DimensionBadge_Text`, nội dung mẫu `"800 × 500"`.
 
@@ -347,36 +431,57 @@ Bước 5: Font: `Text.FontFamily`, size `Text.Badge.FontSize`, weight `Text.Wei
 
 Bước 6: Padding ngang `Size.Badge.PaddingX`, padding dọc `Size.Badge.PaddingY`.
 
+Bước 7: Chọn Board → `Ctrl+K` tạo component.
+
+Bước 8: Tạo properties: `BackgroundColor`, `TextColor`. Mỗi property bao gồm cả màu và opacity. Không cần tạo property opacity riêng.
+
 ### 9.5. Tạo `ColorSwatch`
 
-Bước 1: Tạo Board mới tên `ColorSwatch`, kích thước `20 × 20px`.
+Bước 1: Tạo Board `20 × 20px` tên `ColorSwatch`.
 
 Bước 2: Vẽ Ellipse `18 × 18px` tên `ColorSwatch_FillCircle`, căn giữa.
 
-Bước 3: Fill binding về token màu annotation tương ứng (ví dụ `Annotation.Red`).
+Bước 3: Fill binding về `Annotation.Red` (hoặc màu annotation tương ứng).
 
-Bước 4: Vẽ Ellipse `20 × 20px` tên `ColorSwatch_OuterRing`, nằm dưới FillCircle, màu trắng `30%` opacity variant Default, `100%` opacity variant Active.
+Bước 4: Vẽ Ellipse `20 × 20px` tên `ColorSwatch_OuterRing`, nằm dưới FillCircle, màu trắng opacity `0.30`.
 
-Bước 5: Tạo variants `Default`, `Hover`, `Active`. Variant Hover thêm overlay trắng mờ `10%`.
+Bước 5: Chọn Board → `Ctrl+K` tạo component.
+
+Bước 8: Tạo properties: `FillColor`, `RingOpacity`. `FillColor` bao gồm cả màu và opacity; `RingOpacity` là độ đục của viền trắng.
+
+Bước 7: Khi dùng instance, override `FillColor` theo màu mong muốn.
 
 ---
 
-## 10. Bảng binding token cho từng component
+## 10. Bảng binding property cho từng component
 
-| Component | Layer | Fill / Stroke / Text | Token | Notes |
+| Component | Layer | Property | Giá trị mặc định điền vào Penpot | Token tương ứng |
 | :--- | :--- | :--- | :--- | :--- |
-| `ToolButton` | Container | Fill color | `ToolButton.{Variant}.Background` | Opacity theo variant. |
-| `ToolButton` | Icon | Fill color | `ToolButton.{Variant}.IconColor` | Opacity theo variant. |
-| `BottomToolbar` | Background | Fill color | `Toolbar.BackgroundColor` | Opacity `Toolbar.BackgroundOpacity`. |
-| `BottomToolbar` | Background | Stroke color | `Toolbar.BorderColor` | Width `Toolbar.BorderWidth`, opacity `Toolbar.BorderOpacity`. |
-| `BottomToolbar` | Background | Shadow | `Toolbar.ShadowColor` | Opacity, blur, offset theo token. |
-| `BottomToolbar` | Separator | Fill color | `Toolbar.SeparatorColor` | Opacity `Toolbar.SeparatorOpacity`. |
-| `ResizeHandle` | VisibleSquare | Fill color | `Handle.FillColor` | Opacity `Handle.FillOpacity`. |
-| `ResizeHandle` | VisibleSquare | Stroke color | `Handle.StrokeColor` | Width `Handle.StrokeWidth`, opacity `Handle.StrokeOpacity`. |
-| `DimensionBadge` | Background | Fill color | `Badge.BackgroundColor` | Opacity `Badge.BackgroundOpacity`. |
-| `DimensionBadge` | Text | Text color | `Badge.TextColor` | Opacity `Badge.TextOpacity`. |
-| `DimensionBadge` | Text | Font size | `Text.Badge.FontSize` | Weight `Text.Weight.Semibold`. |
-| `ColorSwatch` | FillCircle | Fill color | `Annotation.{ColorName}` | Ví dụ `Annotation.Red`. |
+| `ToolButton` | Background | `Fill` | `#FFFFFF` opacity `0` | `ToolButton.Default.Background` + opacity `0` |
+| `ToolButton` | Icon | `IconColor` | `#FFFFFF` opacity `0.85` | `ToolButton.Default.IconColor` + `ToolButton.Default.IconOpacity` |
+| `BottomToolbar` | Background | Fill | `#1E1E2E` opacity `0.95` | `Toolbar.BackgroundColor` + `Toolbar.BackgroundOpacity` |
+| `BottomToolbar` | Background | Stroke | `#FFFFFF` opacity `0.10`, width `1px` | `Toolbar.BorderColor` + `Toolbar.BorderOpacity` + `Toolbar.BorderWidth` |
+| `BottomToolbar` | Background | Shadow | `#000000` opacity `0.40`, blur `12px`, offsetY `4px` | `Toolbar.ShadowColor` + `Toolbar.ShadowOpacity` + `Toolbar.ShadowBlur` + `Toolbar.ShadowOffsetY` |
+| `BottomToolbar` | Separator | Fill | `#FFFFFF` opacity `0.15` | `Toolbar.SeparatorColor` + `Toolbar.SeparatorOpacity` |
+| `ResizeHandle` | VisibleSquare | `FillColor` | `#00E5FF` opacity `1.00` | `Handle.FillColor` + `Handle.FillOpacity` |
+| `ResizeHandle` | VisibleSquare | `StrokeColor` | `#000000` opacity `1.00`, width `1px` | `Handle.StrokeColor` + `Handle.StrokeOpacity` + `Handle.StrokeWidth` |
+| `DimensionBadge` | Background | `BackgroundColor` | `#7C3AED` opacity `0.95` | `Badge.BackgroundColor` + `Badge.BackgroundOpacity` |
+| `DimensionBadge` | Text | `TextColor` | `#FFFFFF` opacity `1.00` | `Badge.TextColor` + `Badge.TextOpacity` |
+| `ColorSwatch` | FillCircle | `FillColor` | `#EF4444` opacity `1.00` | `Annotation.Red` |
+| `ColorSwatch` | OuterRing | `RingOpacity` | trắng opacity `0.30` | - |
+
+## 11. Override properties cho từng trạng thái ToolButton
+
+Khi kéo instance ToolButton vào Board màn hình, nhập giá trị 2 properties `Fill` và `IconColor` theo bảng sau. Mỗi property đã bao gồm cả màu và opacity.
+
+| Trạng thái | `Fill` | `IconColor` |
+| :--- | :--- | :--- |
+| Default | `#FFFFFF` opacity `0` | `#FFFFFF` opacity `0.85` |
+| Hover | `#FFFFFF` opacity `0.12` | `#FFFFFF` opacity `1.00` |
+| Active | `#7C3AED` opacity `1.00` | `#FFFFFF` opacity `1.00` |
+| Disabled | `#FFFFFF` opacity `0` | `#FFFFFF` opacity `0.35` |
+
+**Lưu ý về Penpot:** Khi property là color, Penpot tự động gộp mã màu và opacity. Nếu bạn thấy đổi opacity của một property mà property khác cũng đổi theo, đó là do hai property đang dùng chung layer hoặc tên property trùng nhau. Kiểm tra lại tên property của từng layer để đảm bảo tách biệt.
 
 ---
 
@@ -404,16 +509,16 @@ Tất cả icon dùng `currentColor` để trong Avalonia có thể đổi màu 
 
 ## 13. Workflow tạo Component trong Penpot (quan trọng)
 
-Trong Penpot, component được tạo từ một **Board** hoặc một **nhóm layer**. Workflow chuẩn:
+Trong Penpot self-hosted hiện tại, Component được quản lý qua **Properties** thay vì Variants truyền thống. Workflow chuẩn:
 
 ### Bước 1: Tạo Board
-- Trên Page `00_CommonComponent`, click **Board tool** hoặc nhấn `B`.
-- Vẽ Board với kích thước chuẩn, ví dụ `32 × 32px` cho `ToolButton`, `16 × 16px` cho `ResizeHandle`.
+- Trên Page `00_CommonComponent`, chọn **Board tool** hoặc nhấn `B`.
+- Vẽ Board với kích thước chuẩn.
 - Đặt tên Board theo component, ví dụ `ToolButton`, `ResizeHandle`.
 
 ### Bước 2: Vẽ layer bên trong Board
-- Thêm các layer cần thiết: Background rectangle, Icon SVG, Text, v.v.
-- Gán fill/stroke/text bằng token đã import.
+- Thêm các layer cần thiết: Background rectangle, Icon SVG, Text, Ellipse.
+- Gán fill/stroke/text bằng giá trị từ token.
 - Đặt tên layer theo quy tắc ở mục 8.
 
 ### Bước 3: Chuyển Board thành Component
@@ -421,21 +526,25 @@ Trong Penpot, component được tạo từ một **Board** hoặc một **nhóm
 - Nhấn `Ctrl + K` hoặc right-click → **Create component**.
 - Board bây giờ là **Main Component**, hiển thị viền tím.
 
-### Bước 4: Tạo Variants (nếu cần)
-- Click chọn component.
-- Trong panel bên phải, chọn **Variants** → **Add variant**.
-- Tạo các variant: Default, Hover, Active, Disabled.
-- Mỗi variant thay đổi fill, stroke, opacity theo bảng binding token.
+### Bước 4: Tạo Properties
+- Chọn từng layer con trong Board component.
+- Ở panel bên phải, tìm mục **Properties**.
+- Click **Add property** hoặc biểu tượng `+` cạnh Fill/Stroke/Text.
+- Đặt tên property theo bảng binding trong mục 10.
+- Nhập giá trị mặc định tương ứng token.
 
-### Bước 5: Sử dụng Component
+### Bước 5: Override properties trên Instance
 - Sang Page `01_CaptureOverlay`, mở tab **Components** ở sidebar trái.
 - Kéo component từ thư viện vào Board màn hình.
-- Instance có thể đổi variant từ panel bên phải.
+- Click chọn instance vừa kéo.
+- Ở panel bên phải, bạn sẽ thấy các properties đã tạo.
+- Nhập giá trị override theo trạng thái (Default, Hover, Active, Disabled).
 
 ### Lưu ý quan trọng
 - Nếu double-click vào instance, Penpot đưa bạn vào **component edit mode**. Breadcrumb sẽ hiển thị `Page > Component`. Để thoát, click vào tên Page trong breadcrumb hoặc nhấn `Esc` nhiều lần.
 - Khi đang ở component edit mode, `Ctrl+K` không tạo component mới mà chỉ thêm object vào component đang edit.
 - Luôn đảm bảo ở ngoài Page trước khi tạo component mới.
+- Penpot self-hosted có thể gọi properties với tên khác nhau (ví dụ `Fill`, `Selected Color`). Tên trong tài liệu là gợi ý; bạn có thể đặt tên tương tự nhưng phải nhất quán trong cùng một component.
 
 - Mỗi component Master nên được đặt trong Board riêng với kích thước chuẩn, ví dụ `ToolButton` trong Board `32 × 32px`.
 - Dùng **Variants** của Penpot để quản lý Default / Hover / Active / Disabled.
