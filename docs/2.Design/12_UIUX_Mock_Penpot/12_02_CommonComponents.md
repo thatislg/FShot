@@ -2,6 +2,12 @@
 
 > Mô tả các Master Component dùng chung trong workspace Penpot. Mỗi component được thiết kế bằng Flex Layout để tái sử dụng qua các board trạng thái.
 
+## Phân loại component
+
+- **Bắt buộc cho Phase 1:** `ToolButton`, `BottomToolbar_Container`, `ResizeHandle`, `DimensionBadge`.
+- **Phụ trợ:** `ColorSwatch` (dùng cho Color Picker Popup), `TooltipHint` (nice-to-have, không bắt buộc MVP).
+- **Không phải component Penpot:** icon SVG. Đây là tài nguyên vector import vào bên trong `ToolButton`.
+
 ---
 
 ## 1. Component `ToolButton`

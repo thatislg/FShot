@@ -22,6 +22,24 @@ Dự án Penpot được chia thành 3 Page chính:
 
 Chứa toàn bộ Design Tokens và Master Components. Đây là thư viện dùng chung để lắp ráp các màn hình.
 
+Các Master Components bắt buộc cho Phase 1:
+
+| Component | Mục đích | Ghi chú |
+| :--- | :--- | :--- |
+| `ToolButton` | Nút công cụ vuông `32×32` | Có 4 variants: Default, Hover, Active, Disabled. |
+| `BottomToolbar_Container` | Vỏ bọc thanh công cụ `40px` cao | Chứa ToolButton instances, separator, shadow. |
+| `ResizeHandle` | Điểm neo co giãn `8×8` hiển thị, hit area `16×16` | Dùng 8 instance quanh vùng chọn. |
+| `DimensionBadge` | Badge kích thước `18px` cao | Hiển thị `Width × Height`. |
+
+Các component phụ trợ:
+
+| Component | Mục đích | Ghi chú |
+| :--- | :--- | :--- |
+| `ColorSwatch` | Ô màu tròn nhỏ trong Color Picker | Dùng trong `State_05_Color_Picker_Popup`. |
+| `TooltipHint` | Tooltip tên công cụ + phím tắt | Không bắt buộc trong MVP. |
+
+Icon SVG cho các nút toolbar là tài nguyên vector, không phải component. Danh sách icon nằm trong `12_02_CommonComponents.md`.
+
 ### Page 2: `01_CaptureOverlay`
 
 Chứa các Board mô tả vòng đời trạng thái của màn hình chụp. Là trọng tâm cho Phase 1.
@@ -44,7 +62,9 @@ Chứa mockup cho System Tray, Pin Window, và Settings Window. Dành cho Phase 
         ├── ToolButton
         ├── BottomToolbar_Container
         ├── ResizeHandle
-        └── DimensionBadge
+        ├── DimensionBadge
+        ├── ColorSwatch
+        └── TooltipHint
 
 📁 Page: 01_CaptureOverlay
   ├── 🖼️ Board: State_01_Idle_Dimmed
