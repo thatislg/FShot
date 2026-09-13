@@ -204,6 +204,40 @@ let ``Di chuyển vùng chọn`` () =
     Assert.Equal(300.0, finished.Bounds.Width)
     Assert.Equal(200.0, finished.Bounds.Height)
 
+/// Kiểm tra di chuyển vùng chọn theo hướng âm.
+[<Fact>]
+let ``Di chuyển vùng chọn theo hướng âm`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 300.0 250.0 200.0 150.0 }
+    let moving = sel.StartMoving(point 400.0 325.0)
+    let updated = moving.UpdateMoving(point 350.0 275.0)
+    let finished = updated.FinishInteraction()
+    Assert.Equal(250.0, finished.Bounds.X)
+    Assert.Equal(200.0, finished.Bounds.Y)
+    Assert.Equal(200.0, finished.Bounds.Width)
+    Assert.Equal(150.0, finished.Bounds.Height)
+
+/// Kiểm tra di chuyển vùng chọn ra sát biên trái/trên bị giới hạn.
+[<Fact>]
+let ``Di chuyển vùng chọn bị giới hạn ở biên trái trên`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 50.0 50.0 200.0 150.0 }
+    let moving = sel.StartMoving(point 100.0 100.0)
+    let updated = moving.UpdateMoving(point -50.0 -30.0)
+    let clamped = updated.ApplyConstraints captureBounds
+    Assert.Equal(Moving, clamped.State)
+    Assert.Equal(0.0, clamped.Bounds.X)
+    Assert.Equal(0.0, clamped.Bounds.Y)
+    Assert.Equal(200.0, clamped.Bounds.Width)
+    Assert.Equal(150.0, clamped.Bounds.Height)
+
+    let finished = clamped.FinishInteraction()
+    Assert.Equal(Selected, finished.State)
+
 /// Kiểm tra di chuyển vùng chọn ra sát biên phải/dưới bị giới hạn.
 [<Fact>]
 let ``Di chuyển vùng chọn bị giới hạn ở biên phải dưới`` () =
@@ -222,6 +256,32 @@ let ``Di chuyển vùng chọn bị giới hạn ở biên phải dưới`` () =
 
     let finished = clamped.FinishInteraction()
     Assert.Equal(Selected, finished.State)
+
+/// Kiểm tra nhấn và nhả tại cùng điểm bên trong vùng không di chuyển.
+[<Fact>]
+let ``Nhấn nhả tại cùng điểm không di chuyển vùng`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let moving = sel.StartMoving(point 150.0 150.0)
+    let updated = moving.UpdateMoving(point 150.0 150.0)
+    let finished = updated.FinishInteraction()
+    Assert.Equal(Selected, finished.State)
+    Assert.Equal(100.0, finished.Bounds.X)
+    Assert.Equal(80.0, finished.Bounds.Y)
+
+/// Kiểm tra UpdateMoving bỏ qua khi không ở trạng thái Moving.
+[<Fact>]
+let ``UpdateMoving bỏ qua khi không ở trạng thái Moving`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let updated = sel.UpdateMoving(point 500.0 500.0)
+    Assert.Equal(Selected, updated.State)
+    Assert.Equal(100.0, updated.Bounds.X)
+    Assert.Equal(80.0, updated.Bounds.Y)
 
 /// Kiểm tra co giãn bằng handle BottomRight.
 /// Công thức: W = mx - X, H = my - Y.

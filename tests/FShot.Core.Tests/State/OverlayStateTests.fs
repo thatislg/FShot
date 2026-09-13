@@ -80,6 +80,69 @@ let ``Selecting PointerReleased quá nhỏ quay về Idle`` () =
     Assert.Equal(SelectionState.Idle, result.State.Selection.State)
     Assert.False(result.RenderModel.ToolbarVisible)
 
+/// Kiểm tra Selected + PointerPressed trên handle bắt đầu Resizing.
+[<Fact>]
+let ``Selected PointerPressed trên handle bắt đầu Resizing`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    // BottomRight handle của vùng (100,100,200,100) nằm tại (300,200)
+    let result = state |> update (PointerPressed(point 300.0 200.0))
+    Assert.Equal(SelectionState.Resizing BottomRight, result.State.Selection.State)
+
+/// Kiểm tra Moving + PointerReleased chuyển sang Selected.
+[<Fact>]
+let ``Moving PointerReleased chuyển sang Selected`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    let moving = state |> update (PointerPressed(point 150.0 150.0))
+    Assert.Equal(SelectionState.Moving, moving.State.Selection.State)
+
+    let moved = moving.State |> update (PointerMoved(point 200.0 180.0))
+    Assert.Equal(150.0, moved.State.Selection.Bounds.X)
+    Assert.Equal(130.0, moved.State.Selection.Bounds.Y)
+    Assert.Equal(200.0, moved.State.Selection.Bounds.Width)
+    Assert.Equal(100.0, moved.State.Selection.Bounds.Height)
+
+    let finished = moved.State |> update PointerReleased
+    Assert.Equal(SelectionState.Selected, finished.State.Selection.State)
+    Assert.True(finished.RenderModel.ToolbarVisible)
+
+/// Kiểm tra Resizing + PointerReleased chuyển sang Selected.
+[<Fact>]
+let ``Resizing PointerReleased chuyển sang Selected`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    let resizing = state |> update (PointerPressed(point 300.0 200.0))
+    Assert.Equal(SelectionState.Resizing BottomRight, resizing.State.Selection.State)
+
+    let resized = resizing.State |> update (PointerMoved(point 400.0 300.0))
+    Assert.Equal(300.0, resized.State.Selection.Bounds.Width)
+    Assert.Equal(200.0, resized.State.Selection.Bounds.Height)
+
+    let finished = resized.State |> update PointerReleased
+    Assert.Equal(SelectionState.Selected, finished.State.Selection.State)
+
 /// Kiểm tra Selected + PointerPressed ngoài vùng bắt đầu vùng chọn mới.
 [<Fact>]
 let ``Selected PointerPressed ngoài vùng bắt đầu Selecting mới`` () =

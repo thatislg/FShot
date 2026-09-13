@@ -114,26 +114,57 @@ Vùng mới: `(100, 80, 350, 270)`.
 
 ---
 
-## 5. Công thức di chuyển
+## 5. Di chuyển toàn bộ vùng chọn (Moving)
 
-Cho điểm bắt đầu kéo `(sx, sy)` và điểm chuột hiện tại `(mx, my)`:
+Khi người dùng nhấn chuột **bên trong** vùng chọn đã `Selected` và **không** trên handle, vùng chọn chuyển sang trạng thái `Moving`.
+
+### 5.1 Bắt đầu di chuyển
+
+Khi nhận `PointerPressed` tại `P_s`:
+
+- Lưu `OriginalBounds` là `Bounds` hiện tại.
+- Lưu `DragStart = P_s`.
+- Chuyển `State` từ `Selected` sang `Moving`.
+
+Lưu ý: thứ tự ưu tiên tại mục 2.1 đảm bảo handle được xử lý trước; nếu `HitTestHandle` trả về handle, hệ thống chuyển sang `Resizing` thay vì `Moving`.
+
+### 5.2 Cập nhật vị trí trong lúc kéo
+
+Cho điểm bắt đầu kéo `P_s = (sx, sy)` và điểm chuột hiện tại `P_c = (cx, cy)`. Vector dịch chuyển:
 
 ```text
-dx = mx - sx
-dy = my - sy
-
-newX = originalX + dx
-newY = originalY + dy
+dx = cx - sx
+dy = cy - sy
 ```
 
-Ví dụ: vùng gốc `(100, 80, 300, 200)`, bắt đầu kéo tại `(150, 150)`, chuột hiện tại `(200, 130)`:
+Vùng chọn tạm thời trong trạng thái `Moving`:
 
-- `dx = 200 - 150 = 50`
-- `dy = 130 - 150 = -20`
-- `newX = 100 + 50 = 150`
-- `newY = 80 - 20 = 60`
+```text
+X_t = OriginalBounds.X + dx
+Y_t = OriginalBounds.Y + dy
+W_t = OriginalBounds.Width
+H_t = OriginalBounds.Height
+```
 
-Vùng mới: `(150, 60, 300, 200)`.
+Kích thước không thay đổi khi di chuyển; chỉ có vị trí gốc thay đổi.
+
+### 5.3 Ràng buộc khi di chuyển
+
+Sau mỗi lần cập nhật, `Bounds` được `ApplyConstraints` để nằm hoàn toàn trong capture area. Điều này có nghĩa:
+
+- Nếu vùng bị kéo ra ngoài bên trái, `X_t` bị đẩy về `L`.
+- Nếu vùng bị kéo ra ngoài bên phải, `X_t` bị đẩy về `R - W_t`.
+- Tương tự cho chiều dọc.
+
+### 5.4 Hoàn tất di chuyển
+
+Khi nhả chuột, trạng thái chuyển từ `Moving` sang `Selected`. Vì kích thước không đổi trong suốt quá trình move và vùng ban đầu đã hợp lệ, `FinishInteraction` luôn giữ vùng ở trạng thái `Selected` (trừ khi clamp làm biến mất, điều này không xảy ra với vùng hợp lệ).
+
+### 5.5 Trường hợp biên
+
+- **Nhấn và nhả tại cùng một điểm bên trong vùng**: vùng không di chuyển, `dx = dy = 0`, vẫn giữ `Selected`.
+- **Kéo vượt quá capture area**: vùng dừng lại ở biên gần nhất do `ApplyConstraints`.
+- **Vùng có kích thước bằng capture area**: không thể di chuyển vì đã chiếm toàn bộ phạm vi; `X_t` và `Y_t` luôn bằng `L` và `T` sau clamp.
 
 ---
 
@@ -164,7 +195,9 @@ Các tính chất:
 
 Khi đang kéo tạo vùng mới (`Selecting`), kích thước có thể nhỏ hơn min — chỉ kiểm tra tại thời điểm `FinishSelecting`.
 
-Khi đang `Resizing`, kích thước không được nhỏ hơn min trong suốt quá trình kéo để tránh vùng chọn bị đảo chiều hoặc biến mất.
+Khi đang `Resizing`, kích thước có thể nhỏ hơn min trong quá trình kéo; chỉ kiểm tra tại `FinishInteraction`.
+
+Khi đang `Moving`, kích thước không đổi nên không cần kiểm tra min-size.
 
 ---
 
