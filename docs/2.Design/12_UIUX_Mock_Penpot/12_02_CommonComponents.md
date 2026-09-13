@@ -395,9 +395,40 @@ Mỗi icon trong toolbar phải là vector `18 × 18px`, viewBox `0 0 18 18`. Da
 
 Tất cả icon dùng `currentColor` để trong Avalonia có thể đổi màu qua `Foreground`.
 
----
+## 13. Workflow tạo Component trong Penpot (quan trọng)
 
-## 12. Notes cho Penpot
+Trong Penpot, component được tạo từ một **Board** hoặc một **nhóm layer**. Workflow chuẩn:
+
+### Bước 1: Tạo Board
+- Trên Page `00_CommonComponent`, click **Board tool** hoặc nhấn `B`.
+- Vẽ Board với kích thước chuẩn, ví dụ `32 × 32px` cho `ToolButton`, `16 × 16px` cho `ResizeHandle`.
+- Đặt tên Board theo component, ví dụ `ToolButton`, `ResizeHandle`.
+
+### Bước 2: Vẽ layer bên trong Board
+- Thêm các layer cần thiết: Background rectangle, Icon SVG, Text, v.v.
+- Gán fill/stroke/text bằng token đã import.
+- Đặt tên layer theo quy tắc ở mục 8.
+
+### Bước 3: Chuyển Board thành Component
+- Click chọn **Board ngoài cùng** (không chọn layer con).
+- Nhấn `Ctrl + K` hoặc right-click → **Create component**.
+- Board bây giờ là **Main Component**, hiển thị viền tím.
+
+### Bước 4: Tạo Variants (nếu cần)
+- Click chọn component.
+- Trong panel bên phải, chọn **Variants** → **Add variant**.
+- Tạo các variant: Default, Hover, Active, Disabled.
+- Mỗi variant thay đổi fill, stroke, opacity theo bảng binding token.
+
+### Bước 5: Sử dụng Component
+- Sang Page `01_CaptureOverlay`, mở tab **Components** ở sidebar trái.
+- Kéo component từ thư viện vào Board màn hình.
+- Instance có thể đổi variant từ panel bên phải.
+
+### Lưu ý quan trọng
+- Nếu double-click vào instance, Penpot đưa bạn vào **component edit mode**. Breadcrumb sẽ hiển thị `Page > Component`. Để thoát, click vào tên Page trong breadcrumb hoặc nhấn `Esc` nhiều lần.
+- Khi đang ở component edit mode, `Ctrl+K` không tạo component mới mà chỉ thêm object vào component đang edit.
+- Luôn đảm bảo ở ngoài Page trước khi tạo component mới.
 
 - Mỗi component Master nên được đặt trong Board riêng với kích thước chuẩn, ví dụ `ToolButton` trong Board `32 × 32px`.
 - Dùng **Variants** của Penpot để quản lý Default / Hover / Active / Disabled.
