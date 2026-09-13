@@ -239,10 +239,164 @@ graph TD
 
 ---
 
-## 8. Notes cho Penpot
+## 8. Quy tắc đặt tên layer trong Penpot
+
+Mỗi component Master trong Penpot nên có cấu trúc layer thống nhất để dễ tìm và override. Quy tắc đặt tên:
+
+```text
+{ComponentName}_{Role}_{Element}
+```
+
+Ví dụ:
+
+- `ToolButton_Container_Background`
+- `ToolButton_Container_Icon`
+- `BottomToolbar_Background`
+- `BottomToolbar_Separator`
+- `ResizeHandle_VisibleSquare`
+- `ResizeHandle_HitTestArea`
+- `DimensionBadge_Background`
+- `DimensionBadge_Text`
+
+Layer nền luôn đặt ở dưới cùng. Layer tương tác hoặc hit-test trong suốt đặt ở trên cùng. Icon, text, badge nằm giữa.
+
+---
+
+## 9. Checklist tạo từng component trong Penpot
+
+### 9.1. Tạo `ToolButton`
+
+Bước 1: Tạo Board mới tên `ToolButton`, kích thước `32 × 32px`.
+
+Bước 2: Vẽ Rectangle `32 × 32px` tên `ToolButton_Container_Background`, bo góc `Radius.ToolButton = 6px`.
+
+Bước 3: Gán fill:
+- Variant Default: `ToolButton.Default.Background` với opacity `0`.
+- Variant Hover: `ToolButton.Hover.Background` với opacity `0.12`.
+- Variant Active: `ToolButton.Active.Background` với opacity `1`.
+- Variant Disabled: `ToolButton.Disabled.Background` với opacity `0`.
+
+Bước 4: Import SVG icon `18 × 18px`, đặt tên `ToolButton_Container_Icon`, căn giữa trong Board. Màu icon binding về `ToolButton.{Variant}.IconColor`, opacity binding về `ToolButton.{Variant}.IconOpacity`.
+
+Bước 5: Tạo 4 Variants: `Default`, `Hover`, `Active`, `Disabled`.
+
+Bước 6: Đảm bảo mỗi variant chỉ thay đổi fill background và opacity icon, không thay đổi kích thước board.
+
+### 9.2. Tạo `BottomToolbar_Container`
+
+Bước 1: Tạo Board mới tên `BottomToolbar_Container`, chiều cao `40px`, chiều rộng tự động (`Hug content`).
+
+Bước 2: Vẽ Rectangle nền tên `BottomToolbar_Background`, kích thước full board, bo góc `Radius.Toolbar = 8px`.
+
+Bước 3: Gán fill `Toolbar.BackgroundColor` với opacity `Toolbar.BackgroundOpacity`.
+
+Bước 4: Thêm stroke `1px`, màu `Toolbar.BorderColor`, opacity `Toolbar.BorderOpacity`.
+
+Bước 5: Thêm shadow: màu `Toolbar.ShadowColor`, opacity `Toolbar.ShadowOpacity`, blur `Toolbar.ShadowBlur`, offsetY `Toolbar.ShadowOffsetY`.
+
+Bước 6: Tạo Flex Layout ngang tên `BottomToolbar_FlexGroup`:
+- Direction: Row.
+- Align items: Center.
+- Gap giữa các phần tử: tính theo `Spacing.Toolbar.InnerGap` và `Spacing.Toolbar.GroupGap`.
+- Padding: `Spacing.Toolbar.PaddingX` ngang, `Spacing.Toolbar.PaddingY` dọc.
+
+Bước 7: Tạo nhóm `Group_AnnotationTools`, thêm 8 instance của `ToolButton`.
+
+Bước 8: Tạo Separator: Rectangle `1 × 20px` tên `BottomToolbar_Separator`, màu `Toolbar.SeparatorColor`, opacity `Toolbar.SeparatorOpacity`.
+
+Bước 9: Tạo nhóm `Group_ActionTools`, thêm 5 instance của `ToolButton`.
+
+Bước 10: Đảm bảo khoảng cách giữa 2 nhóm qua separator là `2 × Spacing.Toolbar.GroupGap + Toolbar.SeparatorWidth`.
+
+### 9.3. Tạo `ResizeHandle`
+
+Bước 1: Tạo Board mới tên `ResizeHandle`, kích thước `16 × 16px` (vùng bắt chuột). Board này là hit-test area.
+
+Bước 2: Vẽ Rectangle `8 × 8px` tên `ResizeHandle_VisibleSquare`, căn giữa trong Board.
+
+Bước 3: Fill `Handle.FillColor`, opacity `Handle.FillOpacity`.
+
+Bước 4: Stroke `Handle.StrokeWidth`, màu `Handle.StrokeColor`, opacity `Handle.StrokeOpacity`.
+
+Bước 5: (Tùy chọn) Thêm Rectangle `16 × 16px` tên `ResizeHandle_HitTestArea`, trong suốt hoàn toàn, nằm centered. Layer này giúp designer và developer thấy rõ vùng bắt chuột.
+
+### 9.4. Tạo `DimensionBadge`
+
+Bước 1: Tạo Board mới tên `DimensionBadge`, chiều cao `Size.Badge.Height = 18px`, chiều rộng tự động.
+
+Bước 2: Vẽ Rectangle nền tên `DimensionBadge_Background`, bo góc `Radius.Badge = 4px`.
+
+Bước 3: Fill `Badge.BackgroundColor`, opacity `Badge.BackgroundOpacity`.
+
+Bước 4: Thêm Text tên `DimensionBadge_Text`, nội dung mẫu `"800 × 500"`.
+
+Bước 5: Font: `Text.FontFamily`, size `Text.Badge.FontSize`, weight `Text.Weight.Semibold`, màu `Badge.TextColor`, opacity `Badge.TextOpacity`.
+
+Bước 6: Padding ngang `Size.Badge.PaddingX`, padding dọc `Size.Badge.PaddingY`.
+
+### 9.5. Tạo `ColorSwatch`
+
+Bước 1: Tạo Board mới tên `ColorSwatch`, kích thước `20 × 20px`.
+
+Bước 2: Vẽ Ellipse `18 × 18px` tên `ColorSwatch_FillCircle`, căn giữa.
+
+Bước 3: Fill binding về token màu annotation tương ứng (ví dụ `Annotation.Red`).
+
+Bước 4: Vẽ Ellipse `20 × 20px` tên `ColorSwatch_OuterRing`, nằm dưới FillCircle, màu trắng `30%` opacity variant Default, `100%` opacity variant Active.
+
+Bước 5: Tạo variants `Default`, `Hover`, `Active`. Variant Hover thêm overlay trắng mờ `10%`.
+
+---
+
+## 10. Bảng binding token cho từng component
+
+| Component | Layer | Fill / Stroke / Text | Token | Notes |
+| :--- | :--- | :--- | :--- | :--- |
+| `ToolButton` | Container | Fill color | `ToolButton.{Variant}.Background` | Opacity theo variant. |
+| `ToolButton` | Icon | Fill color | `ToolButton.{Variant}.IconColor` | Opacity theo variant. |
+| `BottomToolbar` | Background | Fill color | `Toolbar.BackgroundColor` | Opacity `Toolbar.BackgroundOpacity`. |
+| `BottomToolbar` | Background | Stroke color | `Toolbar.BorderColor` | Width `Toolbar.BorderWidth`, opacity `Toolbar.BorderOpacity`. |
+| `BottomToolbar` | Background | Shadow | `Toolbar.ShadowColor` | Opacity, blur, offset theo token. |
+| `BottomToolbar` | Separator | Fill color | `Toolbar.SeparatorColor` | Opacity `Toolbar.SeparatorOpacity`. |
+| `ResizeHandle` | VisibleSquare | Fill color | `Handle.FillColor` | Opacity `Handle.FillOpacity`. |
+| `ResizeHandle` | VisibleSquare | Stroke color | `Handle.StrokeColor` | Width `Handle.StrokeWidth`, opacity `Handle.StrokeOpacity`. |
+| `DimensionBadge` | Background | Fill color | `Badge.BackgroundColor` | Opacity `Badge.BackgroundOpacity`. |
+| `DimensionBadge` | Text | Text color | `Badge.TextColor` | Opacity `Badge.TextOpacity`. |
+| `DimensionBadge` | Text | Font size | `Text.Badge.FontSize` | Weight `Text.Weight.Semibold`. |
+| `ColorSwatch` | FillCircle | Fill color | `Annotation.{ColorName}` | Ví dụ `Annotation.Red`. |
+
+---
+
+## 11. Yêu cầu icon SVG cho ToolButton
+
+Mỗi icon trong toolbar phải là vector `18 × 18px`, viewBox `0 0 18 18`. Danh sách icon cần thiết:
+
+| Nút | Tên file | Mô tả hình dạng |
+| :--- | :--- | :--- |
+| Pencil | `icon_pencil.svg` | Nét cong tự do hoặc hình bút chì. |
+| Line | `icon_line.svg` | Đường thẳng nghiêng 45°. |
+| Arrow | `icon_arrow.svg` | Đường thẳng với mũi tên. |
+| Rectangle | `icon_rectangle.svg` | Hình chữ nhật rỗng. |
+| Circle | `icon_circle.svg` | Hình tròn / elip rỗng. |
+| Marker | `icon_marker.svg` | Nét ngang bán trong suốt. |
+| Text | `icon_text.svg` | Chữ `T`. |
+| Pixelate | `icon_pixelate.svg` | Lưới ô vuông. |
+| Undo | `icon_undo.svg` | Mũi tên cong trái. |
+| Redo | `icon_redo.svg` | Mũi tên cong phải. |
+| Copy | `icon_copy.svg` | Hai tờ giấy chồng lệch. |
+| Save | `icon_save.svg` | Đĩa mềm hoặc mũi tên xuống. |
+| Cancel | `icon_cancel.svg` | Dấu `X`. |
+
+Tất cả icon dùng `currentColor` để trong Avalonia có thể đổi màu qua `Foreground`.
+
+---
+
+## 12. Notes cho Penpot
 
 - Mỗi component Master nên được đặt trong Board riêng với kích thước chuẩn, ví dụ `ToolButton` trong Board `32 × 32px`.
 - Dùng **Variants** của Penpot để quản lý Default / Hover / Active / Disabled.
 - Không gộp nhiều trạng thái vào cùng một layer; tách rõ các layer nền, icon, label.
 - Icon nên là vector SVG đơn giản, không raster, để dễ export.
 - `ResizeHandle` cần tách lớp `HitTestArea` trong suốt riêng với `VisibleSquare` để designer và developer cùng hiểu vùng bắt chuột.
+- Khi tạo instance trong Board trạng thái, nhớ chọn đúng variant của component. Ví dụ trong Board `State_04_Annotating_Mode`, nút Pencil phải dùng variant `Active`.
+- Không hardcode màu hay kích thước trong component; tất cả binding về token đã import từ `fshot_tokens.json`. Nếu token thay đổi, toàn bộ component tự động cập nhật.
