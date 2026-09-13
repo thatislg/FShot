@@ -1,8 +1,8 @@
 # F-Shot Master Progress Tracking
 
-- **Cập nhật gần nhất:** 2026-09-12
-- **Tiến độ tổng quan:** `[ 8 / 84 ] Tasks hoàn thành (~9.5%)` (Phase 0 PoC đã verify xong trên desktop Windows)
-- **Mục tiêu hiện tại:** Hoàn thiện thiết kế nền tảng Phase 1 (P1.01–P1.04) trước khi viết code
+- **Cập nhật gần nhất:** 2026-09-13
+- **Tiến độ tổng quan:** `[ 9 / 84 ] Tasks hoàn thành (~10.7%)` (Phase 0 PoC đã verify xong; P1.01 domain model đã refactor và pass tests)
+- **Mục tiêu hiện tại:** Hoàn thiện thiết kế nền tảng Phase 1 (P1.02–P1.04) trước khi viết code tiếp theo
 
 ---
 
@@ -11,7 +11,7 @@
 | Phase | Mục tiêu | Trạng thái | Hoàn thành |
 | :--- | :--- | :---: | :---: |
 | **Phase 0: PoC** | Khung Solution, Screen Capture, Overlay Canvas, đo 60 FPS | **DONE** | **8 / 8** (đã verify trên desktop Windows) |
-| **Phase 1: MVP Core** | Bounding box, 8 Annotation tools, Undo/Redo, Save/Clipboard | **PENDING** | 0 / 29 (0%) |
+| **Phase 1: MVP Core** | Bounding box, 8 Annotation tools, Undo/Redo, Save/Clipboard | **IN PROGRESS** | 1 / 29 (~3%) |
 | **Phase 2: Windows v1.0** | Tray, Hotkeys, Real Capture, Config UI, Pin Widget, Advanced tools | **PENDING** | 0 / 39 (0%) |
 | **Phase 3: Advanced** | Imgur upload, Snap-to-grid, Tùy biến nâng cao | **PENDING** | 0 / 8 (0%) |
 
@@ -33,12 +33,14 @@
 ## 3. Checklist chi tiết Phase 1: MVP Core (Target: 17/09 → 10/10/2026)
 
 ### Epic 1: Core Domain & State Machine
-- [ ] **P1.01** Domain model đầy đủ (`Annotation` DU, `CaptureMode`, `ExportTarget`).
+- [x] **P1.01** Domain model đầy đủ (`Annotation` DU, `CaptureMode`, `ExportTarget`).
   - [x] Hoàn thiện `docs/2.Design/04_Annotation/04_03_Pencil.md` (thiết kế Pencil + smoothing).
   - [x] Hoàn thiện `docs/2.Design/04_Annotation/04_06_MarkerAndPixelate.md` (thiết kế Marker + Pixelate).
   - [x] Hoàn thiện `docs/2.Design/04_Annotation/04_07_TextTool.md` (thiết kế Text tool + commit).
   - [x] Rà soát `docs/2.Design/02_Capture/02_03_CaptureRequest.md` (đảm bảo đủ cho `CaptureMode`, `OutputTarget`).
   - [x] Rà soát `docs/2.Design/06_Export/06_02_ExportTarget.md` (đảm bảo đủ cho `ExportTarget`).
+  - [x] Refactor `src/FShot.Core/Domain/Annotation.fs` theo P1.01: `AnnotationStyle` chung, `Marker` dùng `Point list`, `Text` mang `TextAlignment`.
+  - [x] Cập nhật `tests/FShot.Core.Tests/Domain/AnnotationTests.fs` theo API mới; tất cả tests pass.
 - [ ] **P1.02** Immutable `HistoryStack` phục vụ hoàn tác không giới hạn.
   - [ ] Hoàn thiện `docs/2.Design/05_History/05_02_Snapshot.md`.
   - [ ] Hoàn thiện `docs/2.Design/05_History/05_03_HistoryStack.md`.
@@ -174,7 +176,7 @@
 
 ---
 
-*Cập nhật gần nhất: 2026-09-12*
+*Cập nhật gần nhất: 2026-09-13*
 
 ---
 
