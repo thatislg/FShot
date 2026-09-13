@@ -143,6 +143,78 @@ let ``Resizing PointerReleased chuyển sang Selected`` () =
     let finished = resized.State |> update PointerReleased
     Assert.Equal(SelectionState.Selected, finished.State.Selection.State)
 
+/// Kiểm tra Selected + KeyDown Right nudge vùng chọn 1px.
+[<Fact>]
+let ``Selected KeyDown Right nudge vùng chọn`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    let result = state |> update (KeyDown "Right")
+    Assert.Equal(SelectionState.Selected, result.State.Selection.State)
+    Assert.Equal(101.0, result.State.Selection.Bounds.X)
+    Assert.Equal(100.0, result.State.Selection.Bounds.Y)
+    Assert.Equal(200.0, result.State.Selection.Bounds.Width)
+    Assert.Equal(100.0, result.State.Selection.Bounds.Height)
+
+/// Kiểm tra Selected + Shift + KeyDown Up nudge mở rộng cạnh trên.
+[<Fact>]
+let ``Selected Shift KeyDown Up mở rộng cạnh trên`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    let result = state |> update (KeyDown "Shift+Up")
+    Assert.Equal(SelectionState.Selected, result.State.Selection.State)
+    Assert.Equal(100.0, result.State.Selection.Bounds.X)
+    Assert.Equal(99.0, result.State.Selection.Bounds.Y)
+    Assert.Equal(200.0, result.State.Selection.Bounds.Width)
+    Assert.Equal(101.0, result.State.Selection.Bounds.Height)
+
+/// Kiểm tra Selected + KeyDown Down bị giới hạn ở biên dưới.
+[<Fact>]
+let ``Selected KeyDown Down bị giới hạn ở biên dưới`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 1700.0 900.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 1900.0 1070.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    let result = state |> update (KeyDown "Down")
+    Assert.Equal(SelectionState.Selected, result.State.Selection.State)
+    Assert.Equal(1700.0, result.State.Selection.Bounds.X)
+    Assert.Equal(901.0, result.State.Selection.Bounds.Y)
+
+/// Kiểm tra KeyDown không phải mũi tên giữ nguyên trạng thái.
+[<Fact>]
+let ``Selected KeyDown không phải mũi tên giữ nguyên`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    let result = state |> update (KeyDown "Enter")
+    Assert.Equal(SelectionState.Selected, result.State.Selection.State)
+    Assert.Equal(100.0, result.State.Selection.Bounds.X)
+    Assert.Equal(100.0, result.State.Selection.Bounds.Y)
+
 /// Kiểm tra Selected + PointerPressed ngoài vùng bắt đầu vùng chọn mới.
 [<Fact>]
 let ``Selected PointerPressed ngoài vùng bắt đầu Selecting mới`` () =

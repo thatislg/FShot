@@ -83,11 +83,11 @@
   - [x] Rà soát `docs/2.Design/03_Selection/03_04_MouseOperations.md` mục di chuyển vùng chọn.
   - [x] Đảm bảo `Selection.StartMoving` + `UpdateMoving` + clamp hoạt động trong `OverlayState`.
   - [x] Kiểm thử di chuyển vùng chọn ra sát biên và bị giới hạn.
-- [ ] **P1.09** Dịch chuyển vùng chọn 1px bằng phím mũi tên (`FR-SEL-05`).
-  - [ ] Hoàn thiện `docs/2.Design/03_Selection/03_05_KeyboardOperations.md` (nudge bằng phím mũi tên).
-  - [ ] Thêm xử lý `KeyDown` cho phím mũi tên trong `OverlayState.update`.
-  - [ ] Triển khai nudge trong `OverlayState`: dịch vùng chọn 1px theo hướng, clamp vào capture bounds.
-  - [ ] Kiểm thử từng phím mũi tên và kết hợp với modifier.
+- [x] **P1.09** Dịch chuyển vùng chọn 1px bằng phím mũi tên (`FR-SEL-05`).
+  - [x] Hoàn thiện `docs/2.Design/03_Selection/03_05_KeyboardOperations.md` (nudge bằng phím mũi tên).
+  - [x] Thêm xử lý `KeyDown` cho phím mũi tên trong `OverlayState.update`.
+  - [x] Triển khai nudge trong `OverlayState`: dịch vùng chọn 1px theo hướng, clamp vào capture bounds.
+  - [x] Kiểm thử từng phím mũi tên và kết hợp với modifier.
 - [ ] **P1.10** Co giãn 1px bằng `Shift + Arrow` (`FR-SEL-06`).
   - [ ] Hoàn thiện `docs/2.Design/03_Selection/03_05_KeyboardOperations.md` (keyboard resize bằng Shift + Arrow).
   - [ ] Xử lý `KeyDown` kèm Shift trong `OverlayState.update`.

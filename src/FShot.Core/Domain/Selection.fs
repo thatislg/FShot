@@ -260,6 +260,57 @@ type Selection =
     member this.Cancel() =
         Selection.Empty
 
+    /// Dịch chuyển vùng chọn đã chọn 1 pixel theo hướng cho trước.
+    /// Công thức: X' = X + dx, Y' = Y + dy, W' = W, H' = H.
+    /// Xem 03_05_KeyboardOperations.md, mục 2.
+    member this.Nudge(dx: float, dy: float) : Selection =
+        match this.State with
+        | Selected ->
+            let newBounds =
+                {
+                  this.Bounds with
+                      X = this.Bounds.X + dx
+                      Y = this.Bounds.Y + dy
+                }
+            { this with Bounds = newBounds }
+        | _ -> this
+
+    /// Co giãn vùng chọn đã chọn 1 pixel theo hướng cho trước.
+    /// Shift + Arrow thay đổi cạnh ngoài theo hướng phím.
+    /// Xem 03_05_KeyboardOperations.md, mục 3.
+    member this.KeyboardResize(dx: float, dy: float) : Selection =
+        match this.State with
+        | Selected ->
+            let newBounds =
+                if dx < 0.0 then
+                    // Shift + Left: kéo cạnh trái ra trái
+                    {
+                      this.Bounds with
+                          X = this.Bounds.X + dx
+                          Width = this.Bounds.Width - dx
+                    }
+                elif dx > 0.0 then
+                    // Shift + Right: kéo cạnh phải ra phải
+                    {
+                      this.Bounds with
+                          Width = this.Bounds.Width + dx
+                    }
+                elif dy < 0.0 then
+                    // Shift + Up: kéo cạnh trên lên trên
+                    {
+                      this.Bounds with
+                          Y = this.Bounds.Y + dy
+                          Height = this.Bounds.Height - dy
+                    }
+                else
+                    // Shift + Down: kéo cạnh dưới xuống dưới
+                    {
+                      this.Bounds with
+                          Height = this.Bounds.Height + dy
+                    }
+            { this with Bounds = newBounds }
+        | _ -> this
+
     /// Áp dụng ràng buộc giới hạn trong capture area.
     /// Trong khi đang kéo, chỉ clamp vị trí vào phạm vi chụp;
     /// không ép kích thước tối thiểu để cho phép người dùng thả chuột ở vùng nhỏ.

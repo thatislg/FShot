@@ -517,3 +517,92 @@ let ``Giới hạn vùng chọn trong capture area`` () =
     let constrained = sel.ApplyConstraints(rect 0.0 0.0 1920.0 1080.0)
     Assert.Equal(1620.0, constrained.Bounds.X)
     Assert.Equal(880.0, constrained.Bounds.Y)
+
+/// Kiểm tra nudge vùng chọn 1px sang phải.
+[<Fact>]
+let ``Nudge vùng chọn sang phải`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let nudged = sel.Nudge(1.0, 0.0).ApplyConstraints captureBounds
+    Assert.Equal(Selected, nudged.State)
+    Assert.Equal(101.0, nudged.Bounds.X)
+    Assert.Equal(80.0, nudged.Bounds.Y)
+    Assert.Equal(300.0, nudged.Bounds.Width)
+    Assert.Equal(200.0, nudged.Bounds.Height)
+
+/// Kiểm tra nudge vùng chọn 1px lên trên.
+[<Fact>]
+let ``Nudge vùng chọn lên trên`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let nudged = sel.Nudge(0.0, -1.0).ApplyConstraints captureBounds
+    Assert.Equal(Selected, nudged.State)
+    Assert.Equal(100.0, nudged.Bounds.X)
+    Assert.Equal(79.0, nudged.Bounds.Y)
+
+/// Kiểm tra nudge bị giới hạn ở biên trái.
+[<Fact>]
+let ``Nudge bị giới hạn ở biên trái`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 0.0 80.0 300.0 200.0 }
+    let nudged = sel.Nudge(-1.0, 0.0).ApplyConstraints captureBounds
+    Assert.Equal(Selected, nudged.State)
+    Assert.Equal(0.0, nudged.Bounds.X)
+    Assert.Equal(80.0, nudged.Bounds.Y)
+
+/// Kiểm tra nudge bị giới hạn ở biên dưới.
+[<Fact>]
+let ``Nudge bị giới hạn ở biên dưới`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 1620.0 880.0 300.0 200.0 }
+    let nudged = sel.Nudge(0.0, 1.0).ApplyConstraints captureBounds
+    Assert.Equal(Selected, nudged.State)
+    Assert.Equal(880.0, nudged.Bounds.Y)
+
+/// Kiểm tra keyboard resize mở rộng sang phải.
+[<Fact>]
+let ``Keyboard resize mở rộng sang phải`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let resized = sel.KeyboardResize(1.0, 0.0).ApplyConstraints captureBounds
+    Assert.Equal(Selected, resized.State)
+    Assert.Equal(100.0, resized.Bounds.X)
+    Assert.Equal(80.0, resized.Bounds.Y)
+    Assert.Equal(301.0, resized.Bounds.Width)
+    Assert.Equal(200.0, resized.Bounds.Height)
+
+/// Kiểm tra keyboard resize mở rộng lên trên.
+[<Fact>]
+let ``Keyboard resize mở rộng lên trên`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let resized = sel.KeyboardResize(0.0, -1.0).ApplyConstraints captureBounds
+    Assert.Equal(Selected, resized.State)
+    Assert.Equal(100.0, resized.Bounds.X)
+    Assert.Equal(79.0, resized.Bounds.Y)
+    Assert.Equal(300.0, resized.Bounds.Width)
+    Assert.Equal(201.0, resized.Bounds.Height)
+
+/// Kiểm tra keyboard resize bị giới hạn ở biên phải.
+[<Fact>]
+let ``Keyboard resize bị giới hạn ở biên phải`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 1800.0 900.0 120.0 180.0 }
+    let resized = sel.KeyboardResize(1.0, 0.0).ApplyConstraints captureBounds
+    Assert.Equal(Selected, resized.State)
+    Assert.Equal(1799.0, resized.Bounds.X)
+    Assert.Equal(121.0, resized.Bounds.Width)

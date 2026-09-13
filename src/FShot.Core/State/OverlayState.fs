@@ -387,6 +387,34 @@ module OverlayStateLogic =
                         | _ -> []
                     result commands newState
 
+        | SelectionState.Selected, NoAnnotation, KeyDown key ->
+            let normalized = key.ToLowerInvariant()
+
+            let isShift =
+                normalized.Contains("shift")
+                || key.Contains("Shift")
+
+            let arrowDxDy =
+                match normalized with
+                | k when k.Contains("left") -> Some(-1.0, 0.0)
+                | k when k.Contains("right") -> Some(1.0, 0.0)
+                | k when k.Contains("up") -> Some(0.0, -1.0)
+                | k when k.Contains("down") -> Some(0.0, 1.0)
+                | _ -> None
+
+            match arrowDxDy with
+            | Some(dx, dy) ->
+                let rawSelection =
+                    if isShift then
+                        state.Selection.KeyboardResize(dx, dy)
+                    else
+                        state.Selection.Nudge(dx, dy)
+
+                let clamped = rawSelection.ApplyConstraints state.Capture.VirtualBounds
+                emptyResult { state with Selection = clamped }
+            | None ->
+                emptyResult state
+
         | SelectionState.Selected, NoAnnotation, SelectTool tool ->
             emptyResult { state with CurrentTool = tool }
 
