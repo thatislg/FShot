@@ -8,16 +8,18 @@ open Avalonia.Media.Imaging
 open Avalonia.VisualTree
 open FShot.Core.Domain
 open FShot.Core.Geometry
+open FShot.Core.State
+open FShot.Core.State.OverlayStateLogic
 
 open System
 open System.Diagnostics
 
 open FShot.UI.Logging
 
-/// Custom control vẽ overlay.
+/// Custom control vẽ overlay và chuyển input đến OverlayState.
 /// Trong PoC này dùng WriteableBitmap để hiển thị screenshot.
 /// Selection và annotations được vẽ bằng Avalonia DrawingContext.
-/// Xem tài liệu 11_03_OverlayWindow.md và 11_05_InputHandling.md.
+/// Xem tài liệu 11_03_OverlayWindow.md, 11_05_InputHandling.md và 11_09_OverlayStateIntegration.md.
 type CaptureCanvas() as this =
     inherit Control()
 
@@ -26,7 +28,7 @@ type CaptureCanvas() as this =
 
     let mutable captureResult: CaptureResult option = None
     let mutable cachedBitmap: WriteableBitmap option = None
-    let mutable selection: Selection = Selection.Empty
+    let mutable overlayState: OverlayState option = None
 
     let mutable frameCount = 0
     let mutable lastFpsUpdate = Stopwatch.GetTimestamp()
@@ -58,8 +60,19 @@ type CaptureCanvas() as this =
             FShotLog.write "[CaptureCanvas] InvalidateVisual posted to UI thread"
         )
 
-    /// Lấy vùng chọn hiện tại.
-    member this.Selection = selection
+    /// Đặt OverlayState để control dùng làm single source of truth.
+    /// Phải gọi sau khi đã có CaptureResult.
+    member this.SetOverlayState(state: OverlayState) =
+        FShotLog.write "[CaptureCanvas] SetOverlayState"
+        overlayState <- Some state
+        Avalonia.Threading.Dispatcher.UIThread.Post(fun () ->
+            this.InvalidateVisual()
+            stateChanged.Trigger()
+        )
+
+    /// Lấy vùng chọn hiện tại từ OverlayState.
+    member this.Selection =
+        overlayState |> Option.map (fun s -> s.Selection) |> Option.defaultValue Selection.Empty
 
     /// FPS hiện tại (tính từ số lần render mỗi giây).
     member this.CurrentFps = currentFps
@@ -72,7 +85,9 @@ type CaptureCanvas() as this =
 
     /// Đặt lại toàn bộ state.
     member this.Reset() =
-        selection <- Selection.Empty
+        overlayState <-
+            overlayState
+            |> Option.map (fun s -> { s with Selection = Selection.Empty })
         this.InvalidateVisual()
 
     /// Chuyển tọa độ pointer sang Virtual Screen space.
@@ -90,6 +105,51 @@ type CaptureCanvas() as this =
             Y = float pos.Y + float windowPos.Y
         }
 
+    /// Chuyển KeyEventArgs sang chuỗi key dùng trong OverlayEvent.
+    /// Format: "Ctrl+Shift+KeyName".
+    /// Xem 11_09_OverlayStateIntegration.md, mục 4.2.
+    member private this.ToKeyString(e: KeyEventArgs) : string =
+        let modifiers = ResizeArray<string>()
+        if e.KeyModifiers.HasFlag(KeyModifiers.Control) then modifiers.Add("Ctrl")
+        if e.KeyModifiers.HasFlag(KeyModifiers.Shift) then modifiers.Add("Shift")
+        if e.KeyModifiers.HasFlag(KeyModifiers.Alt) then modifiers.Add("Alt")
+
+        let keyName = e.Key.ToString()
+
+        if modifiers.Count = 0 then
+            keyName
+        else
+            String.Join("+", modifiers) + "+" + keyName
+
+    /// Thực thi các commands trả về từ OverlayState.
+    member private this.ExecuteCommands(commands: OverlayCommand list) =
+        for cmd in commands do
+            match cmd with
+            | CloseOverlay ->
+                FShotLog.write "[CaptureCanvas] CloseOverlay command"
+                match this.VisualRoot with
+                | :? Window as w ->
+                    try w.Close() with ex -> FShotLog.writeEx "Failed to close overlay window" ex
+                | _ -> ()
+            | StartExport target ->
+                FShotLog.write (sprintf "[CaptureCanvas] StartExport command: %A" target)
+            | ShowTextInput position ->
+                FShotLog.write (sprintf "[CaptureCanvas] ShowTextInput command at %A" position)
+            | HideTextInput ->
+                FShotLog.write "[CaptureCanvas] HideTextInput command"
+
+    /// Gửi event đến OverlayState, cập nhật state và vẽ lại.
+    member private this.Dispatch(event: OverlayEvent) =
+        match overlayState with
+        | Some state ->
+            let result = OverlayStateLogic.update event state
+            overlayState <- Some result.State
+            this.ExecuteCommands result.Commands
+            this.InvalidateVisual()
+            stateChanged.Trigger()
+        | None ->
+            FShotLog.write "[CaptureCanvas] OverlayState not set; event ignored"
+
     override this.OnAttachedToVisualTree(e: Avalonia.VisualTreeAttachmentEventArgs) =
         base.OnAttachedToVisualTree(e)
         FShotLog.write "[CaptureCanvas] Attached to visual tree"
@@ -103,44 +163,19 @@ type CaptureCanvas() as this =
         // Capture pointer để nhận sự kiện moved/released ngay cả khi chuột ra ngoài control.
         e.Pointer.Capture(this) |> ignore
 
-        match selection.State with
-        | Idle ->
-            selection <- Selection.StartSelecting(point)
-        | Selected ->
-            match selection.HitTestHandle(point) with
-            | Some handle ->
-                selection <- selection.StartResizing handle point
-                FShotLog.write (sprintf "[CaptureCanvas] Bắt đầu resize handle: %A" handle)
-            | None ->
-                if selection.Contains(point) then
-                    selection <- selection.StartMoving(point)
-                    FShotLog.write "[CaptureCanvas] Bắt đầu di chuyển vùng chọn"
-                else
-                    selection <- Selection.StartSelecting(point)
-        | _ -> ()
-
-        this.InvalidateVisual()
-        stateChanged.Trigger()
+        this.Dispatch(PointerPressed(point))
 
     override this.OnPointerMoved(e: PointerEventArgs) =
         base.OnPointerMoved(e)
         let point = this.ToVirtualPoint(e)
 
-        match selection.State with
-        | Selecting ->
-            selection <- selection.UpdateSelecting(point)
-        | Moving ->
-            selection <- selection.UpdateMoving(point)
-        | Resizing _ ->
-            selection <- selection.UpdateResizing(point)
-        | _ -> ()
+        this.Dispatch(PointerMoved(point))
 
-        if selection.State <> Idle then
-            this.InvalidateVisual()
-            stateChanged.Trigger()
-            // Giảm log spam: chỉ log moved khi vùng chọn thay đổi đáng kể.
-            if int selection.Bounds.Width % 20 = 0 || int selection.Bounds.Height % 20 = 0 then
-                FShotLog.write (sprintf "[CaptureCanvas] PointerMoved -> bounds: %A" selection.Bounds)
+        // Giảm log spam: chỉ log moved khi vùng chọn thay đổi đáng kể.
+        let sel = this.Selection
+        if sel.State <> SelectionState.Idle then
+            if int sel.Bounds.Width % 20 = 0 || int sel.Bounds.Height % 20 = 0 then
+                FShotLog.write (sprintf "[CaptureCanvas] PointerMoved -> bounds: %A" sel.Bounds)
 
     override this.OnPointerReleased(e: PointerReleasedEventArgs) =
         base.OnPointerReleased(e)
@@ -149,35 +184,23 @@ type CaptureCanvas() as this =
         // Release pointer capture.
         e.Pointer.Capture(null) |> ignore
 
-        match selection.State with
+        this.Dispatch(PointerReleased)
+
+        let sel = this.Selection
+        match sel.State with
         | Selecting ->
-            selection <- selection.FinishSelecting()
-            FShotLog.write (sprintf "[CaptureCanvas] Vùng chọn hoàn tất: %A" selection.Bounds)
-            this.InvalidateVisual()
-            stateChanged.Trigger()
+            FShotLog.write (sprintf "[CaptureCanvas] Vùng chọn hoàn tất: %A" sel.Bounds)
         | Moving
         | Resizing _ ->
-            selection <- selection.FinishInteraction()
-            FShotLog.write (sprintf "[CaptureCanvas] Tương tác hoàn tất: %A" selection.Bounds)
-            this.InvalidateVisual()
-            stateChanged.Trigger()
+            FShotLog.write (sprintf "[CaptureCanvas] Tương tác hoàn tất: %A" sel.Bounds)
         | _ -> ()
 
     override this.OnKeyDown(e: KeyEventArgs) =
         base.OnKeyDown(e)
-        FShotLog.write (sprintf "[CaptureCanvas] KeyDown: %A" e.Key)
+        let keyString = this.ToKeyString(e)
+        FShotLog.write (sprintf "[CaptureCanvas] KeyDown: %s" keyString)
 
-        match e.Key with
-        | Key.Escape ->
-            // Esc luôn thoát app trong PoC, bất kể có vùng chọn hay không.
-            FShotLog.write "[CaptureCanvas] Esc pressed - closing overlay"
-            match this.VisualRoot with
-            | :? Window as w ->
-                try w.Close() with ex -> FShotLog.writeEx "Failed to close overlay window" ex
-            | _ -> ()
-        | Key.Enter ->
-            FShotLog.write "[CaptureCanvas] Enter pressed - TODO: trigger export"
-        | _ -> ()
+        this.Dispatch(KeyDown(keyString))
 
     /// Tạo WriteableBitmap từ CaptureResult.
     member private this.CreateBitmap(result: CaptureResult) : WriteableBitmap =
@@ -233,13 +256,15 @@ type CaptureCanvas() as this =
                     fpsNote
             )
 
-    /// Vẽ vùng chọn và các handle lên overlay.
-    /// Sử dụng pattern Flameshot:
-    /// - Dim outer area (tối phần ngoài vùng chọn).
-    /// - Fill inner area với màu xanh mờ.
-    /// - Border trắng + handles.
-    member private this.RenderSelectionOverlay(context: DrawingContext) =
-        if selection.State <> Idle then
+    /// Vẽ dimming layer ngoài vùng chọn.
+    /// Trong MVP dùng 4 strips đơn giản bằng Avalonia DrawingContext.
+    /// Xem 11_09_OverlayStateIntegration.md, mục 5.2.
+    member private this.RenderDimming(context: DrawingContext, selectionOption: Selection option) =
+        let fullBounds = this.Bounds
+        let outerBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(128uy, 0uy, 0uy, 0uy))
+
+        match selectionOption with
+        | Some selection when selection.State <> SelectionState.Idle ->
             match captureResult with
             | Some result ->
                 let scale = result.ScaleFactor.Value
@@ -251,30 +276,49 @@ type CaptureCanvas() as this =
                         selection.Bounds.Height * scale
                     )
 
-                let fullBounds = this.Bounds
-                let outerBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(128uy, 0uy, 0uy, 0uy))
-                let innerBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(40uy, 0uy, 150uy, 255uy))
-
                 // Vẽ 4 strips tối xung quanh vùng chọn.
-                // Top strip.
                 context.FillRectangle(outerBrush, Rect(0.0, 0.0, fullBounds.Width, selectionRect.Y))
-                // Bottom strip.
                 context.FillRectangle(outerBrush, Rect(0.0, selectionRect.Bottom, fullBounds.Width, fullBounds.Height - selectionRect.Bottom))
-                // Left strip.
                 context.FillRectangle(outerBrush, Rect(0.0, selectionRect.Y, selectionRect.X, selectionRect.Height))
-                // Right strip.
                 context.FillRectangle(outerBrush, Rect(selectionRect.Right, selectionRect.Y, fullBounds.Width - selectionRect.Right, selectionRect.Height))
+            | None -> ()
+        | _ ->
+            // Chưa có vùng chọn: dimming toàn màn hình.
+            context.FillRectangle(outerBrush, fullBounds)
 
-                // Tô màu xanh mờ bên trong vùng chọn.
-                context.FillRectangle(innerBrush, selectionRect)
+    /// Vẽ vùng chọn và các handle lên overlay.
+    member private this.RenderSelectionOverlay(context: DrawingContext, selection: Selection) =
+        match captureResult with
+        | Some result ->
+            let scale = result.ScaleFactor.Value
+            let selectionRect =
+                Rect(
+                    selection.Bounds.X * scale,
+                    selection.Bounds.Y * scale,
+                    selection.Bounds.Width * scale,
+                    selection.Bounds.Height * scale
+                )
 
-                // Border vùng chọn màu trắng dày 2.5px + bóng mờ đen để nổi.
-                let shadowPen = new Pen(Brushes.Black, 5.0)
-                let pen = new Pen(Brushes.White, 2.5)
-                context.DrawRectangle(null, shadowPen, selectionRect)
-                context.DrawRectangle(null, pen, selectionRect)
+            let innerBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(40uy, 0uy, 150uy, 255uy))
 
-                // Vẽ 8 handle vuông nhỏ.
+            // Tô màu xanh mờ bên trong vùng chọn.
+            context.FillRectangle(innerBrush, selectionRect)
+
+            // Border vùng chọn màu trắng dày 2.5px + bóng mờ đen để nổi.
+            let shadowPen = new Pen(Brushes.Black, 5.0)
+            let pen = new Pen(Brushes.White, 2.5)
+            context.DrawRectangle(null, shadowPen, selectionRect)
+            context.DrawRectangle(null, pen, selectionRect)
+
+            // Vẽ 8 handle vuông nhỏ khi vùng đã chọn hoặc đang tương tác.
+            let shouldDrawHandles =
+                match selection.State with
+                | Selected
+                | Moving
+                | Resizing _ -> true
+                | _ -> false
+
+            if shouldDrawHandles then
                 let handleHalfSize = Selection.HandleSize / 2.0
                 let handleBrush = new SolidColorBrush(Colors.White)
                 let handleShadow = new SolidColorBrush(Colors.Black)
@@ -297,7 +341,7 @@ type CaptureCanvas() as this =
 
                     context.FillRectangle(handleShadow, shadowRect)
                     context.FillRectangle(handleBrush, handleRect)
-            | None -> ()
+        | None -> ()
 
     override this.Render(context: DrawingContext) =
         base.Render(context)
@@ -313,8 +357,36 @@ type CaptureCanvas() as this =
             let brush = new SolidColorBrush(Colors.DarkGray)
             context.FillRectangle(brush, this.Bounds)
 
-        // Vẽ overlay vùng chọn.
-        this.RenderSelectionOverlay(context)
+        // Lấy RenderModel từ OverlayState hiện tại.
+        let renderModel =
+            overlayState
+            |> Option.map buildRenderModel
+            |> Option.defaultValue {
+                VirtualBounds = { X = 0.0; Y = 0.0; Width = this.Bounds.Width; Height = this.Bounds.Height }
+                Selection = None
+                Annotations = []
+                Preview = None
+                ToolbarVisible = false
+                CurrentTool = SelectionTool
+                CanUndo = false
+                CanRedo = false
+                Cursor = CursorHint.Crosshair
+                TextInput = None
+            }
+
+        // Vẽ dimming layer.
+        this.RenderDimming(context, renderModel.Selection)
+
+        // Vẽ vùng chọn nếu có.
+        renderModel.Selection |> Option.iter (fun sel -> this.RenderSelectionOverlay(context, sel))
+
+        // Vẽ annotations đã commit.
+        // Trong P1.11 chưa có annotation renderer; để trống cho P1.12+.
+        // renderModel.Annotations |> List.iter (fun annotation -> ...)
+
+        // Vẽ preview annotation.
+        // Trong P1.11 chưa có preview renderer; để trống cho P1.12+.
+        // renderModel.Preview |> Option.iter (fun preview -> ...)
 
         // Tính toán và cập nhật FPS.
         let frameEnd = Stopwatch.GetTimestamp()

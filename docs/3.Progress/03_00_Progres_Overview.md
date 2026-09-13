@@ -99,6 +99,7 @@
   - [x] Thêm / cập nhật kiểm thử cho từng trường hợp.
   - [x] `Ctrl+Backspace` tương đương Cancel khi có vùng chọn.
   - [x] `Ctrl+Backspace` trong `Annotating` hủy preview và quay về `Selected`.
+  - [x] Tích hợp UI đúng nghĩa: `CaptureCanvas` dùng `OverlayState` cho input chuột/bàn phím, vẽ theo `RenderModel`, thực thi `CloseOverlay`.
 
 ### Epic 3: Bộ công cụ chú thích (Annotations)
 - [ ] **P1.12** Bút vẽ tự do (Pencil) tích hợp thuật toán làm mịn Bézier (`FR-ANN-01`).

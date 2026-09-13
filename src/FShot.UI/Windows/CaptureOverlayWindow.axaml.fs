@@ -14,23 +14,19 @@ open FShot.UI.SkiaCanvas
 open FShot.UI.Logging
 
 /// Cửa sổ overlay chụp màn hình.
-/// Xem tài liệu 11_03_OverlayWindow.md.
+/// Xem tài liệu 11_03_OverlayWindow.md và 11_09_OverlayStateIntegration.md.
 type CaptureOverlayWindow() as this =
     inherit Window()
 
     let mutable canvas: CaptureCanvas option = None
+    let mutable overlayState: FShot.Core.State.OverlayState option = None
 
     do
         this.InitializeComponent()
         this.ConfigureOverlayWindow()
 
-        // Esc luôn đóng overlay ngay cả khi focus không nằm trên canvas.
-        this.KeyDown.Add(fun e ->
-            if e.Key = Key.Escape then
-                FShotLog.write "[CaptureOverlayWindow] Esc pressed - closing overlay"
-                e.Handled <- true
-                try this.Close() with ex -> FShotLog.writeEx "Failed to close overlay window from KeyDown" ex
-        )
+        // Key handling đã được chuyển xuống CaptureCanvas để OverlayState xử lý.
+        // Window không còn đóng trực tiếp từ Esc.
 
     member private this.InitializeComponent() =
         AvaloniaXamlLoader.Load(this)
@@ -95,6 +91,15 @@ type CaptureOverlayWindow() as this =
                     sprintf "Stub capture succeeded: %dx%d pixels" captureResult.Width captureResult.Height
                 )
                 canvas |> Option.iter (fun c -> c.SetCaptureResult captureResult)
+
+                // Khởi tạo OverlayState từ capture result và config mặc định.
+                let config = ConfigSnapshot.Default
+                let state = FShot.Core.State.OverlayStateLogic.init captureResult config
+                overlayState <- Some state
+
+                canvas |> Option.iter (fun c ->
+                    Avalonia.Threading.Dispatcher.UIThread.Post(fun () -> c.SetOverlayState state)
+                )
             | Error err ->
                 FShotLog.write (sprintf "Stub capture failed: %A" err)
         }
