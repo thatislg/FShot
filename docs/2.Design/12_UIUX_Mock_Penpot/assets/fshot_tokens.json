@@ -1,0 +1,520 @@
+{
+  "$schema": "https://tokens.studio/schemas/dtcg/0.1.json",
+  "Accent": {
+    "Primary": {
+      "$type": "color",
+      "$value": "#7C3AED",
+      "$description": "Màu chính cho nút active, điểm nhấn toolbar."
+    },
+    "Secondary": {
+      "$type": "color",
+      "$value": "#FF0055",
+      "$description": "Màu phụ cho trạng thái lỗi, hủy, warning nhẹ."
+    },
+    "Hover": {
+      "$type": "color",
+      "$value": "#9F6CF0",
+      "$description": "Biến thể sáng hơn của Primary khi hover."
+    }
+  },
+  "Overlay": {
+    "DimColor": {
+      "$type": "color",
+      "$value": "#000000",
+      "$description": "Màu đen làm lớp phủ mờ toàn màn hình."
+    },
+    "DimOpacity": {
+      "$type": "number",
+      "$value": 0.50,
+      "$description": "Độ mờ mặc định của overlay."
+    },
+    "DimOpacityStrong": {
+      "$type": "number",
+      "$value": 0.60,
+      "$description": "Độ mờ cao hơn khi cần tương phản mạnh."
+    }
+  },
+  "Selection": {
+    "BorderColor": {
+      "$type": "color",
+      "$value": "#FFFFFF",
+      "$description": "Viền khung chọn, luôn nổi trên nền tối."
+    },
+    "BorderOpacity": {
+      "$type": "number",
+      "$value": 1.00,
+      "$description": "Viền không trong suốt."
+    },
+    "BorderWidth": {
+      "$type": "dimension",
+      "$value": "2px",
+      "$description": "Độ dày viền khung chọn."
+    },
+    "BorderDash": {
+      "$type": "string",
+      "$value": "4px on, 4px off",
+      "$description": "Nét đứt di chuyển tạo cảm giác đang kéo."
+    },
+    "ClearFill": {
+      "$type": "color",
+      "$value": "#FFFFFF",
+      "$description": "Không tô màu bên trong vùng chọn, opacity = 0."
+    },
+    "HoverTint": {
+      "$type": "color",
+      "$value": "#FFFFFF",
+      "$description": "Lớp tint khi di chuyển vùng chọn."
+    },
+    "HoverTintOpacity": {
+      "$type": "number",
+      "$value": 0.05,
+      "$description": "Tô nhẹ 5% để phân biệt vùng đang di chuyển."
+    }
+  },
+  "Handle": {
+    "FillColor": {
+      "$type": "color",
+      "$value": "#00E5FF",
+      "$description": "Màu nền cyan nổi bật."
+    },
+    "FillOpacity": {
+      "$type": "number",
+      "$value": 1.00,
+      "$description": "Không trong suốt để dễ bắt chuột."
+    },
+    "StrokeColor": {
+      "$type": "color",
+      "$value": "#000000",
+      "$description": "Viền đen bao quanh để handle nổi trên mọi nền."
+    },
+    "StrokeOpacity": {
+      "$type": "number",
+      "$value": 1.00,
+      "$description": "Viền đen đậm."
+    },
+    "StrokeWidth": {
+      "$type": "dimension",
+      "$value": "1px",
+      "$description": "Viền mảnh, không lấn át viền vùng chọn."
+    }
+  },
+  "Toolbar": {
+    "BackgroundColor": {
+      "$type": "color",
+      "$value": "#1E1E2E",
+      "$description": "Nền tối gần đen-xanh."
+    },
+    "BackgroundOpacity": {
+      "$type": "number",
+      "$value": 0.95,
+      "$description": "Hơi trong suốt để hòa với overlay."
+    },
+    "BorderColor": {
+      "$type": "color",
+      "$value": "#FFFFFF",
+      "$description": "Viền ngoài toolbar."
+    },
+    "BorderOpacity": {
+      "$type": "number",
+      "$value": 0.10,
+      "$description": "Viền rất mờ."
+    },
+    "BorderWidth": {
+      "$type": "dimension",
+      "$value": "1px",
+      "$description": "Viền mảnh."
+    },
+    "ShadowColor": {
+      "$type": "color",
+      "$value": "#000000",
+      "$description": "Bóng đổ."
+    },
+    "ShadowOpacity": {
+      "$type": "number",
+      "$value": 0.40,
+      "$description": "Bóng đổ 40%."
+    },
+    "ShadowBlur": {
+      "$type": "dimension",
+      "$value": "12px",
+      "$description": "Độ mờ bóng."
+    },
+    "ShadowOffsetY": {
+      "$type": "dimension",
+      "$value": "4px",
+      "$description": "Bóng lệch xuống dưới."
+    },
+    "SeparatorColor": {
+      "$type": "color",
+      "$value": "#FFFFFF",
+      "$description": "Đường phân cách nhóm nút."
+    },
+    "SeparatorOpacity": {
+      "$type": "number",
+      "$value": 0.15,
+      "$description": "Mờ vừa đủ nhìn."
+    },
+    "SeparatorWidth": {
+      "$type": "dimension",
+      "$value": "1px",
+      "$description": "Đường kẻ mảnh."
+    }
+  },
+  "ToolButton": {
+    "Default": {
+      "Background": {
+        "$type": "color",
+        "$value": "#FFFFFF",
+        "$description": "Nền trong suốt, opacity = 0."
+      },
+      "IconColor": {
+        "$type": "color",
+        "$value": "#FFFFFF",
+        "$description": "Icon trắng."
+      },
+      "IconOpacity": {
+        "$type": "number",
+        "$value": 0.85,
+        "$description": "Hơi mờ để tránh chói."
+      }
+    },
+    "Hover": {
+      "Background": {
+        "$type": "color",
+        "$value": "#FFFFFF",
+        "$description": "Nền xám nhẹ."
+      },
+      "BackgroundOpacity": {
+        "$type": "number",
+        "$value": 0.12,
+        "$description": "Mờ vừa đủ thấy hover."
+      },
+      "IconColor": {
+        "$type": "color",
+        "$value": "#FFFFFF",
+        "$description": "Icon trắng."
+      },
+      "IconOpacity": {
+        "$type": "number",
+        "$value": 1.00,
+        "$description": "Đậm hơn khi hover."
+      }
+    },
+    "Active": {
+      "Background": {
+        "$type": "color",
+        "$value": "#7C3AED",
+        "$description": "Nền accent."
+      },
+      "BackgroundOpacity": {
+        "$type": "number",
+        "$value": 1.00,
+        "$description": "Không trong suốt."
+      },
+      "IconColor": {
+        "$type": "color",
+        "$value": "#FFFFFF",
+        "$description": "Icon trắng trên nền tím."
+      },
+      "IconOpacity": {
+        "$type": "number",
+        "$value": 1.00,
+        "$description": "Icon đậm."
+      }
+    },
+    "Disabled": {
+      "Background": {
+        "$type": "color",
+        "$value": "#FFFFFF",
+        "$description": "Không nền."
+      },
+      "IconColor": {
+        "$type": "color",
+        "$value": "#FFFFFF",
+        "$description": "Icon trắng."
+      },
+      "IconOpacity": {
+        "$type": "number",
+        "$value": 0.35,
+        "$description": "Mờ đi rõ rệt."
+      }
+    }
+  },
+  "Annotation": {
+    "Red": {
+      "$type": "color",
+      "$value": "#EF4444",
+      "$description": "Màu đỏ mặc định."
+    },
+    "Yellow": {
+      "$type": "color",
+      "$value": "#F59E0B",
+      "$description": "Màu vàng."
+    },
+    "Green": {
+      "$type": "color",
+      "$value": "#10B981",
+      "$description": "Màu xanh lá."
+    },
+    "Blue": {
+      "$type": "color",
+      "$value": "#3B82F6",
+      "$description": "Màu xanh dương."
+    },
+    "White": {
+      "$type": "color",
+      "$value": "#FFFFFF",
+      "$description": "Màu trắng."
+    },
+    "Black": {
+      "$type": "color",
+      "$value": "#000000",
+      "$description": "Màu đen."
+    },
+    "StrokeWidth": {
+      "Default": {
+        "$type": "dimension",
+        "$value": "2px",
+        "$description": "Độ dày nét mặc định."
+      },
+      "Thick": {
+        "$type": "dimension",
+        "$value": "4px",
+        "$description": "Dùng cho marker hoặc nhấn mạnh."
+      }
+    },
+    "Marker": {
+      "Opacity": {
+        "$type": "number",
+        "$value": 0.40,
+        "$description": "Marker bán trong suốt."
+      }
+    },
+    "Text": {
+      "Color": {
+        "$type": "color",
+        "$value": "#EF4444",
+        "$description": "Màu chữ mặc định."
+      },
+      "Background": {
+        "$type": "color",
+        "$value": "#000000",
+        "$description": "Nền text box trong suốt khi đang chỉnh sửa."
+      },
+      "BackgroundOpacity": {
+        "$type": "number",
+        "$value": 0.00,
+        "$description": "Không nền khi edit."
+      }
+    }
+  },
+  "Badge": {
+    "BackgroundColor": {
+      "$type": "color",
+      "$value": "#7C3AED",
+      "$description": "Nền accent."
+    },
+    "BackgroundOpacity": {
+      "$type": "number",
+      "$value": 0.95,
+      "$description": "Gần như đục."
+    },
+    "TextColor": {
+      "$type": "color",
+      "$value": "#FFFFFF",
+      "$description": "Chữ trắng."
+    },
+    "TextOpacity": {
+      "$type": "number",
+      "$value": 1.00,
+      "$description": "Không trong suốt."
+    },
+    "BorderRadius": {
+      "$type": "dimension",
+      "$value": "4px",
+      "$description": "Bo góc nhỏ."
+    }
+  },
+  "Text": {
+    "FontFamily": {
+      "$type": "string",
+      "$value": "Segoe UI, sans-serif",
+      "$description": "Font hệ thống Windows mặc định."
+    },
+    "FontFamilyMono": {
+      "$type": "string",
+      "$value": "Consolas, monospace",
+      "$description": "Font monospace cho số liệu, tọa độ."
+    },
+    "Toolbar": {
+      "FontSize": {
+        "$type": "dimension",
+        "$value": "13px",
+        "$description": "Font cho tooltip trên toolbar."
+      }
+    },
+    "Badge": {
+      "FontSize": {
+        "$type": "dimension",
+        "$value": "11px",
+        "$description": "Font trong dimension badge."
+      }
+    },
+    "Shortcut": {
+      "FontSize": {
+        "$type": "dimension",
+        "$value": "10px",
+        "$description": "Font phím tắt nhỏ bên dưới icon."
+      }
+    },
+    "Weight": {
+      "Regular": {
+        "$type": "number",
+        "$value": 400,
+        "$description": "Độ đậm thông thường."
+      },
+      "Semibold": {
+        "$type": "number",
+        "$value": 600,
+        "$description": "Độ đậm nhấn mạnh."
+      }
+    }
+  },
+  "Size": {
+    "Toolbar": {
+      "Height": {
+        "$type": "dimension",
+        "$value": "40px",
+        "$description": "Chiều cao thanh công cụ."
+      },
+      "MinWidth": {
+        "$type": "dimension",
+        "$value": "200px",
+        "$description": "Độ rộng tối thiểu toolbar."
+      }
+    },
+    "ToolButton": {
+      "Width": {
+        "$type": "dimension",
+        "$value": "32px",
+        "$description": "Chiều rộng nút công cụ."
+      },
+      "Height": {
+        "$type": "dimension",
+        "$value": "32px",
+        "$description": "Chiều cao nút công cụ."
+      }
+    },
+    "Icon": {
+      "Width": {
+        "$type": "dimension",
+        "$value": "18px",
+        "$description": "Chiều rộng icon trong nút."
+      },
+      "Height": {
+        "$type": "dimension",
+        "$value": "18px",
+        "$description": "Chiều cao icon trong nút."
+      }
+    },
+    "Handle": {
+      "Width": {
+        "$type": "dimension",
+        "$value": "8px",
+        "$description": "Chiều rộng handle."
+      },
+      "Height": {
+        "$type": "dimension",
+        "$value": "8px",
+        "$description": "Chiều cao handle."
+      },
+      "HitPadding": {
+        "$type": "dimension",
+        "$value": "4px",
+        "$description": "Vùng mở rộng bắt chuột xung quanh handle."
+      }
+    },
+    "Badge": {
+      "Height": {
+        "$type": "dimension",
+        "$value": "18px",
+        "$description": "Chiều cao badge kích thước."
+      },
+      "PaddingX": {
+        "$type": "dimension",
+        "$value": "6px",
+        "$description": "Padding ngang trong badge."
+      },
+      "PaddingY": {
+        "$type": "dimension",
+        "$value": "2px",
+        "$description": "Padding dọc trong badge."
+      }
+    },
+    "Separator": {
+      "Height": {
+        "$type": "dimension",
+        "$value": "20px",
+        "$description": "Chiều cao đường phân cách trong toolbar."
+      }
+    }
+  },
+  "Radius": {
+    "Toolbar": {
+      "$type": "dimension",
+      "$value": "8px",
+      "$description": "Bo góc thanh công cụ."
+    },
+    "ToolButton": {
+      "$type": "dimension",
+      "$value": "6px",
+      "$description": "Bo góc nút công cụ."
+    },
+    "Badge": {
+      "$type": "dimension",
+      "$value": "4px",
+      "$description": "Bo góc badge."
+    },
+    "Popup": {
+      "$type": "dimension",
+      "$value": "10px",
+      "$description": "Bo góc popup nhỏ."
+    }
+  },
+  "Spacing": {
+    "Toolbar": {
+      "InnerGap": {
+        "$type": "dimension",
+        "$value": "4px",
+        "$description": "Khoảng cách giữa các nút trong cùng nhóm."
+      },
+      "GroupGap": {
+        "$type": "dimension",
+        "$value": "8px",
+        "$description": "Khoảng cách giữa 2 nhóm nút qua separator."
+      },
+      "PaddingX": {
+        "$type": "dimension",
+        "$value": "8px",
+        "$description": "Padding ngang toàn toolbar."
+      },
+      "PaddingY": {
+        "$type": "dimension",
+        "$value": "4px",
+        "$description": "Padding dọc toàn toolbar."
+      },
+      "OffsetFromSelection": {
+        "$type": "dimension",
+        "$value": "8px",
+        "$description": "Khoảng cách từ mép dưới vùng chọn đến toolbar."
+      }
+    },
+    "Popup": {
+      "Offset": {
+        "$type": "dimension",
+        "$value": "6px",
+        "$description": "Khoảng cách từ nút kích hoạt đến popup."
+      }
+    }
+  }
+}

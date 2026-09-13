@@ -262,20 +262,6 @@ Mỗi handle vẽ bằng 2 lần:
 Sau khi xuất từ Penpot, tài nguyên nên được sắp xếp trong dự án như sau:
 
 ```text
-assets/
-├── design/
-│   ├── tokens.md           (bảng token copy từ Penpot)
-│   └── icons/
-│       ├── icon_pencil.svg
-│       ├── icon_line.svg
-│       └── ...
-└── penpot/
-    └── fshot_mock.penpot   (file gốc Penpot nếu export được)
-```
-
-Hoặc nếu Penpot file lưu online:
-
-```text
 docs/2.Design/12_UIUX_Mock_Penpot/
 ├── 12_00_Overview.md
 ├── 12_01_DesignTokens.md
@@ -284,10 +270,47 @@ docs/2.Design/12_UIUX_Mock_Penpot/
 ├── 12_04_ToolbarLayout.md
 ├── 12_05_ExportGuidelines.md
 └── assets/
+    ├── fshot_tokens.json     (file import tokens DTCG cho Penpot)
     └── icons/
         ├── icon_pencil.svg
         └── ...
 ```
+
+## 9. Import nhanh tokens vào Penpot
+
+### 9.1. Cách import từ file JSON
+
+Penpot hỗ trợ import token theo chuẩn DTCG (Design Tokens Community Group) từ file JSON. Thay vì tạo từng token thủ công:
+
+1. Mở project Penpot.
+2. Chọn tab **Tokens** ở sidebar phải.
+3. Click nút **Import** (biểu tượng upload / import).
+4. Chọn file `assets/fshot_tokens.json`.
+5. Penpot sẽ tạo toàn bộ cây token theo nhóm: `Accent`, `Overlay`, `Selection`, `Handle`, `Toolbar`, `ToolButton`, `Annotation`, `Badge`, `Text`, `Size`, `Radius`, `Spacing`.
+
+### 9.2. Lưu ý khi import
+
+- File JSON phải đúng định dạng DTCG với các key `$type`, `$value`, `$description`.
+- Penpot có thể chưa hỗ trợ đầy đủ tất cả các type; nếu gặp lỗi, hãy kiểm tra các token kiểu `string` hoặc `number` không có đơn vị.
+- Nếu Penpot báo lỗi alias/reference, đảm bảo không dùng cú pháp `{token.path}` trong `$value`.
+- Sau khi import, kiểm tra lại nhóm token để đảm bảo không bị lệch cấu trúc.
+
+### 9.3. Fallback nếu import không hoạt động
+
+Nếu Penpot tại thời điểm sử dụng chưa hỗ trợ import JSON:
+
+- Dùng file `fshot_tokens.json` làm bảng tra cứu.
+- Tạo từng nhóm token trong Penpot theo cây đã định nghĩa.
+- Có thể copy tên token từ file JSON để tránh nhầm lẫn.
+
+### 9.4. Export ngược từ Penpot
+
+Khi cần đồng bộ token từ Penpot về code:
+
+1. Trong tab Tokens, chọn **Export**.
+2. Chọn định dạng DTCG JSON.
+3. Lưu vào `assets/fshot_tokens_exported.json`.
+4. So sánh với `fshot_tokens.json` gốc để phát hiện thay đổi.
 
 ---
 
