@@ -60,10 +60,10 @@ FShot Tokens
 │   ├── ShadowBlur
 │   └── ShadowOffsetY
 ├── ToolButton
-│   ├── Default/Background
-│   ├── Default/IconColor
-│   ├── Hover/Background
-│   └── Active/Background
+│   ├── Default.Background
+│   ├── Default.IconColor
+│   ├── Hover.Background
+│   └── Active.Background
 ├── Annotation
 │   ├── Red
 │   ├── Yellow
@@ -71,31 +71,31 @@ FShot Tokens
 │   ├── Blue
 │   ├── White
 │   ├── Black
-│   ├── StrokeWidth/Default
-│   └── Marker/Opacity
+│   ├── StrokeWidth.Default
+│   └── Marker.Opacity
 ├── Text
 │   ├── FontFamily
 │   ├── FontFamilyMono
-│   ├── Toolbar/FontSize
-│   ├── Badge/FontSize
-│   └── Shortcut/FontSize
+│   ├── Toolbar.FontSize
+│   ├── Badge.FontSize
+│   └── Shortcut.FontSize
 ├── Size
-│   ├── Toolbar/Height
-│   ├── ToolButton/Width
-│   ├── ToolButton/Height
-│   ├── Icon/Width
-│   ├── Handle/Width
-│   ├── Handle/HitPadding
-│   └── Badge/Height
+│   ├── Toolbar.Height
+│   ├── ToolButton.Width
+│   ├── ToolButton.Height
+│   ├── Icon.Width
+│   ├── Handle.Width
+│   ├── Handle.HitPadding
+│   └── Badge.Height
 ├── Radius
 │   ├── Toolbar
 │   ├── ToolButton
 │   └── Badge
 └── Spacing
-    ├── Toolbar/InnerGap
-    ├── Toolbar/GroupGap
-    ├── Toolbar/PaddingX
-    └── Toolbar/OffsetFromSelection
+    ├── Toolbar.InnerGap
+    ├── Toolbar.GroupGap
+    ├── Toolbar.PaddingX
+    └── Toolbar.OffsetFromSelection
 ```
 
 ### 2.2. Cách map sang Avalonia
@@ -108,8 +108,8 @@ Brush = Color * Opacity
 
 Ví dụ:
 
-- `Overlay/DimColor = #000000`, `Overlay/DimOpacity = 0.50` → tạo brush `#00000080`.
-- `Toolbar/BackgroundColor = #1E1E2E`, `Toolbar/BackgroundOpacity = 0.95` → tạo brush `#1E1E2EF2`.
+- `Overlay.DimColor = #000000`, `Overlay.DimOpacity = 0.50` → tạo brush `#00000080`.
+- `Toolbar.BackgroundColor = #1E1E2E`, `Toolbar.BackgroundOpacity = 0.95` → tạo brush `#1E1E2EF2`.
 
 Các token kích thước chuyển thành `double` trong XAML hoặc constant trong F#.
 
@@ -238,14 +238,14 @@ SKColor = RGBA(Color.R, Color.G, Color.B, round(Opacity * 255))
 
 ### 6.2. Overlay dimming
 
-Lớp phủ tối toàn màn hình dùng `SKPaint` màu đen với alpha từ `Overlay/DimOpacity`.
+Lớp phủ tối toàn màn hình dùng `SKPaint` màu đen với alpha từ `Overlay.DimOpacity`.
 
 ### 6.3. Selection border
 
 Viền vùng chọn dùng `SKPaint` với:
 
-- `Color = Selection/BorderColor`.
-- `StrokeWidth = Selection/BorderWidth`.
+- `Color = Selection.BorderColor`.
+- `StrokeWidth = Selection.BorderWidth`.
 - `PathEffect` nếu là nét đứt.
 
 ### 6.4. Resize handles
