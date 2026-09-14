@@ -228,20 +228,20 @@ type CaptureCanvas() as this =
         base.OnKeyDown(e)
         let keyString = this.ToKeyString(e)
         let isFocused = this.IsFocused
-        FShotLog.write (sprintf "[CaptureCanvas] KeyDown: %s | Focused: %b" keyString isFocused)
+        FShotLog.write (sprintf "[CaptureCanvas] KeyDown: %s | Key: %A | Focused: %b" keyString e.Key isFocused)
 
         // Phím tắt chuyển nhanh công cụ annotation.
-        let normalized = keyString.ToLowerInvariant()
-        match normalized with
-        | "p" -> this.Dispatch(SelectTool PencilTool)
-        | "l" -> this.Dispatch(SelectTool LineTool)
-        | "a" -> this.Dispatch(SelectTool ArrowTool)
-        | "r" -> this.Dispatch(SelectTool RectangleTool)
-        | "c" -> this.Dispatch(SelectTool CircleTool)
-        | "m" -> this.Dispatch(SelectTool MarkerTool)
-        | "t" -> this.Dispatch(SelectTool TextTool)
-        | "b" -> this.Dispatch(SelectTool PixelateTool)
-        | "s" -> this.Dispatch(SelectTool SelectionTool)
+        // Dùng e.Key (phím vật lý) thay vì chuỗi IME để tránh bị bộ gõ tiếng Việt bắt mất.
+        match e.Key with
+        | Key.P -> this.Dispatch(SelectTool PencilTool)
+        | Key.L -> this.Dispatch(SelectTool LineTool)
+        | Key.A -> this.Dispatch(SelectTool ArrowTool)
+        | Key.R -> this.Dispatch(SelectTool RectangleTool)
+        | Key.C -> this.Dispatch(SelectTool CircleTool)
+        | Key.M -> this.Dispatch(SelectTool MarkerTool)
+        | Key.T -> this.Dispatch(SelectTool TextTool)
+        | Key.B -> this.Dispatch(SelectTool PixelateTool)
+        | Key.S -> this.Dispatch(SelectTool SelectionTool)
         | _ -> this.Dispatch(KeyDown(keyString))
 
     /// Tạo WriteableBitmap từ CaptureResult.
