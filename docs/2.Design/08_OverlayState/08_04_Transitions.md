@@ -267,9 +267,13 @@ Nếu người dùng chọn công cụ khác trong khi đang vẽ, có hai khả
 - Hủy preview hiện tại, thay đổi `CurrentTool`, và quay về `Selected`.
 - Hoặc bỏ qua lệnh chuyển công cụ cho đến khi thao tác hiện tại kết thúc.
 
-Trong MVP, lựa chọn khuyến nghị là hủy preview và quay về `Selected` để tránh trạng thái kẹt.
+Trong MVP, lựa chọn khuyến nghị là hủy preview và quay về `Selected` để tránh trạng thái kẹt. Tuy nhiên, code hiện tại cho phép chuyển tool ngay cả trong `Annotating` bằng cách hủy preview hiện tại và đổi `CurrentTool`, giúp phản hồi nhanh khi người dùng nhấn nhầm phím tắt.
 
-### 9.5 EditingText + Enter → Selected
+### 9.5 EditingText + SelectTool khác → Selected
+
+Nếu người dùng chọn công cụ khác trong khi đang nhập text, UI hủy text input, đổi `CurrentTool`, và gửi `HideTextInput` command. Trạng thái quay về `Selected` (hoặc `Idle` nếu công cụ là Selection và không có vùng chọn).
+
+### 9.6 EditingText + Enter → Selected
 
 Khi người dùng nhấn Enter sau khi nhập text, annotation Text được commit.
 

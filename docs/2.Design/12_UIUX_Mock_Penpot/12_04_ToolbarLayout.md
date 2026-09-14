@@ -85,52 +85,58 @@ Trong Penpot, layer `BottomToolbar` đặt trên cùng của board trạng thái
 
 ## 4. Vị trí toolbar so với vùng chọn
 
-### 4.1. Vị trí mặc định
+Toolbar luôn đặt ngoài vùng chọn, cách ít nhất `8px`. Vị trí mặc định là dưới đáy vùng chọn, căn giữa theo chiều ngang. Nếu mép dưới không đủ chỗ, toolbar tự động chuyển lên trên. Nếu cả trên và dưới đều không đủ chỗ (ví dụ vùng chọn quá rộng so với chiều cao màn hình hoặc toolbar ngang quá dài so với vùng chọn), toolbar chuyển sang dạng dọc bên phải vùng chọn, căn giữa theo chiều dọc. Nếu phải không đủ chỗ thì chuyển sang dọc bên trái.
 
-Toolbar đặt ở mép dưới bên phải của vùng chọn:
+Các trường hợp cụ thể:
+
+### 4.1. Vị trí mặc định (BottomHorizontal)
+
+Toolbar đặt dưới đáy vùng chọn, căn giữa:
 
 ```text
-Toolbar.X = Selection.Right - Toolbar.Width
+Toolbar.X = Selection.X + Selection.Width / 2 - Toolbar.Width / 2
 Toolbar.Y = Selection.Bottom + 8px
 ```
 
-Lý do chọn góc phải-dưới:
+### 4.2. Khi vùng chọn sát mép dưới (TopHorizontal)
 
-- Góc này thường là vùng tự do sau khi kéo từ trái-trên sang phải-dưới.
-- Người dùng thuận tay phải thường kéo theo hướng này, nên toolbar xuất hiện gần vị trí chuột thả.
-
-### 4.2. Xử lý khi vùng chọn nhỏ
-
-Nếu `Selection.Width < Toolbar.Width`, toolbar vẫn đặt theo công thức trên, nhưng bị tràn sang trái. Lúc này cần clamp:
+Nếu toolbar vượt quá chiều cao màn hình:
 
 ```text
-Toolbar.X = max(8px, Selection.Right - Toolbar.Width)
-```
-
-### 4.3. Xử lý khi vùng chọn ở biên dưới màn hình
-
-Nếu toolbar bị tràn xuống dưới màn hình:
-
-```text
-if Toolbar.Y + Toolbar.Height > ScreenHeight - 8px then
+if Toolbar.Y + Toolbar.Height > ScreenHeight then
     Toolbar.Y = Selection.Top - Toolbar.Height - 8px
 ```
 
-### 4.4. Xử lý khi vùng chọn ở biên phải màn hình
+### 4.3. Khi vùng chọn hẹp hơn toolbar ngang hoặc không đủ chỗ trên/dưới (RightVertical)
 
-Nếu toolbar tràn ra phải:
+Toolbar chuyển sang dạng dọc bên phải vùng chọn:
 
 ```text
-if Toolbar.X + Toolbar.Width > ScreenWidth - 8px then
+Toolbar.X = Selection.Right + 8px
+Toolbar.Y = Selection.Y + Selection.Height / 2 - Toolbar.Height / 2
+```
+
+### 4.4. Khi phải không đủ chỗ (LeftVertical)
+
+Toolbar chuyển sang dọc bên trái vùng chọn:
+
+```text
+Toolbar.X = Selection.Left - Toolbar.Width - 8px
+Toolbar.Y = Selection.Y + Selection.Height / 2 - Toolbar.Height / 2
+```
+
+### 4.5. Xử lý khi vùng chọn ở biên phải màn hình
+
+Nếu toolbar dọc phải bị tràn:
+
+```text
+if Toolbar.X + Toolbar.Width > ScreenWidth then
     Toolbar.X = ScreenWidth - Toolbar.Width - 8px
 ```
 
-### 4.5. Xử lý khi vùng chọn ở góc dưới-phải
+### 4.6. Toolbar không bao giờ che vùng chọn
 
-Áp dụng cả hai điều kiện trên theo thứ tự:
-
-1. Clamp X trước.
-2. Nếu vẫn tràn Y thì flip Y lên trên.
+Toolbar luôn đặt ngoài vùng chọn, cách ít nhất `8px`. Trong trường hợp vùng chọn chiếm gần hết màn hình, toolbar có thể bị đẩy ra một bên nhưng vẫn không che phủ vùng chọn.
 
 ---
 

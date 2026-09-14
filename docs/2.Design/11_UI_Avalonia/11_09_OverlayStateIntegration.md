@@ -135,7 +135,7 @@ Trong tương lai, khi có toolbar hoặc phím tắt chuyển công cụ, UI g�
 - `SetStrokeWidth width`
 - `Undo`, `Redo`, `Copy`, `Save`, `Cancel`
 
-Trong phạm vi P1.11, tích hợp này chỉ bao gồm chuột và bàn phím cơ bản.
+Trong phạm vi P1.11, tích hợp này chỉ bao gồm chuột và bàn phím cơ bản. Toolbar chưa được triển khai runtime; việc chuyển công cụ qua phím tắt được xử lý bằng `e.Key` để tránh xung đột với bộ gõ tiếng Việt. Xem `11_05_InputHandling.md`, mục 3.2.
 
 ---
 
@@ -178,7 +178,7 @@ Dùng `RenderModel.Selection`:
 
 ### 5.5 Annotations và Preview
 
-Trong P1.11 chưa có annotation tool UI, nên `RenderModel.Annotations` và `RenderModel.Preview` sẽ rỗng. Chỉ cần giữ chỗ để tương lai vẽ.
+Từ P1.12, `RenderModel.Annotations` và `RenderModel.Preview` được vẽ bằng Avalonia `StreamGeometry` trong `CaptureCanvas`. Nút vẽ hiện tại (Pencil) dùng cùng thuật toán làm mịn quadratic Bézier như `FShot.Rendering.Skia`. Các annotation tool khác sẽ được bổ sung khi triển khai P1.13–P1.19.
 
 ---
 
@@ -194,6 +194,37 @@ Trong P1.11 chưa có annotation tool UI, nên `RenderModel.Annotations` và `Re
 | `StartExport target` | Tương lai: gọi export service. |
 
 Trong P1.11 chỉ cần xử lý `CloseOverlay`.
+
+Từ P1.12, `CaptureCanvas` cũng xử lý `SelectTool` từ toolbar tạm thời được vẽ trực tiếp trên overlay. Toolbar này hiển thị khi `RenderModel.ToolbarVisible = true`, bám quanh vùng chọn theo 4 cạnh (bottom, top, right, left) tùy không gian màn hình. Xem `12_04_ToolbarLayout.md` và phần "Toolbar runtime" dưới đây.
+
+---
+
+## 6. Toolbar runtime tạm thời (P1.12)
+
+Trong MVP, toolbar được vẽ trực tiếp bên trong `CaptureCanvas.Render` thay vì dùng Avalonia controls. Cách này giúp nhanh chóng kiểm tra luồng chuyển công cụ trước khi triển khai toolbar đầy đủ bằng Penpot design.
+
+### 6.1 Vị trí
+
+Toolbar bám quanh vùng chọn với các placement:
+
+- `BottomHorizontal`: mặc định, dưới đáy, căn giữa.
+- `TopHorizontal`: khi dưới tràn màn hình.
+- `RightVertical`: khi vùng chọn hẹp hơn toolbar ngang hoặc không đủ chỗ trên/dưới.
+- `LeftVertical`: khi phải không đủ chỗ.
+
+### 6.2 Hit-test
+
+Khi `OnPointerPressed`, `CaptureCanvas` kiểm tra xem click có nằm trong toolbar không trước khi gửi `PointerPressed` vào `OverlayState`. Nếu trúng, gửi `SelectTool` tương ứng.
+
+### 6.3 Render
+
+Toolbar vẽ nền tối trong suốt, border mỏng, các nút `S P L A R C M T B`, và viền trắng cho nút active.
+
+### 6.4 Giới hạn
+
+- Chưa dùng icon SVG; hiện tại dùng chữ cái tạm thời.
+- Chưa có nhóm Action (Undo, Redo, Copy, Save, Cancel).
+- Icon Flameshot đã được sao chép sang `docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/` nhưng chưa được tích hợp vào runtime.
 
 ---
 
@@ -215,9 +246,11 @@ Trong P1.11 chỉ cần xử lý `CloseOverlay`.
 - Bỏ trường `selection` riêng; thay bằng `overlayState: OverlayState option`.
 - Bỏ logic `OnPointerPressed/Moved/Released` cũ; thay bằng gửi `OverlayEvent`.
 - Sửa `OnKeyDown` để gửi `KeyDown keyString`.
+- Thêm xử lý `SelectTool` từ phím tắt vật lý (`e.Key`) để tránh IME chặn phím.
 - Thêm `SetOverlayState`.
-- Sửa `Render` để vẽ theo `RenderModel`.
+- Sửa `Render` để vẽ theo `RenderModel`, bao gồm toolbar tạm thời quanh vùng chọn.
 - Thêm helper chuyển `KeyEventArgs` sang chuỗi.
+- (P1.12+) Tách logic toolbar vào module riêng để dễ bảo trì.
 
 ### 8.2 `src/FShot.UI/Windows/CaptureOverlayWindow.axaml.fs`
 
@@ -240,20 +273,22 @@ Trong P1.11 chỉ cần xử lý `CloseOverlay`.
 
 ---
 
-## 9. Phạm vi P1.11 tích hợp UI
+## 9. Phạm vi P1.12 tích hợp UI
 
-Trong P1.11, tích hợp UI đạt đến mức:
+Trong P1.12, tích hợp UI đạt đến mức:
 
 - [x] `CaptureCanvas` dùng `OverlayState` cho mọi input chuột.
 - [x] `CaptureCanvas` gửi keyboard events đúng format đến `OverlayState`.
-- [x] `CaptureCanvas` vẽ theo `RenderModel.Selection`.
+- [x] `CaptureCanvas` vẽ theo `RenderModel.Selection`, `RenderModel.Annotations`, `RenderModel.Preview`.
 - [x] `Esc` / `Ctrl+Backspace` hoạt động đúng theo trạng thái.
 - [x] Nudge và Shift+Arrow hoạt động trên overlay thực tế.
 - [x] `CloseOverlay` command đóng cửa sổ.
+- [x] Phím tắt chuyển công cụ `P/L/A/R/C/M/T/B/S` hoạt động, xử lý qua `e.Key` để tránh IME.
+- [x] Toolbar tạm thời hiển thị quanh vùng chọn và cho phép click chọn tool.
 
 Không bao gồm:
 
-- Toolbar UI.
+- Toolbar đầy đủ với icon SVG, nhóm Action (Undo, Redo, Copy, Save, Cancel).
 - `DimmingRenderer` Skia (dùng Avalonia 4 strips đơn giản).
 - `StartExport` command.
 - `ShowTextInput` / `HideTextInput`.
@@ -267,6 +302,7 @@ Không bao gồm:
 | Threading: `SetCaptureResult` chạy trên background async, nhưng `SetOverlayState` cần UI thread. | Gọi `SetOverlayState` qua `Dispatcher.UIThread.Post`. |
 | `CaptureCanvas` không focus nên không nhận `OnKeyDown`. | Gọi `this.Focus()` trong `OnAttachedToVisualTree` và sau khi window show. |
 | `KeyDown` ở `CaptureOverlayWindow` đóng window trước khi canvas xử lý. | Gỡ bỏ handler ở window; để canvas xử lý. |
+| Bộ gõ tiếng Việt chặn phím tắt công cụ (`P`, `L`, `A`, `R`, `C`, `M`, `T`, `B`, `S`). | Dùng `e.Key` thay vì chuỗi `ToKeyString()` cho các phím tắt tool; ghi nhận là tech debt cần giải quyết sau. Xem `11_05_InputHandling.md`, mục 3.2. |
 | RenderModel có `Selection = None` trong `Idle` nhưng vẫn cần dimming toàn màn hình. | Vẽ 4 strips phủ toàn control khi không có selection. |
 
 ---
@@ -276,9 +312,10 @@ Không bao gồm:
 - **08_05_RenderModel.md**: dữ liệu UI dùng để vẽ.
 - **08_06_Integration.md**: trách nhiệm UI/State.
 - **11_04_RenderControl.md**: vẽ overlay trước tích hợp.
-- **11_05_InputHandling.md**: mapping input sang events.
+- **11_05_InputHandling.md**: mapping input sang events, phím tắt tool, và tech debt IME.
+- **12_04_ToolbarLayout.md**: vị trí và hành vi toolbar bám quanh vùng chọn.
 - **03_05_KeyboardOperations.md**: hành vi Esc/Ctrl+Backspace, nudge, Shift+Arrow.
 
 ---
 
-*Tích hợp này biến `OverlayState` từ module đã test đơn lẻ thành trung tâm điều khiển thực tế của overlay. Sau khi hoàn thành, P1.05–P1.11 sẽ hoạt động đúng trên UI.*
+*Tích hợp này biến `OverlayState` từ module đã test đơn lẻ thành trung tâm điều khiển thực tế của overlay. Sau khi hoàn thành, P1.05–P1.12 sẽ hoạt động đúng trên UI.*

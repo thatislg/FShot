@@ -111,6 +111,7 @@ Thông tin đi kèm:
 - Phím Esc hủy thao tác hiện tại hoặc đóng overlay.
 - Phím Enter xác nhận xuất ảnh hoặc commit text.
 - Phím Backspace hoặc Delete xóa annotation đang được chọn trong v1.x, trong MVP có thể chưa hỗ trợ.
+- Các phím tắt chuyển công cụ annotation (`P`, `L`, `A`, `R`, `C`, `M`, `T`, `B`, `S`) thường được UI xử lý trước bằng `e.Key` (phím vật lý) để tránh bị bộ gõ tiếng Việt chặn, sau đó gửi `SelectTool tool` vào state machine. Xem thêm `11_05_InputHandling.md`, mục 3.2.
 
 ### 4.2 KeyUp
 
