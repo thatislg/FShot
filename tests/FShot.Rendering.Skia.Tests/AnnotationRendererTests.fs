@@ -157,7 +157,7 @@ let ``Rectangle render vẽ ít nhất một pixel màu xanh`` () =
 
     Assert.True(hasPixelWithBlue bitmap, "Không tìm thấy pixel màu xanh sau khi render Rectangle.")
 
-/// Kiểm tra Circle vẽ được pixel màu đỏ khi không khóa tỷ lệ.
+/// Kiểm tra Circle vẽ được pixel màu đỏ khi không khóa tỉ lệ.
 [<Fact>]
 let ``Circle render vẽ ít nhất một pixel màu đỏ`` () =
     let start = { X = 10.0; Y = 15.0 }
@@ -172,3 +172,27 @@ let ``Circle render vẽ ít nhất một pixel màu đỏ`` () =
     AnnotationRenderer.renderAnnotation canvas scale annotation
 
     Assert.True(hasPixelWithRed bitmap, "Không tìm thấy pixel màu đỏ sau khi render Circle.")
+
+/// Kiểm tra các tool hai điểm với start/end trùng nhau không gây lỗi (chống degrade divide-by-zero).
+[<Fact>]
+let ``Arrow Rectangle Circle điểm trùng nhau không gây lỗi`` () =
+    let start = { X = 25.0; Y = 25.0 }
+    let endPoint = { X = 25.0; Y = 25.0 }
+    let scale = ScaleFactor.Create 1.0
+
+    use bitmap = new SKBitmap(50, 50, SKColorType.Bgra8888, SKAlphaType.Premul)
+    use canvas = new SKCanvas(bitmap)
+
+    let arrow = createArrowAnnotation start endPoint Color.Red 2.0
+    let rect = createRectangleAnnotation start endPoint Color.Blue 2.0
+    let circleNormal = createCircleAnnotation start endPoint false Color.Green 2.0
+    let circleLocked = createCircleAnnotation start endPoint true Color.Green 2.0
+
+    AnnotationRenderer.renderAnnotation canvas scale arrow
+    AnnotationRenderer.renderAnnotation canvas scale rect
+    AnnotationRenderer.renderAnnotation canvas scale circleNormal
+    AnnotationRenderer.renderAnnotation canvas scale circleLocked
+
+    Assert.True(true)
+
+/// Kiểm tra Circle khóa tỉ lệ vẽ được pixel khi bounding box không vuông.

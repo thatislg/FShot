@@ -571,6 +571,81 @@ let ``Circle PointerReleased commit annotation Circle`` () =
         Assert.Equal(point 300.0 250.0, b)
     | _ -> Assert.True(false, "Expected Tool.Circle with aspect lock")
 
+/// Kiểm tra Ctrl modifier được cập nhật trong lúc preview Circle.
+/// Điều này chống degrade khi người dùng nhấn/thả Ctrl giữa chừng khi kéo hình tròn.
+[<Fact>]
+let ``Circle Ctrl modifier thay đổi trong lúc preview phải cập nhật aspect lock`` () =
+    let baseState =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool CircleTool)
+        |> (fun r -> r.State)
+
+    // Bắt đầu vẽ không giữ Ctrl.
+    let drawing =
+        baseState
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+
+    match drawing.AnnotationInteraction with
+    | DrawingPreview(_, _, kind) -> Assert.Equal(CircleTool, kind)
+    | _ -> Assert.True(false, "Expected DrawingPreview")
+
+    // Giữ Ctrl giữa chừng.
+    let ctrlPressed = drawing |> update (CtrlModifier true) |> (fun r -> r.State)
+    let previewLocked = ctrlPressed |> update (PointerMoved(point 300.0 250.0)) |> (fun r -> r.RenderModel.Preview)
+    match previewLocked with
+    | Some annotation ->
+        match annotation.Tool with
+        | Tool.Circle(_, _, true) -> ()
+        | _ -> Assert.True(false, "Expected preview Circle aspectLocked after Ctrl pressed")
+    | None -> Assert.True(false, "Expected preview exists")
+
+    // Thả Ctrl và commit phải ra Circle không khóa.
+    let released =
+        ctrlPressed
+        |> update (CtrlModifier false)
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 350.0 300.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+
+    Assert.Equal(1, List.length released.State.History.Current.Annotations)
+    match (List.head released.State.History.Current.Annotations).Tool with
+    | Tool.Circle(_, _, false) -> ()
+    | _ -> Assert.True(false, "Expected committed Circle without aspect lock after Ctrl released")
+
+/// Kiểm tra chuyển tool khi đang vẽ preview phải hủy preview hiện tại.
+/// Điều này chống degrade khi người dùng nhấn A rồi ngay lập tức nhấn R.
+[<Fact>]
+let ``Chuyển tool khi đang DrawingPreview hủy preview cũ`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool ArrowTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+
+    Assert.Equal(ArrowTool, state.CurrentTool)
+    Assert.True(state.AnnotationInteraction <> NoAnnotation)
+
+    let afterSwitch = state |> update (SelectTool RectangleTool)
+    Assert.Equal(RectangleTool, afterSwitch.State.CurrentTool)
+    Assert.Equal(NoAnnotation, afterSwitch.State.AnnotationInteraction)
+    Assert.True(afterSwitch.RenderModel.Preview.IsNone)
+    Assert.Equal(0, List.length afterSwitch.State.History.Current.Annotations)
+
 /// Kiểm tra Annotating + Cancel hủy preview.
 [<Fact>]
 let ``Annotating Cancel hủy preview`` () =
