@@ -54,22 +54,26 @@ type CaptureCanvas() as this =
         PixelateTool, "B"
     ]
 
-    /// Tính vị trí và kích thước của toolbar trên màn hình.
-    let toolbarBounds (canvasWidth: float) (canvasHeight: float) : Avalonia.Rect =
+    let toolbarPadding = 4.0
+    let toolbarOffsetFromSelection = 8.0
+
+    /// Tính vị trí toolbar bám theo dưới cùng của vùng chọn (theo tọa độ vật lý).
+    let toolbarBoundsFromSelection (scale: float) (selection: FShot.Core.Geometry.Rect) : Avalonia.Rect =
         let count = float (List.length toolbarTools)
-        let width = count * toolbarButtonSize + (count - 1.0) * toolbarGap
-        let height = toolbarButtonSize
-        let x = (canvasWidth - width) / 2.0
-        let y = canvasHeight - toolbarMarginBottom - height
-        Avalonia.Rect(x, y, width, height)
+        let width = count * toolbarButtonSize + (count - 1.0) * toolbarGap + 2.0 * toolbarPadding
+        let height = toolbarButtonSize + 2.0 * toolbarPadding
+        // Căn giữa theo chiều ngang của vùng chọn.
+        let selectionCenterX = selection.X * scale + (selection.Width * scale) / 2.0
+        let x = selectionCenterX - width / 2.0
+        let y = selection.Bottom * scale + toolbarOffsetFromSelection
+        Avalonia.Rect(max 0.0 x, y, width, height)
 
     /// Tìm tool tương ứng với tọa độ click trên toolbar.
-    let hitToolbarTool (canvasWidth: float) (canvasHeight: float) (point: Avalonia.Point) : ToolKind option =
-        let bounds = toolbarBounds canvasWidth canvasHeight
-        if not (bounds.Contains point) then
+    let hitToolbarTool (toolbarBounds: Avalonia.Rect) (point: Avalonia.Point) : ToolKind option =
+        if not (toolbarBounds.Contains point) then
             None
         else
-            let relativeX = point.X - bounds.X
+            let relativeX = point.X - toolbarBounds.X - toolbarPadding
             let index = int (relativeX / (toolbarButtonSize + toolbarGap))
             if index >= 0 && index < List.length toolbarTools then
                 Some (fst (List.item index toolbarTools))
@@ -225,13 +229,28 @@ type CaptureCanvas() as this =
 
         let avPoint = e.GetPosition(this)
         let point = this.ToVirtualPoint(e)
+        let scale =
+            match captureResult with
+            | Some result -> result.ScaleFactor.Value
+            | None -> 1.0
 
         // Ưu tiên kiểm tra click vào toolbar trước.
-        match hitToolbarTool this.Bounds.Width this.Bounds.Height avPoint with
-        | Some tool ->
-            FShotLog.write (sprintf "[CaptureCanvas] Toolbar click -> SelectTool %A" tool)
-            this.Dispatch(SelectTool tool)
-        | None ->
+        let toolbarBounds =
+            overlayState
+            |> Option.map buildRenderModel
+            |> Option.bind (fun rm -> rm.Selection)
+            |> Option.map (fun sel -> toolbarBoundsFromSelection scale sel.Bounds)
+
+        match toolbarBounds with
+        | Some bounds when bounds.Contains avPoint ->
+            match hitToolbarTool bounds avPoint with
+            | Some tool ->
+                FShotLog.write (sprintf "[CaptureCanvas] Toolbar click -> SelectTool %A" tool)
+                this.Dispatch(SelectTool tool)
+            | None ->
+                // Click vào toolbar nhưng không trúng nút; bỏ qua.
+                ()
+        | _ ->
             // Đảm bảo control có focus để nhận phím tắt.
             this.Focus() |> ignore
 
@@ -376,46 +395,55 @@ type CaptureCanvas() as this =
             // Chưa có vùng chọn: dimming toàn màn hình.
             context.FillRectangle(outerBrush, fullBounds)
 
-    /// Vẽ toolbar đơn giản ở bottom center.
+    /// Vẽ toolbar đơn giản bám dưới vùng chọn.
     member private this.RenderToolbar(context: DrawingContext, renderModel: RenderModel) =
         if not renderModel.ToolbarVisible then
             ()
         else
-            let bounds = toolbarBounds this.Bounds.Width this.Bounds.Height
-            let backgroundBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(200uy, 30uy, 30uy, 30uy))
-            let borderPen = new Pen(new SolidColorBrush(Avalonia.Media.Color.FromArgb(255uy, 80uy, 80uy, 80uy)), 1.0)
-            let activeBorderPen = new Pen(Brushes.White, 2.0)
-            let textBrush = Brushes.White
+            match renderModel.Selection with
+            | None -> ()
+            | Some selection ->
+                let scale =
+                    match captureResult with
+                    | Some result -> result.ScaleFactor.Value
+                    | None -> 1.0
 
-            context.FillRectangle(backgroundBrush, bounds)
-            context.DrawRectangle(null, borderPen, bounds)
+                let bounds = toolbarBoundsFromSelection scale selection.Bounds
+                let backgroundBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(200uy, 30uy, 30uy, 30uy))
+                let borderPen = new Pen(new SolidColorBrush(Avalonia.Media.Color.FromArgb(255uy, 80uy, 80uy, 80uy)), 1.0)
+                let activeBorderPen = new Pen(Brushes.White, 2.0)
+                let textBrush = Brushes.White
 
-            let typeface = Typeface.Default
-            let textSize = 14.0
+                context.FillRectangle(backgroundBrush, bounds)
+                context.DrawRectangle(null, borderPen, bounds)
 
-            toolbarTools
-            |> List.iteri (fun i (tool, label) ->
-                let x = bounds.X + float i * (toolbarButtonSize + toolbarGap)
-                let buttonRect = Avalonia.Rect(x, bounds.Y, toolbarButtonSize, toolbarButtonSize)
-                let isActive = renderModel.CurrentTool = tool
+                let typeface = Typeface.Default
+                let textSize = 14.0
 
-                if isActive then
-                    context.DrawRectangle(null, activeBorderPen, buttonRect)
+                toolbarTools
+                |> List.iteri (fun i (tool, label) ->
+                    let x = bounds.X + toolbarPadding + float i * (toolbarButtonSize + toolbarGap)
+                    let y = bounds.Y + toolbarPadding
+                    let buttonRect = Avalonia.Rect(x, y, toolbarButtonSize, toolbarButtonSize)
+                    let isActive = renderModel.CurrentTool = tool
 
-                let formatted =
-                    new FormattedText(
-                        label,
-                        System.Globalization.CultureInfo.CurrentCulture,
-                        FlowDirection.LeftToRight,
-                        typeface,
-                        textSize,
-                        textBrush
-                    )
+                    if isActive then
+                        context.DrawRectangle(null, activeBorderPen, buttonRect)
 
-                let textX = buttonRect.Center.X - formatted.Width / 2.0
-                let textY = buttonRect.Center.Y - formatted.Height / 2.0
-                context.DrawText(formatted, Avalonia.Point(textX, textY))
-            )
+                    let formatted =
+                        new FormattedText(
+                            label,
+                            System.Globalization.CultureInfo.CurrentCulture,
+                            FlowDirection.LeftToRight,
+                            typeface,
+                            textSize,
+                            textBrush
+                        )
+
+                    let textX = buttonRect.Center.X - formatted.Width / 2.0
+                    let textY = buttonRect.Center.Y - formatted.Height / 2.0
+                    context.DrawText(formatted, Avalonia.Point(textX, textY))
+                )
 
     /// Vẽ vùng chọn và các handle lên overlay.
     member private this.RenderSelectionOverlay(context: DrawingContext, selection: Selection) =
