@@ -52,7 +52,16 @@ Ví dụ: B = `(400, 100)`, hướng ngang sang phải, arrowLength = 20, θ = 3
 - `P1 ≈ (382.7, 90)`
 - `P2 ≈ (382.7, 110)`
 
+### 2.2 Preview và commit
+
+Tương tự Line, preview Arrow hiển thị đường chính từ `A` đến `C` và mũi tên ở `C` với cùng công thức trên. Khi thả chuột, commit thành `Arrow(A, C, ArrowStyle.Standard)`.
+
+### 2.3 Trường hợp đặc biệt
+
+Nếu `A` và `C` trùng nhau (`L = 0`), vector đơn vị không xác định. Trong trường hợp này, renderer bỏ qua phần mũi tên hoặc vẽ điểm duy nhất tại `A`, không ném lỗi.
+
 ## 3. Kết nối với code
 
 - `src/FShot.Core/Domain/Annotation.fs`
 - `src/FShot.Rendering.Skia/Renderers/AnnotationRenderer.fs`
+- `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`

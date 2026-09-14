@@ -135,21 +135,21 @@
   - [x] Thêm phím tắt `L` trên toolbar tạm.
   - [x] Thêm tests (render + state commit).
 - [ ] **P1.14** Vẽ mũi tên Arrow có chóp định hướng (`FR-ANN-03`).
-  - [ ] Hoàn thiện `docs/2.Design/04_Annotation/04_02_Arrow.md`.
+  - [ ] Hoàn thiện / rà soát `docs/2.Design/04_Annotation/04_04_LineAndArrow.md` (mục Arrow).
   - [ ] Triển khai `ArrowAnnotation` với đầu mũi tên tam giác.
   - [ ] Triển khai `ArrowRenderer`.
   - [ ] Tích hợp `OverlayState` tool Arrow.
   - [ ] Thêm phím tắt `A`.
   - [ ] Thêm tests.
 - [ ] **P1.15** Vẽ hình chữ nhật Rectangle hỗ trợ bo góc (`FR-ANN-04`).
-  - [ ] Rà soát `docs/2.Design/04_Annotation/04_04_Rectangle.md`.
+  - [ ] Hoàn thiện / rà soát `docs/2.Design/04_Annotation/04_05_RectangleAndCircle.md` (mục Rectangle).
   - [ ] Triển khai `RectangleAnnotation` với thuộc tính `CornerRadius`.
   - [ ] Triển khai `RectangleRenderer`.
   - [ ] Tích hợp `OverlayState` tool Rectangle.
   - [ ] Thêm phím tắt `R`.
   - [ ] Thêm tests.
 - [ ] **P1.16** Vẽ hình tròn/elip Circle giữ `Ctrl` khóa tỉ lệ 1:1 (`FR-ANN-05`).
-  - [ ] Rà soát `docs/2.Design/04_Annotation/04_05_Circle.md`.
+  - [ ] Hoàn thiện / rà soát `docs/2.Design/04_Annotation/04_05_RectangleAndCircle.md` (mục Circle/Ellipse).
   - [ ] Triển khai `CircleAnnotation`.
   - [ ] Triển khai `CircleRenderer`.
   - [ ] Tích hợp `OverlayState` tool Circle, xử lý modifier `Ctrl` để khóa tỉ lệ 1:1.
