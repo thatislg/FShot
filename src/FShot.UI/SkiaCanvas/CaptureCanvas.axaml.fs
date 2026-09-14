@@ -655,15 +655,6 @@ type CaptureCanvas() as this =
 
         let avPoint (p: Point) = Avalonia.Point(p.X * scale, p.Y * scale)
 
-        // Clip annotations bên trong capture region để không tràn ra ngoài vùng chọn.
-        let clipRect =
-            match renderModel.Selection with
-            | Some sel ->
-                Rect(sel.Bounds.X * scale, sel.Bounds.Y * scale, sel.Bounds.Width * scale, sel.Bounds.Height * scale)
-            | None -> Rect(0.0, 0.0, this.Bounds.Width, this.Bounds.Height)
-
-        use _clip = context.PushClip(clipRect)
-
         // Vẽ một annotation đã commit hoặc đang preview.
         let drawAnnotation (annotation: Annotation) =
             match annotation.Tool with
@@ -680,10 +671,22 @@ type CaptureCanvas() as this =
 
             | _ -> ()
 
-        renderModel.Annotations |> List.iter drawAnnotation
+        // Clip annotations bên trong capture region để không tràn ra ngoài vùng chọn.
+        // Scope riêng: clip chỉ áp dụng cho annotations, không ảnh hưởng toolbar.
+        do
+            let clipRect =
+                match renderModel.Selection with
+                | Some sel ->
+                    Rect(sel.Bounds.X * scale, sel.Bounds.Y * scale, sel.Bounds.Width * scale, sel.Bounds.Height * scale)
+                | None -> Rect(0.0, 0.0, this.Bounds.Width, this.Bounds.Height)
 
-        // Vẽ preview annotation đang vẽ.
-        renderModel.Preview |> Option.iter drawAnnotation
+            use _clip = context.PushClip(clipRect)
+
+            // Vẽ annotations đã commit.
+            renderModel.Annotations |> List.iter drawAnnotation
+
+            // Vẽ preview annotation đang vẽ.
+            renderModel.Preview |> Option.iter drawAnnotation
 
         // Vẽ toolbar.
         this.RenderToolbar(context, renderModel)
