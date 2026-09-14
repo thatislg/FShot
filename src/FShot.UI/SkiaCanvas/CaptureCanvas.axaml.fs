@@ -42,6 +42,7 @@ module Toolbar =
         MarkerTool, "M"
         TextTool, "T"
         PixelateTool, "B"
+        IconTool, "I"
     ]
 
     let toolCount = List.length tools
@@ -585,6 +586,7 @@ type CaptureCanvas() as this =
         | Key.M -> this.Dispatch(SelectTool MarkerTool)
         | Key.T -> this.Dispatch(SelectTool TextTool)
         | Key.B -> this.Dispatch(SelectTool PixelateTool)
+        | Key.I -> this.Dispatch(SelectTool IconTool)
         | Key.S -> this.Dispatch(SelectTool SelectionTool)
         // Ctrl modifier được gửi riêng để state machine biết khi nào đang khóa tỉ lệ.
         // Sử dụng e.Key thay vì modifier string để tránh IME nuốt mất sự kiện Ctrl khi đang gõ tiếng Việt.
@@ -940,6 +942,35 @@ type CaptureCanvas() as this =
                         | TextAlignment.Right -> origin.X - ft.Width
 
                     context.DrawText(ft, Avalonia.Point(x, origin.Y))
+
+            | Tool.Icon (position, width, height, iconId) ->
+                // MVP placeholder: vẽ hình chữ nhật nét đứt với chữ "ICON".
+                let x = position.X * scale
+                let y = position.Y * scale
+                let w = width * scale
+                let h = height * scale
+                let rect = Avalonia.Rect(x, y, w, h)
+                let mediaColor = avaloniaColor annotation.Style.Color
+                let dashedPen =
+                    let dashStyle = new DashStyle([| 10.0; 5.0 |], 0.0)
+                    new Pen(new SolidColorBrush(mediaColor), 2.0, DashStyle = dashStyle)
+                context.DrawRectangle(null, dashedPen, rect)
+
+                let label = if String.IsNullOrWhiteSpace iconId then "ICON" else iconId
+                let fontSize = Math.Min(w / 4.0, h / 4.0)
+                if fontSize > 4.0 then
+                    let ft =
+                        new FormattedText(
+                            label,
+                            System.Globalization.CultureInfo.CurrentCulture,
+                            FlowDirection.LeftToRight,
+                            new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Normal),
+                            fontSize,
+                            new SolidColorBrush(mediaColor)
+                        )
+                    let textX = rect.Center.X - ft.Width / 2.0
+                    let textY = rect.Center.Y - ft.Height / 2.0
+                    context.DrawText(ft, Avalonia.Point(textX, textY))
 
             | _ -> ()
 

@@ -14,7 +14,7 @@ Ví dụ, một công cụ vẽ đường thẳng chỉ cần hai điểm đầu
 
 ## 2. Các loại tool trong MVP
 
-Trong phiên bản MVP, F-Shot hỗ trợ tám loại tool. Dưới đây là mô tả dữ liệu của từng loại, diễn giải hoàn toàn bằng lời.
+Trong phiên bản MVP, F-Shot hỗ trợ chín loại tool. Dưới đây là mô tả dữ liệu của từng loại, diễn giải hoàn toàn bằng lời.
 
 ### 2.1 Pencil
 
@@ -127,6 +127,22 @@ Pixelate mô tả một vùng hình chữ nhật được xử lý hiệu ứng 
 **Preview:** Hình chữ nhật tạm với viền hoặc lớp phủ mờ cho biết vùng sẽ bị xử lý.
 
 **Commit:** Khi thả chuột, thuật toán pixelate được áp dụng lên ảnh gốc trong vùng đã chọn. Thông tin vùng và kích thước ô được lưu vào Annotation.
+
+### 2.9 Icon
+
+Icon là công cụ chèn biểu tượng hoặc hình ảnh nhỏ vào vùng chụp. Trong MVP, công cụ này chỉ là placeholder để dành phím tắt `I`; việc chèn icon thực sự sẽ triển khai trong v1.x.
+
+Dữ liệu trong MVP gồm vị trí gốc, kích thước placeholder, và một định danh icon tạm thời.
+
+**Cách tương tác:** Người dùng nhấn `I` để chọn công cụ. Click vào capture region hiển thị placeholder hình chữ nhật nét đứt với chữ "ICON" bên trong. Không tạo annotation thực trong MVP.
+
+**Kết quả hình học:** Hình chữ nhật placeholder 64×64 pixel tại vị trí click, màu theo `CurrentStyle.Color`.
+
+**Ràng buộc:** Không có ràng buộc trong MVP.
+
+**Preview:** Hình chữ nhật nét đứt và chữ "ICON" hiển thị tại vị trí con trỏ khi click.
+
+**Commit:** Không commit trong MVP. Annotation `Tool.Icon` chỉ được tạo khi nào có thư viện icon trong v1.x.
 
 ---
 

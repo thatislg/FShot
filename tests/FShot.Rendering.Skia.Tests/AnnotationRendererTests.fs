@@ -233,6 +233,35 @@ let private createTextAnnotation (position: Point) (content: string) (color: Col
 let private createPixelateAnnotation (start: Point) (endPoint: Point) (blockSize: int) (color: Color) (strokeWidth: float) : Annotation =
     createAnnotation (Tool.Pixelate(start, endPoint, blockSize)) color strokeWidth
 
+let private createIconAnnotation (position: Point) (width: float) (height: float) (iconId: string) (color: Color) : Annotation =
+    createAnnotation (Tool.Icon(position, width, height, iconId)) color 2.0
+
+/// Kiểm tra Icon placeholder render vẽ được pixel màu đỏ.
+[<Fact>]
+let ``Icon placeholder render vẽ ít nhất một pixel màu đỏ`` () =
+    let position = { X = 10.0; Y = 10.0 }
+    let annotation = createIconAnnotation position 30.0 20.0 "" Color.Red
+    let scale = ScaleFactor.Create 1.0
+
+    use bitmap = new SKBitmap(50, 40, SKColorType.Bgra8888, SKAlphaType.Premul)
+    bitmap.Erase(SKColor.Empty)
+
+    use canvas = new SKCanvas(bitmap)
+    AnnotationRenderer.renderAnnotation canvas scale annotation
+
+    Assert.True(hasPixelWithRed bitmap, "Không tìm thấy pixel màu đỏ sau khi render Icon placeholder.")
+
+/// Kiểm tra Icon placeholder với kích thước 0 không gây lỗi.
+[<Fact>]
+let ``Icon placeholder size 0 không gây lỗi`` () =
+    let annotation = createIconAnnotation { X = 10.0; Y = 10.0 } 0.0 0.0 "" Color.Red
+    let scale = ScaleFactor.Create 1.0
+
+    use bitmap = new SKBitmap(20, 20, SKColorType.Bgra8888, SKAlphaType.Premul)
+    use canvas = new SKCanvas(bitmap)
+    AnnotationRenderer.renderAnnotation canvas scale annotation
+    Assert.True(true)
+
 /// Kiểm tra Marker vẽ được pixel màu đỏ với alpha blend.
 [<Fact>]
 let ``Marker render vẽ ít nhất một pixel màu đỏ`` () =

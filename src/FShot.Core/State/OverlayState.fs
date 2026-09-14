@@ -157,6 +157,7 @@ module OverlayStateLogic =
         | MarkerTool -> Some (Tool.Marker [ start; current ])
         | PixelateTool -> Some (Tool.Pixelate(start, current, 10))
         | TextTool -> Some (Tool.Text(start, "", TextAlignment.Left))
+        | IconTool -> None
 
     /// Cập nhật preview từ điểm hiện tại.
     let private updatePreview (current: Point) (interaction: AnnotationInteraction) : AnnotationInteraction =
@@ -416,6 +417,15 @@ module OverlayStateLogic =
                 elif state.CurrentTool = SelectionTool then
                     let newSelection = state.Selection.StartMoving point
                     emptyResult { state with Selection = newSelection }
+                elif state.CurrentTool = IconTool then
+                    // MVP: IconTool chỉ chèn placeholder 64×64 tại vị trí click, commit ngay lập tức.
+                    let placeholderSize = 64.0
+                    let tool = Tool.Icon(point, placeholderSize, placeholderSize, "")
+                    let annotation = Annotation.FromPreview(tool, currentAnnotationStyle state)
+                    let newAnnotations = committedAnnotations state @ [ annotation ]
+                    let snapshot = Snapshot.Create newAnnotations
+                    let newHistory = state.History.Push snapshot
+                    emptyResult { state with History = newHistory }
                 else
                     let newState = startAnnotation point state
                     let commands =

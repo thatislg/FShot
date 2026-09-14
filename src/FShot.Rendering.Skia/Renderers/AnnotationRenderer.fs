@@ -199,6 +199,35 @@ module AnnotationRenderer =
                         )
                     canvas.DrawRect(rect, overlayPaint)
 
+        | Tool.Icon (position, width, height, iconId) ->
+            // MVP placeholder: vẽ hình chữ nhật nét đứt với chữ "ICON" bên trong.
+            // Vị trí gốc là góc trên-trái của placeholder.
+            let x = float32 (position.X * scale.Value)
+            let y = float32 (position.Y * scale.Value)
+            let w = float32 (width * scale.Value)
+            let h = float32 (height * scale.Value)
+            let rect = SKRect(x, y, x + w, y + h)
+            let c = DomainToSkia.colorToSk annotation.Style.Color
+
+            use strokePaint = new SKPaint()
+            strokePaint.Color <- c
+            strokePaint.IsStroke <- true
+            strokePaint.StrokeWidth <- 2.0f
+            strokePaint.PathEffect <- SKPathEffect.CreateDash([| 10.0f; 5.0f |], 0.0f)
+            canvas.DrawRect(rect, strokePaint)
+
+            use textPaint = new SKPaint()
+            textPaint.Color <- c
+            textPaint.IsAntialias <- true
+            let fontSize = Math.Min(w / 4.0f, h / 4.0f)
+            if fontSize > 4.0f then
+                use font = new SKFont(SKTypeface.Default, fontSize)
+                let text = if String.IsNullOrWhiteSpace iconId then "ICON" else iconId
+                let textAlign = SKTextAlign.Center
+                let textX = x + w / 2.0f
+                let textY = y + h / 2.0f + fontSize / 3.0f
+                canvas.DrawText(text, textX, textY, textAlign, font, textPaint)
+
         | _ ->
             // Các tool khác sẽ được triển khai sau.
             ()

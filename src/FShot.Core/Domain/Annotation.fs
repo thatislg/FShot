@@ -47,6 +47,8 @@ type ToolKind =
     | MarkerTool
     | TextTool
     | PixelateTool
+    | IconTool
+    /// Xem tài liệu 04_02_ToolModel.md, mục 2.9.
 
 /// Tập hợp các thuộc tính hình ảnh chung cho một Annotation.
 /// Thay vì mỗi tool tự lưu màu sắc và độ dày, tất cả các tool dùng chung
@@ -97,6 +99,9 @@ type Tool =
 
     /// Làm mờ pixelate vùng.
     | Pixelate of start: Point * endPoint: Point * blockSize: int
+
+    /// Chèn icon/hình ảnh. Trong MVP chỉ là placeholder để dành phím tắt I.
+    | Icon of position: Point * width: float * height: float * iconId: string
 
 /// Một chú thích đã hoàn thành.
 /// Xem tài liệu 04_02_ToolModel.md, mục 3.
@@ -155,4 +160,11 @@ type Annotation = {
               Y = position.Y
               Width = 0.0
               Height = 0.0
+            }
+        | Icon (position, width, height, _) ->
+            {
+              X = position.X
+              Y = position.Y
+              Width = width
+              Height = height
             }

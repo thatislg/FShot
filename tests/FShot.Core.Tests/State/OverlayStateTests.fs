@@ -1115,3 +1115,49 @@ let ``RenderModel phản ánh đúng trạng thái Idle và Selected`` () =
 
     Assert.True(selectedModel.Selection.IsSome)
     Assert.True(selectedModel.ToolbarVisible)
+
+/// Kiểm tra phím tắt I chuyển sang IconTool.
+[<Fact>]
+let ``Phím I chuyển sang IconTool`` () =
+    let result =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool IconTool)
+
+    Assert.Equal(IconTool, result.State.CurrentTool)
+    Assert.Equal(NoAnnotation, result.State.AnnotationInteraction)
+
+/// Kiểm tra IconTool click trong vùng chọn commit placeholder annotation.
+[<Fact>]
+let ``IconTool click trong vùng commit placeholder annotation`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool IconTool)
+        |> (fun r -> r.State)
+
+    let clickPoint = point 150.0 150.0
+    let result = state |> update (PointerPressed clickPoint)
+    Assert.Equal(NoAnnotation, result.State.AnnotationInteraction)
+    Assert.Equal(1, List.length result.State.History.Current.Annotations)
+
+    match result.State.History.Current.Annotations with
+    | [ annotation ] ->
+        match annotation.Tool with
+        | Icon(position, width, height, iconId) ->
+            Assert.Equal(clickPoint, position)
+            Assert.Equal(64.0, width)
+            Assert.Equal(64.0, height)
+            Assert.Equal("", iconId)
+        | _ -> Assert.True(false, "Expected Icon annotation")
+    | _ -> Assert.True(false, "Expected one annotation")

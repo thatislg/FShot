@@ -99,3 +99,18 @@ let ``Text annotation lưu alignment`` () =
     match annotation.Tool with
     | Text (_, _, alignment) -> Assert.Equal(Center, alignment)
     | _ -> Assert.True(false, "Tool phải là Text")
+
+/// Kiểm tra bounding box của Icon.
+[<Fact>]
+let ``Bounding box của Icon`` () =
+    let style = defaultStyle Color.Black (StrokeWidth.Create 2.0)
+    let annotation =
+        Annotation.FromPreview(
+            Icon(point 100.0 80.0, 64.0, 48.0, ""),
+            style
+        )
+    let box = annotation.BoundingBox
+    Assert.Equal(100.0, box.X)
+    Assert.Equal(80.0, box.Y)
+    Assert.Equal(64.0, box.Width)
+    Assert.Equal(48.0, box.Height)

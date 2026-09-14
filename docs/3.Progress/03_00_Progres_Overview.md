@@ -1,7 +1,7 @@
 # F-Shot Master Progress Tracking
 
 - **Cập nhật gần nhất:** 2026-09-14
-- **Tiến độ tổng quan:** `[ 31 / 84 ] Tasks hoàn thành (~36.9%)` (Phase 0 PoC đã verify xong; Epic 1 P1.01–P1.04, Epic 2 P1.05–P1.11, Epic 2.5 E2.5.01–E2.5.05, và Epic 3 P1.12–P1.19 đã hoàn thiện)
+- **Tiến độ tổng quan:** `[ 32 / 84 ] Tasks hoàn thành (~38.1%)` (Phase 0 PoC đã verify xong; Epic 1 P1.01–P1.04, Epic 2 P1.05–P1.11, Epic 2.5 E2.5.01–E2.5.05, và Epic 3 P1.12–P1.20 đã hoàn thiện)
 - **Mục tiêu hiện tại:** Tiếp tục Epic 4: Undo/Redo toolbar (P1.21–P1.23).
 
 ---
@@ -11,7 +11,7 @@
 | Phase | Mục tiêu | Trạng thái | Hoàn thành |
 | :--- | :--- | :---: | :---: |
 | **Phase 0: PoC** | Khung Solution, Screen Capture, Overlay Canvas, đo 60 FPS | **DONE** | **8 / 8** (đã verify trên desktop Windows) |
-| **Phase 1: MVP Core** | Bounding box, 8 Annotation tools, Undo/Redo, Save/Clipboard | **IN PROGRESS** | 23 / 29 (~79%) |
+| **Phase 1: MVP Core** | Bounding box, 9 Annotation tools, Undo/Redo, Save/Clipboard | **IN PROGRESS** | 24 / 29 (~83%) |
 | **Phase 2: Windows v1.0** | Tray, Hotkeys, Real Capture, Config UI, Pin Widget, Advanced tools | **PENDING** | 0 / 39 (0%) |
 | **Phase 3: Advanced** | Imgur upload, Snap-to-grid, Tùy biến nâng cao | **PENDING** | 0 / 8 (0%) |
 
@@ -177,11 +177,14 @@
   - [x] Tích hợp `OverlayState` tool Pixelate.
   - [x] Thêm phím tắt `B`.
   - [x] Thêm tests.
-- [ ] **P1.20** Phím tắt chuyển nhanh công cụ (`P/D/A/S/R/C/M/T/B/I`).
-  - [ ] Rà soát `docs/2.Design/08_OverlayState/08_03_Events.md` và `08_04_Transitions.md`.
-  - [ ] Đảm bảo `OverlayState.update` xử lý đủ phím tắt cho 9 công cụ annotation.
-  - [ ] Mapping phím: `P` Pencil, `L` Line, `A` Arrow, `R` Rectangle, `C` Circle, `M` Marker, `T` Text, `B` Pixelate, `Esc` hoặc `S` Selection tool.
-  - [ ] Kiểm thử từng phím tắt chuyển tool.
+- [x] **P1.20** Phím tắt chuyển nhanh công cụ (`P/L/A/S/R/C/M/T/B/I`).
+  - [x] Hoàn thiện `docs/2.Design/04_Annotation/04_08_IconTool.md` (placeholder cho `I` shortcut).
+  - [x] Thêm `IconTool` vào `ToolKind` và `Tool.Icon` trong `src/FShot.Core/Domain/Annotation.fs`.
+  - [x] Cập nhật `src/FShot.Core/State/OverlayState.fs` để `IconTool` click trong vùng chọn commit placeholder 64×64.
+  - [x] Cập nhật `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`: mapping phím `I`, toolbar entry, render placeholder.
+  - [x] Cập nhật `src/FShot.Rendering.Skia/Renderers/AnnotationRenderer.fs` để render placeholder `Tool.Icon`.
+  - [x] Thêm tests cho `SelectTool IconTool`, commit Icon, render Icon, BoundingBox Icon.
+  - [x] Kiểm thử từng phím tắt chuyển tool.
 
 ### Epic 4: Undo, Redo & Toolbar
 - [ ] **P1.21** Hoàn tác Undo `Ctrl+Z` (`FR-UNDO-01`).
