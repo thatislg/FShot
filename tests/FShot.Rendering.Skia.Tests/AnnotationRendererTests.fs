@@ -196,3 +196,123 @@ let ``Arrow Rectangle Circle điểm trùng nhau không gây lỗi`` () =
     Assert.True(true)
 
 /// Kiểm tra Circle khóa tỉ lệ vẽ được pixel khi bounding box không vuông.
+[<Fact>]
+let ``Circle khóa tỉ lệ render vẽ ít nhất một pixel màu xanh`` () =
+    let start = { X = 10.0; Y = 10.0 }
+    let endPoint = { X = 40.0; Y = 20.0 }
+    let annotation = createCircleAnnotation start endPoint true Color.Blue 2.0
+    let scale = ScaleFactor.Create 1.0
+
+    use bitmap = new SKBitmap(50, 50, SKColorType.Bgra8888, SKAlphaType.Premul)
+    bitmap.Erase(SKColor.Empty)
+
+    use canvas = new SKCanvas(bitmap)
+    AnnotationRenderer.renderAnnotation canvas scale annotation
+
+    Assert.True(hasPixelWithBlue bitmap, "Không tìm thấy pixel màu xanh sau khi render Circle khóa tỉ lệ.")
+
+let private createMarkerAnnotation (points: Point list) (color: Color) (strokeWidth: float) : Annotation =
+    createAnnotation (Tool.Marker points) color strokeWidth
+
+let private createTextAnnotation (position: Point) (content: string) (color: Color) (fontSize: float) : Annotation =
+    let style = {
+        Color = color
+        StrokeWidth = StrokeWidth.Create 2.0
+        FontSize = fontSize
+        FontName = None
+        FontStyle = []
+    }
+
+    {
+      Id = System.Guid.NewGuid()
+      Tool = Tool.Text(position, content, TextAlignment.Left)
+      Style = style
+      CreatedAt = System.DateTime.UtcNow
+    }
+
+let private createPixelateAnnotation (start: Point) (endPoint: Point) (blockSize: int) (color: Color) (strokeWidth: float) : Annotation =
+    createAnnotation (Tool.Pixelate(start, endPoint, blockSize)) color strokeWidth
+
+/// Kiểm tra Marker vẽ được pixel màu đỏ với alpha blend.
+[<Fact>]
+let ``Marker render vẽ ít nhất một pixel màu đỏ`` () =
+    let points =
+        [
+            { X = 5.0; Y = 5.0 }
+            { X = 45.0; Y = 45.0 }
+        ]
+
+    let annotation = createMarkerAnnotation points Color.Red 2.0
+    let scale = ScaleFactor.Create 1.0
+
+    use bitmap = new SKBitmap(50, 50, SKColorType.Bgra8888, SKAlphaType.Premul)
+    bitmap.Erase(SKColor.Empty)
+
+    use canvas = new SKCanvas(bitmap)
+    AnnotationRenderer.renderAnnotation canvas scale annotation
+
+    Assert.True(hasPixelWithRed bitmap, "Không tìm thấy pixel màu đỏ sau khi render Marker.")
+
+/// Kiểm tra Text vẽ được pixel màu đỏ khi nội dung không rỗng.
+[<Fact>]
+let ``Text render vẽ ít nhất một pixel màu đỏ`` () =
+    let position = { X = 5.0; Y = 20.0 }
+    let annotation = createTextAnnotation position "Test" Color.Red 16.0
+    let scale = ScaleFactor.Create 1.0
+
+    use bitmap = new SKBitmap(100, 40, SKColorType.Bgra8888, SKAlphaType.Premul)
+    bitmap.Erase(SKColor.Empty)
+
+    use canvas = new SKCanvas(bitmap)
+    AnnotationRenderer.renderAnnotation canvas scale annotation
+
+    Assert.True(hasPixelWithRed bitmap, "Không tìm thấy pixel màu đỏ sau khi render Text.")
+
+/// Kiểm tra Text rỗng không gây lỗi và không vẽ pixel.
+[<Fact>]
+let ``Text rỗng không gây lỗi`` () =
+    let position = { X = 5.0; Y = 20.0 }
+    let annotation = createTextAnnotation position "   " Color.Red 16.0
+    let scale = ScaleFactor.Create 1.0
+
+    use bitmap = new SKBitmap(100, 40, SKColorType.Bgra8888, SKAlphaType.Premul)
+    use canvas = new SKCanvas(bitmap)
+    AnnotationRenderer.renderAnnotation canvas scale annotation
+    Assert.True(true)
+
+/// Kiểm tra Pixelate không gây lỗi với vùng hợp lệ.
+[<Fact>]
+let ``Pixelate render không gây lỗi`` () =
+    let start = { X = 10.0; Y = 10.0 }
+    let endPoint = { X = 40.0; Y = 40.0 }
+    let annotation = createPixelateAnnotation start endPoint 10 Color.Blue 2.0
+    let scale = ScaleFactor.Create 1.0
+
+    use bitmap = new SKBitmap(50, 50, SKColorType.Bgra8888, SKAlphaType.Premul)
+    use canvas = new SKCanvas(bitmap)
+    AnnotationRenderer.renderAnnotation canvas scale annotation
+    Assert.True(true)
+
+/// Kiểm tra Pixelate với blockSize = 0 không gây lỗi.
+[<Fact>]
+let ``Pixelate blockSize 0 không gây lỗi`` () =
+    let start = { X = 10.0; Y = 10.0 }
+    let endPoint = { X = 40.0; Y = 40.0 }
+    let annotation = createPixelateAnnotation start endPoint 0 Color.Blue 2.0
+    let scale = ScaleFactor.Create 1.0
+
+    use bitmap = new SKBitmap(50, 50, SKColorType.Bgra8888, SKAlphaType.Premul)
+    use canvas = new SKCanvas(bitmap)
+    AnnotationRenderer.renderAnnotation canvas scale annotation
+    Assert.True(true)
+
+/// Kiểm tra Marker rỗng không gây lỗi.
+[<Fact>]
+let ``Marker rỗng không gây lỗi`` () =
+    let annotation = createMarkerAnnotation [] Color.Red 2.0
+    let scale = ScaleFactor.Create 1.0
+
+    use bitmap = new SKBitmap(10, 10, SKColorType.Bgra8888, SKAlphaType.Premul)
+    use canvas = new SKCanvas(bitmap)
+    AnnotationRenderer.renderAnnotation canvas scale annotation
+    Assert.True(true)

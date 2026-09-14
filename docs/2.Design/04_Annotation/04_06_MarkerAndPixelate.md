@@ -45,6 +45,17 @@ Dữ liệu lưu trữ của Marker gồm:
 - Giá trị alpha.
 - Thời điểm tạo.
 
+Trong MVP, quyết định cụ thể như sau:
+
+- Giá trị alpha mặc định của Marker: α = 0.35 (35%). Đủ đậm để làm nổi bật, đủ trong suốt để nhìn thấy nội dung bên dưới.
+- Độ dày nét Marker mặc định: gấp 3 lần `StrokeWidth` hiện tại (tức là dùng `annotation.Style.StrokeWidth.Value * 3.0` khi render). Người dùng có thể điều chỉnh độ dày nét chung qua cấu hình/toolbar, nhưng không điều chỉnh riêng alpha trong MVP.
+- Marker sử dụng cùng kiểu dữ liệu `Tool.Marker of Point list` như Pencil; không lưu alpha riêng trong domain. Alpha được áp dụng tại renderer bằng cách đặt `SKPaint.Alpha` hoặc nhân màu với α.
+- Không làm mịn phức tạp: chỉ nối các điểm bằng đoạn thẳng hoặc đường cong đơn giản (có thể dùng `PathSmoothing` như Pencil nhưng với độ dày lớn hơn).
+
+Ví dụ, nếu màu Marker là vàng RGB (255, 255, 0) với alpha 0.35 và pixel gốc là xám (128, 128, 128), kết quả từng kênh:
+
+`R = G = B = (1 - 0.35) * 128 + 0.35 * 255 = 172`.
+
 ### 2.4 Cách render nét Marker
 
 Khi render, hệ thống vẽ từng đoạn giữa các điểm trong chuỗi bằng một nét có độ dày lớn và alpha thấp. Các đoạn có thể được nối bằng đoạn thẳng hoặc đường cong đơn giản tùy thuộc vào yêu cầu mượt.
@@ -136,6 +147,16 @@ Dữ liệu lưu trữ của Pixelate gồm:
 - Hai điểm tạo thành hình chữ nhật cần che.
 - Kích thước ô mosaic.
 - Thời điểm tạo.
+
+Trong MVP, quyết định cụ thể như sau:
+
+- Kích thước ô mosaic mặc định: 10×10 pixel (domain lưu `blockSize = 10`).
+- Thuật toán: tính trung bình màu các pixel trong ô (cách an toàn), không dùng lấy mẫu một pixel.
+- Cách lưu trữ: Pixelate **không lưu ảnh đã xử lý trong snapshot**. Thay vào đó, Annotation Pixelate lưu hình chữ nhật + blockSize; mỗi lần render, renderer tái tạo hiệu ứng mosaic trực tiếp từ ảnh gốc (`CaptureResult.Pixels`). Điều này giữ snapshot nhẹ và undo/redo vẫn đúng vì ảnh gốc không bị thay đổi.
+- Xử lý biên: ô cuối mỗi hàng/cột có thể nhỏ hơn blockSize, vẫn tính trung bình theo số pixel thực tế.
+- Không cho phép điều chỉnh blockSize trong lúc vẽ trong MVP; giá trị cố định từ `ConfigSnapshot` hoặc domain mặc định.
+
+Ví dụ, vùng Pixelate từ (100, 80) đến (300, 200) với blockSize 10 sẽ được chia thành lưới 20×12 ô (một số ô biên cuối có thể nhỏ hơn 10). Mỗi ô được tô bằng màu trung bình của pixel ảnh gốc trong ô đó.
 
 ### 3.4 Cách xác định vùng xử lý
 

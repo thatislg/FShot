@@ -667,6 +667,152 @@ let ``Annotating Cancel hủy preview`` () =
     Assert.True(result.RenderModel.Preview.IsNone)
     Assert.Equal(0, List.length result.State.History.Current.Annotations)
 
+/// Kiểm tra Marker PointerReleased commit annotation Marker.
+[<Fact>]
+let ``Marker PointerReleased commit annotation Marker`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool MarkerTool)
+        |> (fun r -> r.State)
+
+    let result =
+        state
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+
+    Assert.Equal(NoAnnotation, result.State.AnnotationInteraction)
+    Assert.Equal(1, List.length result.State.History.Current.Annotations)
+    let annotation = List.head result.State.History.Current.Annotations
+    match annotation.Tool with
+    | Tool.Marker points ->
+        Assert.True(List.length points >= 2)
+        Assert.Equal(point 150.0 150.0, List.head points)
+    | _ -> Assert.True(false, "Expected Tool.Marker")
+
+/// Kiểm tra Pixelate PointerReleased commit annotation Pixelate.
+[<Fact>]
+let ``Pixelate PointerReleased commit annotation Pixelate`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool PixelateTool)
+        |> (fun r -> r.State)
+
+    let result =
+        state
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+
+    Assert.Equal(NoAnnotation, result.State.AnnotationInteraction)
+    Assert.Equal(1, List.length result.State.History.Current.Annotations)
+    let annotation = List.head result.State.History.Current.Annotations
+    match annotation.Tool with
+    | Tool.Pixelate (a, b, blockSize) ->
+        Assert.Equal(point 150.0 150.0, a)
+        Assert.Equal(point 250.0 250.0, b)
+        Assert.Equal(10, blockSize)
+    | _ -> Assert.True(false, "Expected Tool.Pixelate")
+
+/// Kiểm tra TextCommitted commit text annotation.
+[<Fact>]
+let ``TextCommitted commit text annotation`` () =
+    let result =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool TextTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (TextCommitted "Hello")
+
+    Assert.Equal(NoAnnotation, result.State.AnnotationInteraction)
+    Assert.Equal(1, List.length result.State.History.Current.Annotations)
+    match result.Commands with
+    | [ HideTextInput ] -> ()
+    | _ -> Assert.True(false, "Expected HideTextInput command")
+
+    match result.State.History.Current.Annotations with
+    | [ annotation ] ->
+        match annotation.Tool with
+        | Text(position, content, _) ->
+            Assert.Equal(point 150.0 150.0, position)
+            Assert.Equal("Hello", content)
+        | _ -> Assert.True(false, "Expected Text annotation")
+    | _ -> Assert.True(false, "Expected exactly one annotation")
+
+/// Kiểm tra TextCommitted rỗng không tạo annotation.
+[<Fact>]
+let ``TextCommitted rỗng không tạo annotation`` () =
+    let result =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool TextTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (TextCommitted "")
+
+    Assert.Equal(NoAnnotation, result.State.AnnotationInteraction)
+    Assert.Equal(0, List.length result.State.History.Current.Annotations)
+    match result.Commands with
+    | [ HideTextInput ] -> ()
+    | _ -> Assert.True(false, "Expected HideTextInput command")
+
+/// Kiểm tra chuyển tool khác trong lúc EditingText hủy text input.
+[<Fact>]
+let ``Chuyển tool trong lúc EditingText hủy preview`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool TextTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+
+    match state.AnnotationInteraction with
+    | EditingText _ -> ()
+    | _ -> Assert.True(false, "Expected EditingText")
+
+    let result = state |> update (SelectTool ArrowTool)
+    Assert.Equal(ArrowTool, result.State.CurrentTool)
+    Assert.Equal(NoAnnotation, result.State.AnnotationInteraction)
+    Assert.Equal(0, List.length result.State.History.Current.Annotations)
+    match result.Commands with
+    | [ HideTextInput ] -> ()
+    | _ -> Assert.True(false, "Expected HideTextInput command")
+
 /// Kiểm tra Undo/Redo hoạt động sau khi commit annotation.
 [<Fact>]
 let ``Undo và Redo hoạt động sau commit`` () =
@@ -920,7 +1066,7 @@ let ``Chọn TextTool và nhấn trong vùng tạo TextInput`` () =
 
 /// Kiểm tra TextCommitted commit text annotation.
 [<Fact>]
-let ``TextCommitted commit text annotation`` () =
+let ``TextCommitted commit text annotation existing`` () =
     let state =
         initResult()
         |> update (PointerPressed(point 100.0 100.0))

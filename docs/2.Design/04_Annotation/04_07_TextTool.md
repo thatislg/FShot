@@ -22,6 +22,19 @@ Text tool khác biệt so với các công cụ khác vì nó cần một trạn
 
 Text tool hoạt động qua ba giai đoạn chính: chọn vị trí, nhập liệu, và commit.
 
+Trong MVP, quyết định cụ thể như sau:
+
+- Control nhập liệu: dùng `TextBox` tích hợp của Avalonia để hỗ trợ Unicode, bộ gõ tiếng Việt, emoji, và các phím tắt chuẩn.
+- Không hỗ trợ đa dòng trong MVP; `TextBox` chỉ cho phép một dòng.
+- Font: chỉ dùng font mặc định của hệ thống, không cho phép người dùng đổi font trong MVP.
+- Phím Enter (Return/NumPadEnter) = commit; không xuống dòng.
+- Không cho phép kéo di chuyển vị trí sau khi đặt trong MVP; nếu sai vị trí thì hủy (Esc) và đặt lại.
+- Căn chỉnh mặc định: căn trái.
+- Không xoay văn bản trong MVP.
+- Nếu nội dung rỗng khi commit, Annotation không được tạo.
+
+Ví dụ, người dùng nhấn `T`, click vào ảnh tại (200, 150), gõ "Lỗi ở đây", nhấn Enter. TextBox biến mất và Text Annotation được commit với nội dung đó, vị trí (200, 150), căn trái, cỡ chữ lấy từ `CurrentStyle.FontSize`.
+
 ### 2.1 Chọn vị trí
 
 Người dùng nhấn chuột tại vị trí mong muốn trên ảnh. Điểm này trở thành gốc của văn bản. Tùy cách căn chỉnh, gốc có thể là góc trái trên, giữa trên, hoặc góc phải trên của khối văn bản.

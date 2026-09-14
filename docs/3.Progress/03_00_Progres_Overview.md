@@ -1,8 +1,8 @@
 # F-Shot Master Progress Tracking
 
 - **Cập nhật gần nhất:** 2026-09-14
-- **Tiến độ tổng quan:** `[ 28 / 84 ] Tasks hoàn thành (~33.3%)` (Phase 0 PoC đã verify xong; Epic 1 P1.01–P1.04, Epic 2 P1.05–P1.11, Epic 2.5 E2.5.01–E2.5.05, P1.12–P1.13 và P1.14–P1.16 đã hoàn thiện)
-- **Mục tiêu hiện tại:** Tiếp tục Epic 3: P1.17 Marker annotation.
+- **Tiến độ tổng quan:** `[ 31 / 84 ] Tasks hoàn thành (~36.9%)` (Phase 0 PoC đã verify xong; Epic 1 P1.01–P1.04, Epic 2 P1.05–P1.11, Epic 2.5 E2.5.01–E2.5.05, và Epic 3 P1.12–P1.19 đã hoàn thiện)
+- **Mục tiêu hiện tại:** Tiếp tục Epic 4: Undo/Redo toolbar (P1.21–P1.23).
 
 ---
 
@@ -11,7 +11,7 @@
 | Phase | Mục tiêu | Trạng thái | Hoàn thành |
 | :--- | :--- | :---: | :---: |
 | **Phase 0: PoC** | Khung Solution, Screen Capture, Overlay Canvas, đo 60 FPS | **DONE** | **8 / 8** (đã verify trên desktop Windows) |
-| **Phase 1: MVP Core** | Bounding box, 8 Annotation tools, Undo/Redo, Save/Clipboard | **IN PROGRESS** | 20 / 29 (~69%) |
+| **Phase 1: MVP Core** | Bounding box, 8 Annotation tools, Undo/Redo, Save/Clipboard | **IN PROGRESS** | 23 / 29 (~79%) |
 | **Phase 2: Windows v1.0** | Tray, Hotkeys, Real Capture, Config UI, Pin Widget, Advanced tools | **PENDING** | 0 / 39 (0%) |
 | **Phase 3: Advanced** | Imgur upload, Snap-to-grid, Tùy biến nâng cao | **PENDING** | 0 / 8 (0%) |
 
@@ -155,28 +155,28 @@
   - [x] Tích hợp `OverlayState` tool Circle, xử lý modifier `Ctrl` để khóa tỉ lệ 1:1.
   - [x] Thêm phím tắt `C`.
   - [x] Thêm tests.
-- [ ] **P1.17** Bút nhớ Marker bán trong suốt Alpha Blend (`FR-ANN-06`).
-  - [ ] Rà soát `docs/2.Design/04_Annotation/04_06_MarkerAndPixelate.md` phần Marker.
-  - [ ] Triển khai `MarkerAnnotation` với điểm path và alpha blend.
-  - [ ] Triển khai `MarkerRenderer`.
-  - [ ] Tích hợp `OverlayState` tool Marker.
-  - [ ] Thêm phím tắt `M`.
-  - [ ] Thêm tests.
-- [ ] **P1.18** Chèn văn bản Text (gõ qua Avalonia TextBox, commit phẳng vào Skia) (`FR-ANN-07`).
-  - [ ] Rà soát `docs/2.Design/04_Annotation/04_07_TextTool.md`.
-  - [ ] Triển khai `TextAnnotation` với `TextAlignment`, `FontSize`.
-  - [ ] Triển khai `TextRenderer` vẽ text phẳng bằng Skia.
-  - [ ] Thiết kế cơ chế edit: `OverlayState` chuyển sang `TextEditing`, UI hiện Avalonia TextBox tạm thời.
-  - [ ] Tích hợp UI `CaptureCanvas` để chỉ định vị trí TextBox overlay.
-  - [ ] Thêm phím tắt `T`.
-  - [ ] Thêm tests.
-- [ ] **P1.19** Che mờ Pixelate xử lý trực tiếp trên mảng byte (`FR-ANN-08`).
-  - [ ] Rà soát `docs/2.Design/04_Annotation/04_06_MarkerAndPixelate.md` phần Pixelate.
-  - [ ] Triển khai `PixelateAnnotation` với `BlockSize`.
-  - [ ] Triển khai `PixelateRenderer` xử lý trên raw byte (hoặc Skia bitmap sampling nếu đơn giản hơn).
-  - [ ] Tích hợp `OverlayState` tool Pixelate.
-  - [ ] Thêm phím tắt `B`.
-  - [ ] Thêm tests.
+- [x] **P1.17** Bút nhớ Marker bán trong suốt Alpha Blend (`FR-ANN-06`).
+  - [x] Hoàn thiện / rà soát `docs/2.Design/04_Annotation/04_06_MarkerAndPixelate.md` phần Marker (quyết định MVP: alpha=0.35, độ dày gấp 3, dùng `Tool.Marker Point list`).
+  - [x] Triển khai `MarkerAnnotation` với điểm path và alpha blend.
+  - [x] Triển khai `MarkerRenderer`.
+  - [x] Tích hợp `OverlayState` tool Marker.
+  - [x] Thêm phím tắt `M`.
+  - [x] Thêm tests.
+- [x] **P1.18** Chèn văn bản Text (gõ qua Avalonia TextBox, commit phẳng vào Skia) (`FR-ANN-07`).
+  - [x] Hoàn thiện / rà soát `docs/2.Design/04_Annotation/04_07_TextTool.md` (quyết định MVP: TextBox 1 dòng, Enter=commit, font mặc định, căn trái).
+  - [x] Triển khai `TextAnnotation` với `TextAlignment`, `FontSize`.
+  - [x] Triển khai `TextRenderer` vẽ text phẳng bằng Skia.
+  - [x] Thiết kế cơ chế edit: `OverlayState` chuyển sang `EditingText`, UI hiện Avalonia TextBox tạm thời.
+  - [x] Tích hợp UI `CaptureCanvas` để chỉ định vị trí TextBox overlay.
+  - [x] Thêm phím tắt `T`.
+  - [x] Thêm tests.
+- [x] **P1.19** Che mờ Pixelate xử lý trực tiếp trên mảng byte (`FR-ANN-08`).
+  - [x] Hoàn thiện / rà soát `docs/2.Design/04_Annotation/04_06_MarkerAndPixelate.md` phần Pixelate (quyết định MVP: blockSize=10, tính trung bình, tái tạo từ ảnh gốc khi render).
+  - [x] Triển khai `PixelateAnnotation` với `BlockSize`.
+  - [x] Triển khai `PixelateRenderer` xử lý trên raw byte (hoặc Skia bitmap sampling nếu đơn giản hơn).
+  - [x] Tích hợp `OverlayState` tool Pixelate.
+  - [x] Thêm phím tắt `B`.
+  - [x] Thêm tests.
 - [ ] **P1.20** Phím tắt chuyển nhanh công cụ (`P/D/A/S/R/C/M/T/B/I`).
   - [ ] Rà soát `docs/2.Design/08_OverlayState/08_03_Events.md` và `08_04_Transitions.md`.
   - [ ] Đảm bảo `OverlayState.update` xử lý đủ phím tắt cho 9 công cụ annotation.

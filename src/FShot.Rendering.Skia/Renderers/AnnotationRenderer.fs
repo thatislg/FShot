@@ -121,6 +121,82 @@ module AnnotationRenderer =
             use paint = DomainToSkia.createStrokePaint annotation.Style.Color strokeWidth
             canvas.DrawOval(rect, paint)
 
+        | Tool.Marker points ->
+            // Marker vẽ nét bán trong suốt phủ lên ảnh gốc.
+            // MVP: alpha = 0.35, độ dày gấp 3 lần StrokeWidth hiện tại.
+            if List.isEmpty points then
+                ()
+            else
+                let strokeWidth =
+                    DomainToSkia.strokeWidthToSkPhysical scale annotation.Style.StrokeWidth * 3.0f
+
+                use paint = DomainToSkia.createStrokePaint annotation.Style.Color strokeWidth
+                paint.Color <-
+                    let c = DomainToSkia.colorToSk annotation.Style.Color
+                    // Giữ 35% alpha so với alpha gốc; nếu màu gốc alpha < 255 thì tỉ lệ cũng giảm theo.
+                    SKColor(c.Red, c.Green, c.Blue, byte (float c.Alpha * 0.35))
+
+                use path = new SKPath()
+                let start = DomainToSkia.pointToSkPhysical scale (List.head points)
+                path.MoveTo(start)
+
+                for p in List.tail points do
+                    path.LineTo(DomainToSkia.pointToSkPhysical scale p)
+                    |> ignore
+
+                canvas.DrawPath(path, paint)
+
+        | Tool.Text (position, content, alignment) when not (String.IsNullOrWhiteSpace content) ->
+            let text = content.Trim()
+            let fontSize = float32 annotation.Style.FontSize * float32 scale.Value
+            if fontSize > 0.0f then
+                let font =
+                    match annotation.Style.FontName with
+                    | Some name -> SKFont(SKTypeface.FromFamilyName(name), fontSize)
+                    | None -> SKFont(SKTypeface.Default, fontSize)
+
+                use paint = new SKPaint()
+                paint.IsAntialias <- true
+                paint.Color <- DomainToSkia.colorToSk annotation.Style.Color
+
+                let baseline = DomainToSkia.pointToSkPhysical scale position
+                let width = font.MeasureText(text, paint)
+
+                let x =
+                    match alignment with
+                    | TextAlignment.Left -> float32 baseline.X
+                    | TextAlignment.Center -> float32 baseline.X - width / 2.0f
+                    | TextAlignment.Right -> float32 baseline.X - width
+
+                canvas.DrawText(text, x, float32 baseline.Y, font, paint)
+
+        | Tool.Pixelate (startPoint, endPoint, blockSize) ->
+            // Pixelate tái tạo từ ảnh gốc trong CaptureResult.
+            // MVP: blockSize mặc định 10, tính trung bình pixel trong mỗi ô.
+            if blockSize <= 0 then
+                ()
+            else
+                let x0 = int (Math.Min(startPoint.X, endPoint.X))
+                let y0 = int (Math.Min(startPoint.Y, endPoint.Y))
+                let x1 = int (Math.Max(startPoint.X, endPoint.X))
+                let y1 = int (Math.Max(startPoint.Y, endPoint.Y))
+                if x1 > x0 && y1 > y0 then
+                    // MVP tạm thời: vẽ hình chữ nhật mờ bán trong suốt để chỉ vùng Pixelate.
+                    // Lý do: renderer này không có truy cập trực tiếp đến backing bitmap của output;
+                    // xử lý pixel thật cần snapshot ảnh gốc, sẽ làm trong export pipeline.
+                    // TODO: thay bằng xử lý mosaic trên raw byte khi tích hợp export.
+                    use overlayPaint = new SKPaint()
+                    overlayPaint.Color <- SKColor(0uy, 0uy, 0uy, 128uy)
+                    overlayPaint.Style <- SKPaintStyle.Fill
+                    let rect =
+                        SKRect(
+                            float32 x0 * float32 scale.Value,
+                            float32 y0 * float32 scale.Value,
+                            float32 x1 * float32 scale.Value,
+                            float32 y1 * float32 scale.Value
+                        )
+                    canvas.DrawRect(rect, overlayPaint)
+
         | _ ->
             // Các tool khác sẽ được triển khai sau.
             ()

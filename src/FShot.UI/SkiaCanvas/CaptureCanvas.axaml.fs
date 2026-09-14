@@ -230,6 +230,7 @@ type CaptureCanvas() as this =
     let mutable captureResult: CaptureResult option = None
     let mutable cachedBitmap: WriteableBitmap option = None
     let mutable overlayState: OverlayState option = None
+    let mutable textBox: TextBox option = None
 
     let mutable frameCount = 0
     let mutable lastFpsUpdate = Stopwatch.GetTimestamp()
@@ -336,8 +337,10 @@ type CaptureCanvas() as this =
                 FShotLog.write (sprintf "[CaptureCanvas] StartExport command: %A" target)
             | ShowTextInput position ->
                 FShotLog.write (sprintf "[CaptureCanvas] ShowTextInput command at %A" position)
+                this.ShowTextInput(position)
             | HideTextInput ->
                 FShotLog.write "[CaptureCanvas] HideTextInput command"
+                this.HideTextInput()
 
     /// Gửi event đến OverlayState, cập nhật state và vẽ lại.
     member private this.Dispatch(event: OverlayEvent) =
@@ -350,6 +353,92 @@ type CaptureCanvas() as this =
             stateChanged.Trigger()
         | None ->
             FShotLog.write "[CaptureCanvas] OverlayState not set; event ignored"
+
+    /// Hiển thị TextBox tạm tại vị trí (virtual screen space) để nhập text.
+    member private this.ShowTextInput(position: FShot.Core.Geometry.Point) =
+        this.HideTextInput()
+
+        let tb = new TextBox()
+        tb.AcceptsReturn <- false
+        tb.AcceptsTab <- false
+        tb.Text <- ""
+        tb.FontSize <-
+            overlayState
+            |> Option.map (fun s -> s.CurrentStyle.FontSize)
+            |> Option.defaultValue 14.0
+        tb.Foreground <-
+            let color =
+                overlayState
+                |> Option.map (fun s -> s.CurrentStyle.Color)
+                |> Option.defaultValue FShot.Core.Geometry.Color.Red
+            let mediaColor = Avalonia.Media.Color.FromArgb(color.A, color.R, color.G, color.B)
+            new SolidColorBrush(mediaColor)
+        tb.Background <- Brushes.Transparent
+        tb.BorderThickness <- Avalonia.Thickness(0.0)
+        tb.Padding <- Avalonia.Thickness(2.0)
+        tb.MinWidth <- 50.0
+        tb.MinHeight <- 20.0
+        tb.CaretBrush <- tb.Foreground
+
+        let scale =
+            match captureResult with
+            | Some r -> r.ScaleFactor.Value
+            | None -> 1.0
+
+        let windowPos =
+            match this.VisualRoot with
+            | :? Window as w -> w.Position
+            | _ -> PixelPoint(0, 0)
+
+        let x = position.X * scale - float windowPos.X
+        let y = position.Y * scale - float windowPos.Y
+        Canvas.SetLeft(tb, x)
+        Canvas.SetTop(tb, y)
+
+        tb.KeyDown.Add(fun e ->
+            match e.Key with
+            | Key.Enter
+            | Key.Return ->
+                e.Handled <- true
+                this.Dispatch(TextCommitted tb.Text)
+            | Key.Escape ->
+                e.Handled <- true
+                this.Dispatch(Cancel)
+            | _ -> ()
+        )
+
+        tb.LostFocus.Add(fun _ ->
+            if String.IsNullOrWhiteSpace tb.Text then
+                this.Dispatch(Cancel)
+            else
+                this.Dispatch(TextCommitted tb.Text)
+        )
+
+        match this.Parent with
+        | :? Canvas as canvas ->
+            canvas.Children.Add(tb)
+            textBox <- Some tb
+            tb.Focus() |> ignore
+        | :? Panel as panel ->
+            panel.Children.Add(tb)
+            textBox <- Some tb
+            tb.Focus() |> ignore
+        | _ ->
+            FShotLog.write "[CaptureCanvas] Không tìm thấy Panel/Canvas để thêm TextBox"
+
+    /// Ẩn và xóa TextBox tạm.
+    member private this.HideTextInput() =
+        match textBox with
+        | Some tb ->
+            textBox <- None
+            try
+                match tb.Parent with
+                | :? Canvas as canvas -> canvas.Children.Remove(tb) |> ignore
+                | :? Panel as panel -> panel.Children.Remove(tb) |> ignore
+                | _ -> ()
+            with ex ->
+                FShotLog.writeEx "HideTextInput failed" ex
+        | None -> ()
 
     override this.OnAttachedToVisualTree(e: Avalonia.VisualTreeAttachmentEventArgs) =
         base.OnAttachedToVisualTree(e)
@@ -741,6 +830,55 @@ type CaptureCanvas() as this =
                     else
                         Avalonia.Rect(x * scale, y * scale, w * scale, h * scale)
                 context.DrawEllipse(null, pen, rect.Center, rect.Width / 2.0, rect.Height / 2.0)
+
+            | Tool.Marker points ->
+                // Marker preview: nét bán trong suốt, độ dày gấp 3, alpha 35%.
+                if not (List.isEmpty points) then
+                    let thickness = annotation.Style.StrokeWidth.Value * scale * 3.0
+                    let mediaColor = avaloniaColor annotation.Style.Color
+                    let markerColor = Avalonia.Media.Color.FromArgb(byte (255.0 * 0.35), mediaColor.R, mediaColor.G, mediaColor.B)
+                    let brush = new SolidColorBrush(markerColor)
+                    let pen = new Pen(brush, thickness)
+                    let start = avPoint (List.head points)
+                    let mutable current = start
+                    for p in List.tail points do
+                        let next = avPoint p
+                        context.DrawLine(pen, current, next)
+                        current <- next
+
+            | Tool.Pixelate (startPoint, endPoint, _) ->
+                // Preview: hình chữ nhật mờ bán trong suốt chỉ vùng sẽ pixelate.
+                let x = Math.Min(startPoint.X, endPoint.X) * scale
+                let y = Math.Min(startPoint.Y, endPoint.Y) * scale
+                let w = Math.Abs(endPoint.X - startPoint.X) * scale
+                let h = Math.Abs(endPoint.Y - startPoint.Y) * scale
+                let rect = Avalonia.Rect(x, y, w, h)
+                let brush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(128uy, 0uy, 0uy, 0uy))
+                context.DrawRectangle(brush, null, rect)
+
+            | Tool.Text (position, content, alignment) when not (String.IsNullOrWhiteSpace content) ->
+                // Text đã commit: vẽ trực tiếp bằng Avalonia FormattedText.
+                let text = content.Trim()
+                let fontSize = annotation.Style.FontSize * scale
+                if fontSize > 0.0 then
+                    let ft =
+                        new FormattedText(
+                            text,
+                            System.Globalization.CultureInfo.CurrentCulture,
+                            FlowDirection.LeftToRight,
+                            new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Normal),
+                            fontSize,
+                            new SolidColorBrush(avaloniaColor annotation.Style.Color)
+                        )
+
+                    let origin = avPoint position
+                    let x =
+                        match alignment with
+                        | TextAlignment.Left -> origin.X
+                        | TextAlignment.Center -> origin.X - ft.Width / 2.0
+                        | TextAlignment.Right -> origin.X - ft.Width
+
+                    context.DrawText(ft, Avalonia.Point(x, origin.Y))
 
             | _ -> ()
 

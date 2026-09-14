@@ -184,10 +184,11 @@ module OverlayStateLogic =
         | _ -> None
 
     /// Chuyển annotation Text đã nhập thành annotation hoàn chỉnh.
+    /// Nếu nội dung rỗng hoặc chỉ chứa khoảng trắng thì không tạo annotation (FR-ANN-07).
     let private commitText (content: string) (state: OverlayState) : Annotation option =
         match state.AnnotationInteraction with
-        | EditingText(position, _) ->
-            let tool = Tool.Text(position, content, TextAlignment.Left)
+        | EditingText(position, _) when not (String.IsNullOrWhiteSpace content) ->
+            let tool = Tool.Text(position, content.Trim(), TextAlignment.Left)
             Some (Annotation.FromPreview(tool, currentAnnotationStyle state))
         | _ -> None
 
