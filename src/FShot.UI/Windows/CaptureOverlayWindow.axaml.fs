@@ -19,6 +19,7 @@ type CaptureOverlayWindow() as this =
     inherit Window()
 
     let mutable canvas: CaptureCanvas option = None
+    let mutable rootCanvas: Canvas option = None
     let mutable overlayState: FShot.Core.State.OverlayState option = None
 
     do
@@ -31,6 +32,7 @@ type CaptureOverlayWindow() as this =
     member private this.InitializeComponent() =
         AvaloniaXamlLoader.Load(this)
         canvas <- Some (this.FindControl<CaptureCanvas>("CaptureCanvas"))
+        rootCanvas <- Some (this.FindControl<Canvas>("RootCanvas"))
         FShotLog.write "CaptureOverlayWindow initialized"
 
     /// Cấu hình cửa sổ borderless topmost phủ toàn Virtual Screen.
@@ -42,9 +44,11 @@ type CaptureOverlayWindow() as this =
         this.ShowInTaskbar <- false
         this.Focusable <- true
 
-        // Background đen mờ để người dùng thấy đang ở chế độ capture.
-        this.Background <- Media.Brushes.Black
-        this.Opacity <- 0.4
+        // Flameshot-style: cửa sổ trong suốt hoàn toàn.
+        // Dimming và selection được vẽ bởi CaptureCanvas trên nền trong suốt.
+        // Không dùng Window.Opacity < 1.0 để tránh toàn bộ cửa sổ bị mờ.
+        this.Background <- Media.Brushes.Transparent
+        this.Opacity <- 1.0
 
     /// Mở cửa sổ phủ toàn Virtual Screen và chụp ảnh nền.
     member this.ShowOverlayAsync() =
@@ -67,6 +71,18 @@ type CaptureOverlayWindow() as this =
                     this.Position <- PixelPoint(int bounds.X, int bounds.Y)
                     this.Width <- float width
                     this.Height <- float height
+
+                    // Đảm bảo Canvas wrapper và CaptureCanvas phủ toàn cửa sổ
+                    // để hit-test và render không bị gián đoạn.
+                    rootCanvas |> Option.iter (fun rc ->
+                        rc.Width <- this.Width
+                        rc.Height <- this.Height
+                    )
+                    canvas |> Option.iter (fun c ->
+                        c.Width <- this.Width
+                        c.Height <- this.Height
+                    )
+
                     this.IsVisible <- true
 
                     FShotLog.write "ShowOverlayAsync: showing window"

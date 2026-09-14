@@ -366,19 +366,27 @@ type CaptureCanvas() as this =
             overlayState
             |> Option.map (fun s -> s.CurrentStyle.FontSize)
             |> Option.defaultValue 14.0
-        tb.Foreground <-
-            let color =
-                overlayState
-                |> Option.map (fun s -> s.CurrentStyle.Color)
-                |> Option.defaultValue FShot.Core.Geometry.Color.Red
-            let mediaColor = Avalonia.Media.Color.FromArgb(color.A, color.R, color.G, color.B)
-            new SolidColorBrush(mediaColor)
-        tb.Background <- Brushes.Transparent
-        tb.BorderThickness <- Avalonia.Thickness(0.0)
-        tb.Padding <- Avalonia.Thickness(2.0)
-        tb.MinWidth <- 50.0
-        tb.MinHeight <- 20.0
-        tb.CaretBrush <- tb.Foreground
+
+        let color =
+            overlayState
+            |> Option.map (fun s -> s.CurrentStyle.Color)
+            |> Option.defaultValue FShot.Core.Geometry.Color.Red
+
+        let mediaColor = Avalonia.Media.Color.FromArgb(color.A, color.R, color.G, color.B)
+        tb.Foreground <- new SolidColorBrush(mediaColor)
+        // Caret phải dùng brush riêng; nếu dùng cùng brush với Foreground có thể bị ẩn.
+        tb.CaretBrush <- new SolidColorBrush(mediaColor)
+        // Nền hơi tối để text nổi bật trên ảnh chụp; vẫn đủ trong suốt để nhìn xuyên.
+        tb.Background <- new SolidColorBrush(Avalonia.Media.Color.FromArgb(64uy, 0uy, 0uy, 0uy))
+        tb.BorderBrush <- new SolidColorBrush(mediaColor)
+        tb.BorderThickness <- Avalonia.Thickness(1.0)
+        tb.Padding <- Avalonia.Thickness(4.0)
+        tb.MinWidth <- 80.0
+        tb.MinHeight <- 28.0
+        // Bắt buộc hiển thị và nhận input.
+        tb.IsVisible <- true
+        tb.IsHitTestVisible <- true
+        tb.Focusable <- true
 
         let scale =
             match captureResult with
@@ -414,17 +422,55 @@ type CaptureCanvas() as this =
                 this.Dispatch(TextCommitted tb.Text)
         )
 
+        // Ưu tiên: thêm TextBox vào Canvas cha trực tiếp (RootCanvas trong XAML).
+        // Nếu vì lý do gì cha không phải Canvas, dùng TopLevel.GetTopLevel để
+        // tìm Window và fallback bọc Content trong Canvas tạm thời.
         match this.Parent with
         | :? Canvas as canvas ->
             canvas.Children.Add(tb)
             textBox <- Some tb
             tb.Focus() |> ignore
-        | :? Panel as panel ->
-            panel.Children.Add(tb)
-            textBox <- Some tb
-            tb.Focus() |> ignore
+            FShotLog.write "[CaptureCanvas] TextBox added to Canvas (Parent)"
         | _ ->
-            FShotLog.write "[CaptureCanvas] Không tìm thấy Panel/Canvas để thêm TextBox"
+            FShotLog.write "[CaptureCanvas] ShowTextInput: Parent is not Canvas, using fallback"
+            let topLevel = Avalonia.Controls.TopLevel.GetTopLevel(this)
+            FShotLog.write (sprintf "[CaptureCanvas] ShowTextInput fallback: TopLevel type = %s" (if isNull topLevel then "null" else topLevel.GetType().Name))
+
+            match topLevel with
+            | :? Window as window ->
+                let contentTypeName =
+                    if isNull window.Content then "null"
+                    else window.Content.GetType().Name
+                let refEquals = Object.ReferenceEquals(window.Content, this)
+                FShotLog.write (sprintf "[CaptureCanvas] ShowTextInput fallback: Window.Content = %s, ReferenceEquals(this) = %b" contentTypeName refEquals)
+
+                match window.Content with
+                | :? Canvas as canvas when canvas.Children.Contains(this) ->
+                    canvas.Children.Add(tb)
+                    textBox <- Some tb
+                    tb.Focus() |> ignore
+                    FShotLog.write "[CaptureCanvas] TextBox added to existing Canvas wrapper"
+                | content when Object.ReferenceEquals(content, this) ->
+                    let canvas = new Canvas()
+                    canvas.Background <- Brushes.Transparent
+                    canvas.HorizontalAlignment <- Avalonia.Layout.HorizontalAlignment.Stretch
+                    canvas.VerticalAlignment <- Avalonia.Layout.VerticalAlignment.Stretch
+                    canvas.Width <- window.Bounds.Width
+                    canvas.Height <- window.Bounds.Height
+
+                    window.Content <- null
+                    canvas.Children.Add(this)
+                    this.Width <- canvas.Width
+                    this.Height <- canvas.Height
+                    canvas.Children.Add(tb)
+                    textBox <- Some tb
+                    window.Content <- canvas
+                    tb.Focus() |> ignore
+                    FShotLog.write "[CaptureCanvas] TextBox added to new Canvas wrapper (CaptureCanvas as root)"
+                | _ ->
+                    FShotLog.write "[CaptureCanvas] Window.Content không phải CaptureCanvas hoặc wrapper Canvas"
+            | _ ->
+                FShotLog.write "[CaptureCanvas] Không tìm thấy Panel/Canvas để thêm TextBox"
 
     /// Ẩn và xóa TextBox tạm.
     member private this.HideTextInput() =
@@ -433,8 +479,18 @@ type CaptureCanvas() as this =
             textBox <- None
             try
                 match tb.Parent with
-                | :? Canvas as canvas -> canvas.Children.Remove(tb) |> ignore
-                | :? Panel as panel -> panel.Children.Remove(tb) |> ignore
+                | :? Canvas as canvas ->
+                    canvas.Children.Remove(tb) |> ignore
+                    // Nếu Canvas này là wrapper tạm thời trong Window, khôi phục lại Window.Content.
+                    match canvas.Parent with
+                    | :? Window as window when window.Content = (canvas :> obj) && canvas.Children.Contains(this) ->
+                        canvas.Children.Remove(this) |> ignore
+                        this.Width <- Double.NaN
+                        this.Height <- Double.NaN
+                        window.Content <- this
+                    | _ -> ()
+                | :? Panel as panel ->
+                    panel.Children.Remove(tb) |> ignore
                 | _ -> ()
             with ex ->
                 FShotLog.writeEx "HideTextInput failed" ex
@@ -599,7 +655,8 @@ type CaptureCanvas() as this =
             )
 
     /// Vẽ dimming layer ngoài vùng chọn.
-    /// Trong MVP dùng 4 strips đơn giản bằng Avalonia DrawingContext.
+    /// Trước khi chọn vùng: toàn màn hình mờ 50% (vẫn thấy desktop).
+    /// Sau khi chọn vùng: 4 strips ngoài vùng chọn mờ 50%; capture region trong suốt, hiển thị desktop gốc rõ.
     /// Xem 11_09_OverlayStateIntegration.md, mục 5.2.
     member private this.RenderDimming(context: DrawingContext, selectionOption: Selection option) =
         let fullBounds = this.Bounds
@@ -657,9 +714,9 @@ type CaptureCanvas() as this =
                     selection.Bounds.Height * scale
                 )
 
-            let innerBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(40uy, 0uy, 150uy, 255uy))
-
-            // Tô màu xanh mờ bên trong vùng chọn.
+            // Capture region hiển thị desktop gốc rõ; không tô màu che phủ.
+            // Chỉ vẽ viền và handle để đánh dấu vùng chọn.
+            let innerBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(0uy, 0uy, 150uy, 255uy))
             context.FillRectangle(innerBrush, selectionRect)
 
             // Border vùng chọn màu trắng dày 2.5px + bóng mờ đen để nổi.
@@ -705,14 +762,16 @@ type CaptureCanvas() as this =
         base.Render(context)
         let frameStart = Stopwatch.GetTimestamp()
 
+        // Flameshot-style: cửa sổ trong suốt, không vẽ screenshot stub đè lên desktop.
+        // Capture result vẫn được lưu để export pipeline sử dụng.
+        // Dimming và annotations được vẽ trên nền trong suốt.
         match cachedBitmap with
-        | Some bitmap ->
-            // Vẽ screenshot nền từ bitmap đã cache.
-            let rect = Rect(0.0, 0.0, this.Bounds.Width, this.Bounds.Height)
-            context.DrawImage(bitmap, rect)
+        | Some _ ->
+            // Không vẽ screenshot lên overlay; desktop gốc hiển thị phía sau cửa sổ.
+            ()
         | None ->
-            // Chưa có capture result: vẽ nền xám.
-            let brush = new SolidColorBrush(Colors.DarkGray)
+            // Chưa có capture result: vẽ nền xám nhạt để debug.
+            let brush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(32uy, 128uy, 128uy, 128uy))
             context.FillRectangle(brush, this.Bounds)
 
         // Lấy RenderModel từ OverlayState hiện tại.

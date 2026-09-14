@@ -6,10 +6,18 @@
         WindowDecorations="None"
         Topmost="True"
         CanResize="False"
-        Background="#66000000"
+        Background="#00000000"
         ShowInTaskbar="False"
         Focusable="True"
         IsVisible="False"
         IsHitTestVisible="True">
-    <controls:CaptureCanvas x:Name="CaptureCanvas" IsHitTestVisible="True" />
+    <!--
+        CaptureCanvas được bọc trong Canvas để có thể thêm Avalonia TextBox khi cần
+        (ví dụ: tool Text). Canvas phải stretch toàn cửa sổ; CaptureCanvas sẽ được
+        đặt kích thước bằng cửa sổ trong code-behind để đảm bảo hit-test và render
+        vẫn phủ toàn màn hình.
+    -->
+    <Canvas x:Name="RootCanvas" Background="Transparent">
+        <controls:CaptureCanvas x:Name="CaptureCanvas" IsHitTestVisible="True" />
+    </Canvas>
 </Window>
