@@ -389,8 +389,13 @@ module OverlayStateLogic =
                 emptyResult { state with Selection = newSelection }
             | None ->
                 if not (state.Selection.Contains point) then
-                    let newSelection = Selection.StartSelecting point
-                    emptyResult { state with Selection = newSelection }
+                    // Hành vi Flameshot: nếu đã có annotations, click ngoài = copy rồi close overlay.
+                    // Nếu chưa có annotations, cho phép reselect bình thường.
+                    if not (List.isEmpty state.History.Current.Annotations) then
+                        startExport ExportTarget.CopyToClipboard state
+                    else
+                        let newSelection = Selection.StartSelecting point
+                        emptyResult { state with Selection = newSelection }
                 elif state.CurrentTool = SelectionTool then
                     let newSelection = state.Selection.StartMoving point
                     emptyResult { state with Selection = newSelection }

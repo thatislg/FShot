@@ -293,6 +293,34 @@ let ``Selected PointerPressed ngoài vùng bắt đầu Selecting mới`` () =
     Assert.Equal(SelectionState.Selecting, result.State.Selection.State)
     Assert.Equal(point 500.0 500.0, result.State.Selection.DragStart)
 
+/// Kiểm tra Selected + PointerPressed ngoài vùng khi đã có annotations = copy + close overlay.
+[<Fact>]
+let ``Selected PointerPressed ngoài vùng khi đã có annotations trigger Copy and CloseOverlay`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool LineTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    Assert.Equal(1, List.length state.History.Current.Annotations)
+
+    let result = state |> update (PointerPressed(point 500.0 500.0))
+    Assert.True(
+        result.Commands |> List.contains (StartExport ExportTarget.CopyToClipboard),
+        "Phải phát ra StartExport CopyToClipboard"
+    )
+
 /// Kiểm tra Selected + PointerPressed trong vùng với SelectionTool bắt đầu Moving.
 [<Fact>]
 let ``Selected PointerPressed trong vùng với SelectionTool di chuyển vùng chọn`` () =
