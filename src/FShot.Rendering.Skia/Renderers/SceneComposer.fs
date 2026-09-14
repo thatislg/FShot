@@ -13,7 +13,8 @@ module SceneComposer =
     /// Xem 09_07_SceneComposer.md, mục 3.
     let private renderScreenshot (canvas: SKCanvas) (captureResult: CaptureResult) =
         use bitmap = captureResult |> DomainToSkia.captureResultToBitmap
-        canvas.DrawBitmap(bitmap, SKPoint(0.0f, 0.0f))
+        let sampling = new SKSamplingOptions(SKCubicResampler.Mitchell)
+        canvas.DrawBitmap(bitmap, SKPoint(0.0f, 0.0f), sampling)
 
     /// Vẽ lớp tối ngoài vùng chọn.
     /// Xem 03_07_OverlayDimming.md và 09_07_SceneComposer.md, mục 4.
@@ -108,7 +109,8 @@ module SceneComposer =
             )
 
         let destRect = SKRect(0.0f, 0.0f, float32 width, float32 height)
-        canvas.DrawBitmap(fullBitmap, sourceRect, destRect)
+        let sampling = new SKSamplingOptions(SKCubicResampler.Mitchell)
+        canvas.DrawBitmap(fullBitmap, sourceRect, destRect, sampling)
 
         // Vẽ annotations, dịch gốc tọa độ để nằm trong vùng crop.
         let physicalSelection = captureResult.LogicalSelectionToPhysical selection.Bounds

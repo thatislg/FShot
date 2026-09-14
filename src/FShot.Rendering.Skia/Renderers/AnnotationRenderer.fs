@@ -26,17 +26,21 @@ module AnnotationRenderer =
                 if List.isEmpty segments then
                     ()
                 else
-                    use path = new SKPath()
+                    use pathBuilder = new SKPathBuilder()
                     let (start, ctrl, target) = List.head segments
-                    path.MoveTo(DomainToSkia.pointToSkPhysical scale start)
+                    pathBuilder.MoveTo(DomainToSkia.pointToSkPhysical scale start)
+                    pathBuilder.QuadTo(
+                        DomainToSkia.pointToSkPhysical scale ctrl,
+                        DomainToSkia.pointToSkPhysical scale target
+                    )
 
-                    for (_, c, e) in segments do
-                        path.QuadTo(
+                    for (_, c, e) in List.tail segments do
+                        pathBuilder.QuadTo(
                             DomainToSkia.pointToSkPhysical scale c,
                             DomainToSkia.pointToSkPhysical scale e
                         )
-                        |> ignore
 
+                    use path = pathBuilder.Detach()
                     let strokeWidth =
                         DomainToSkia.strokeWidthToSkPhysical scale annotation.Style.StrokeWidth
 
@@ -136,14 +140,14 @@ module AnnotationRenderer =
                     // Giữ 35% alpha so với alpha gốc; nếu màu gốc alpha < 255 thì tỉ lệ cũng giảm theo.
                     SKColor(c.Red, c.Green, c.Blue, byte (float c.Alpha * 0.35))
 
-                use path = new SKPath()
+                use pathBuilder = new SKPathBuilder()
                 let start = DomainToSkia.pointToSkPhysical scale (List.head points)
-                path.MoveTo(start)
+                pathBuilder.MoveTo(start)
 
                 for p in List.tail points do
-                    path.LineTo(DomainToSkia.pointToSkPhysical scale p)
-                    |> ignore
+                    pathBuilder.LineTo(DomainToSkia.pointToSkPhysical scale p)
 
+                use path = pathBuilder.Detach()
                 canvas.DrawPath(path, paint)
 
         | Tool.Text (position, content, alignment) when not (String.IsNullOrWhiteSpace content) ->
@@ -152,23 +156,21 @@ module AnnotationRenderer =
             if fontSize > 0.0f then
                 let font =
                     match annotation.Style.FontName with
-                    | Some name -> SKFont(SKTypeface.FromFamilyName(name), fontSize)
-                    | None -> SKFont(SKTypeface.Default, fontSize)
+                    | Some name -> new SKFont(SKTypeface.FromFamilyName(name), fontSize)
+                    | None -> new SKFont(SKTypeface.Default, fontSize)
 
                 use paint = new SKPaint()
                 paint.IsAntialias <- true
                 paint.Color <- DomainToSkia.colorToSk annotation.Style.Color
 
                 let baseline = DomainToSkia.pointToSkPhysical scale position
-                let width = font.MeasureText(text, paint)
-
-                let x =
+                let textAlign =
                     match alignment with
-                    | TextAlignment.Left -> float32 baseline.X
-                    | TextAlignment.Center -> float32 baseline.X - width / 2.0f
-                    | TextAlignment.Right -> float32 baseline.X - width
+                    | TextAlignment.Left -> SKTextAlign.Left
+                    | TextAlignment.Center -> SKTextAlign.Center
+                    | TextAlignment.Right -> SKTextAlign.Right
 
-                canvas.DrawText(text, x, float32 baseline.Y, font, paint)
+                canvas.DrawText(text, float32 baseline.X, float32 baseline.Y, textAlign, font, paint)
 
         | Tool.Pixelate (startPoint, endPoint, blockSize) ->
             // Pixelate tái tạo từ ảnh gốc trong CaptureResult.

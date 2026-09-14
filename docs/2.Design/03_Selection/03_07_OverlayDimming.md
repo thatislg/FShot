@@ -130,8 +130,10 @@ Dimming phải được vẽ ngay sau screenshot và trước selection border, 
 
 Giá trị mặc định:
 
-- `DimmingColor`: đen `#000000`.
+- `DimmingColor`: xanh Flameshot `#45b6f7`.
 - `DimmingOpacity`: 0.5 (50%).
+
+Lý do chọn màu xanh: đặc trưng giao diện Flameshot, dễ nhận diện, tương phản tốt với hầu hết nền desktop.
 
 Trong tương lai có thể cho phép người dùng điều chỉnh opacity trong Settings (thuộc P2/P3).
 
@@ -148,9 +150,10 @@ Trong MVP cần đảm bảo:
 
 Không cần trong MVP:
 
-- Tùy chỉnh màu dimming.
 - Hiệu ứng gradient.
 - Khoét nhiều vùng cùng lúc.
+
+`DimmingColor` hiện tại đã được cố định là `#45b6f7` trong MVP; tùy chỉnh màu có thể thêm trong Settings sau.
 
 ---
 

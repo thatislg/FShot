@@ -655,12 +655,14 @@ type CaptureCanvas() as this =
             )
 
     /// Vẽ dimming layer ngoài vùng chọn.
-    /// Trước khi chọn vùng: toàn màn hình mờ 50% (vẫn thấy desktop).
-    /// Sau khi chọn vùng: 4 strips ngoài vùng chọn mờ 50%; capture region trong suốt, hiển thị desktop gốc rõ.
+    /// Flameshot-style: màu xanh #45b6f7 với alpha 50%.
+    /// Trước khi chọn vùng: toàn màn hình được phủ mờ.
+    /// Sau khi chọn vùng: 4 strips ngoài vùng chọn được phủ mờ; capture region trong suốt.
     /// Xem 11_09_OverlayStateIntegration.md, mục 5.2.
     member private this.RenderDimming(context: DrawingContext, selectionOption: Selection option) =
         let fullBounds = this.Bounds
-        let outerBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(128uy, 0uy, 0uy, 0uy))
+        // #45b6f7 với alpha 128 (~50%).
+        let outerBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(128uy, 69uy, 182uy, 247uy))
 
         match selectionOption with
         | Some selection when selection.State <> SelectionState.Idle ->
@@ -675,14 +677,14 @@ type CaptureCanvas() as this =
                         selection.Bounds.Height * scale
                     )
 
-                // Vẽ 4 strips tối xung quanh vùng chọn.
+                // Vẽ 4 strips xanh xung quanh vùng chọn.
                 context.FillRectangle(outerBrush, Rect(0.0, 0.0, fullBounds.Width, selectionRect.Y))
                 context.FillRectangle(outerBrush, Rect(0.0, selectionRect.Bottom, fullBounds.Width, fullBounds.Height - selectionRect.Bottom))
                 context.FillRectangle(outerBrush, Rect(0.0, selectionRect.Y, selectionRect.X, selectionRect.Height))
                 context.FillRectangle(outerBrush, Rect(selectionRect.Right, selectionRect.Y, fullBounds.Width - selectionRect.Right, selectionRect.Height))
             | None -> ()
         | _ ->
-            // Chưa có vùng chọn: dimming toàn màn hình.
+            // Chưa có vùng chọn: dimming xanh toàn màn hình.
             context.FillRectangle(outerBrush, fullBounds)
 
     /// Vẽ toolbar đơn giản quanh vùng chọn.
