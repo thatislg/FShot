@@ -169,21 +169,23 @@ Mỗi nét Pencil lưu một chuỗi điểm. Kích thước dữ liệu tỉ l�
 
 ## 8. Các câu hỏi cần quyết định
 
-| Câu hỏi | Tác động |
-|---------|----------|
-| Mức làm mịn mặc định là bao nhiêu? | Ảnh hưởng cảm giác vẽ tay tự do |
-| Có cho phép người dùng điều chỉnh mức làm mịn không? | Cần thêm cấu hình công cụ |
-| Ngưỡng bỏ điểm dư thừa tính theo pixel hay theo tỉ lệ độ dày nét? | Ảnh hưởng chất lượng đường nét ở các độ phân giải màn hình khác nhau |
-| Có cần lưu cả chuỗi điểm thô để chỉnh sửa sau không? | Ảnh hưởng kích thước dữ liệu và khả năng sửa chú thích cũ |
+| Câu hỏi | Quyết định cho MVP |
+|---------|--------------------|
+| Mức làm mịn mặc định là bao nhiêu? | Dùng đường cong bậc hai xuyên qua trung điểm các cặp điểm liên tiếp; không có tham số làm mịn độc lập. |
+| Có cho phép người dùng điều chỉnh mức làm mịn không? | Không; giữ thuật toán cố định để đơn giản. |
+| Ngưỡng bỏ điểm dư thừa tính theo pixel hay theo tỉ lệ độ dày nét? | Theo tỉ lệ độ dày nét: một phần tư độ dày nét, giới hạn dưới là 0.5 logical pixel. |
+| Có cần lưu cả chuỗi điểm thô để chỉnh sửa sau không? | Không; chỉ lưu chuỗi điểm đã rà soát, phù hợp MVP. |
+| Icon cho nút Pencil trong toolbar? | Tạm dùng icon `pencil.svg` từ bộ icon Material Design của Flameshot, sao chép sang `docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/icon_pencil.svg`. Sau này thay bằng bộ icon riêng của F-Shot. |
 
 ---
 
 ## 9. Kết nối với các phần khác
 
-- Geometry cung cấp kiểu Point và các phép tính khoảng cách.
-- Rendering.Skia sẽ vẽ đường cong dựa trên danh sách điểm đã xử lý.
+- Geometry cung cấp kiểu Point, khoảng cách, nội suy tuyến tính, và module làm mịn đường nét.
+- Rendering.Skia vẽ đường cong bậc hai từ danh sách điểm đã xử lý, áp dụng màu và độ dày từ AnnotationStyle.
+- UI layer hiển thị preview và annotation đã commit bằng cách tái sử dụng cùng thuật toán làm mịn.
 - History đảm bảo mỗi nét Pencil hoàn thành đều tạo ra một snapshot mới.
-- Config cung cấp giá trị mặc định cho màu, độ dày, và mức làm mịn.
+- Config cung cấp giá trị mặc định cho màu, độ dày, và công cụ mặc định.
 
 ---
 

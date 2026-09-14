@@ -693,21 +693,24 @@ Khi kéo instance ToolButton vào Board màn hình, nhập giá trị 2 properti
 
 Mỗi icon trong toolbar phải là vector `18 × 18px`, viewBox `0 0 18 18`. Danh sách icon cần thiết:
 
-| Nút | Tên file | Mô tả hình dạng |
-| :--- | :--- | :--- |
-| Pencil | `icon_pencil.svg` | Nét cong tự do hoặc hình bút chì. |
-| Line | `icon_line.svg` | Đường thẳng nghiêng 45°. |
-| Arrow | `icon_arrow.svg` | Đường thẳng với mũi tên. |
-| Rectangle | `icon_rectangle.svg` | Hình chữ nhật rỗng. |
-| Circle | `icon_circle.svg` | Hình tròn / elip rỗng. |
-| Marker | `icon_marker.svg` | Nét ngang bán trong suốt. |
-| Text | `icon_text.svg` | Chữ `T`. |
-| Pixelate | `icon_pixelate.svg` | Lưới ô vuông. |
-| Undo | `icon_undo.svg` | Mũi tên cong trái. |
-| Redo | `icon_redo.svg` | Mũi tên cong phải. |
-| Copy | `icon_copy.svg` | Hai tờ giấy chồng lệch. |
-| Save | `icon_save.svg` | Đĩa mềm hoặc mũi tên xuống. |
-| Cancel | `icon_cancel.svg` | Dấu `X`. |
+| Nút | Tên file | Mô tả hình dạng | Nguồn tạm thời |
+| :--- | :--- | :--- | :--- |
+| Pencil | `icon_pencil.svg` | Nét cong tự do hoặc hình bút chì. | `flameshot/data/img/material/black/pencil.svg` |
+| Line | `icon_line.svg` | Đường thẳng nghiêng 45°. | `flameshot/data/img/material/black/line.svg` |
+| Arrow | `icon_arrow.svg` | Đường thẳng với mũi tên. | `flameshot/data/img/material/black/arrow-bottom-left.svg` |
+| Rectangle | `icon_rectangle.svg` | Hình chữ nhật rỗng. | `flameshot/data/img/material/black/square-outline.svg` |
+| Circle | `icon_circle.svg` | Hình tròn / elip rỗng. | `flameshot/data/img/material/black/circle-outline.svg` |
+| Marker | `icon_marker.svg` | Nét ngang bán trong suốt. | `flameshot/data/img/material/black/marker.svg` |
+| Text | `icon_text.svg` | Chữ `T`. | `flameshot/data/img/material/black/text.svg` |
+| Pixelate | `icon_pixelate.svg` | Lưới ô vuông. | `flameshot/data/img/material/black/pixelate.svg` |
+| Selection | `icon_selection.svg` | Con trỏ di chuyển. | `flameshot/data/img/material/black/cursor-move.svg` |
+| Undo | `icon_undo.svg` | Mũi tên cong trái. | TBD |
+| Redo | `icon_redo.svg` | Mũi tên cong phải. | TBD |
+| Copy | `icon_copy.svg` | Hai tờ giấy chồng lệch. | TBD |
+| Save | `icon_save.svg` | Đĩa mềm hoặc mũi tên xuống. | TBD |
+| Cancel | `icon_cancel.svg` | Dấu `X`. | TBD |
+
+Các icon tạm thời được sao chép từ bộ icon Material Design của Flameshot sang `docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/` để dùng trong Penpot mockups cho đến khi có bộ icon riêng. Chúng cần được xem lại về kích thước viewBox `0 0 18 18` và đổi sang `currentColor` trước khi đưa vào Avalonia UI.
 
 Tất cả icon dùng `currentColor` để trong Avalonia có thể đổi màu qua `Foreground`.
 
