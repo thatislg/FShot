@@ -1,8 +1,8 @@
 # F-Shot Master Progress Tracking
 
 - **Cập nhật gần nhất:** 2026-09-14
-- **Tiến độ tổng quan:** `[ 25 / 84 ] Tasks hoàn thành (~29.8%)` (Phase 0 PoC đã verify xong; Epic 1 P1.01–P1.04, Epic 2 P1.05–P1.11, Epic 2.5 E2.5.01–E2.5.05, và P1.12–P1.13 đã hoàn thiện)
-- **Mục tiêu hiện tại:** Tiếp tục Epic 3: P1.14 Arrow annotation.
+- **Tiến độ tổng quan:** `[ 28 / 84 ] Tasks hoàn thành (~33.3%)` (Phase 0 PoC đã verify xong; Epic 1 P1.01–P1.04, Epic 2 P1.05–P1.11, Epic 2.5 E2.5.01–E2.5.05, P1.12–P1.13 và P1.14–P1.16 đã hoàn thiện)
+- **Mục tiêu hiện tại:** Tiếp tục Epic 3: P1.17 Marker annotation.
 
 ---
 
@@ -11,7 +11,7 @@
 | Phase | Mục tiêu | Trạng thái | Hoàn thành |
 | :--- | :--- | :---: | :---: |
 | **Phase 0: PoC** | Khung Solution, Screen Capture, Overlay Canvas, đo 60 FPS | **DONE** | **8 / 8** (đã verify trên desktop Windows) |
-| **Phase 1: MVP Core** | Bounding box, 8 Annotation tools, Undo/Redo, Save/Clipboard | **IN PROGRESS** | 17 / 29 (~59%) |
+| **Phase 1: MVP Core** | Bounding box, 8 Annotation tools, Undo/Redo, Save/Clipboard | **IN PROGRESS** | 20 / 29 (~69%) |
 | **Phase 2: Windows v1.0** | Tray, Hotkeys, Real Capture, Config UI, Pin Widget, Advanced tools | **PENDING** | 0 / 39 (0%) |
 | **Phase 3: Advanced** | Imgur upload, Snap-to-grid, Tùy biến nâng cao | **PENDING** | 0 / 8 (0%) |
 
@@ -134,27 +134,27 @@
   - [x] Tích hợp `OverlayState`: tool Line, preview khi kéo, commit khi thả (đã có từ P1.03).
   - [x] Thêm phím tắt `L` trên toolbar tạm.
   - [x] Thêm tests (render + state commit).
-- [ ] **P1.14** Vẽ mũi tên Arrow có chóp định hướng (`FR-ANN-03`).
-  - [ ] Hoàn thiện / rà soát `docs/2.Design/04_Annotation/04_04_LineAndArrow.md` (mục Arrow).
-  - [ ] Triển khai `ArrowAnnotation` với đầu mũi tên tam giác.
-  - [ ] Triển khai `ArrowRenderer`.
-  - [ ] Tích hợp `OverlayState` tool Arrow.
-  - [ ] Thêm phím tắt `A`.
-  - [ ] Thêm tests.
-- [ ] **P1.15** Vẽ hình chữ nhật Rectangle hỗ trợ bo góc (`FR-ANN-04`).
-  - [ ] Hoàn thiện / rà soát `docs/2.Design/04_Annotation/04_05_RectangleAndCircle.md` (mục Rectangle).
-  - [ ] Triển khai `RectangleAnnotation` với thuộc tính `CornerRadius`.
-  - [ ] Triển khai `RectangleRenderer`.
-  - [ ] Tích hợp `OverlayState` tool Rectangle.
-  - [ ] Thêm phím tắt `R`.
-  - [ ] Thêm tests.
-- [ ] **P1.16** Vẽ hình tròn/elip Circle giữ `Ctrl` khóa tỉ lệ 1:1 (`FR-ANN-05`).
-  - [ ] Hoàn thiện / rà soát `docs/2.Design/04_Annotation/04_05_RectangleAndCircle.md` (mục Circle/Ellipse).
-  - [ ] Triển khai `CircleAnnotation`.
-  - [ ] Triển khai `CircleRenderer`.
-  - [ ] Tích hợp `OverlayState` tool Circle, xử lý modifier `Ctrl` để khóa tỉ lệ 1:1.
-  - [ ] Thêm phím tắt `C`.
-  - [ ] Thêm tests.
+- [x] **P1.14** Vẽ mũi tên Arrow có chóp định hướng (`FR-ANN-03`).
+  - [x] Hoàn thiện / rà soát `docs/2.Design/04_Annotation/04_04_LineAndArrow.md` (mục Arrow).
+  - [x] Triển khai `ArrowAnnotation` với đầu mũi tên tam giác.
+  - [x] Triển khai `ArrowRenderer`.
+  - [x] Tích hợp `OverlayState` tool Arrow.
+  - [x] Thêm phím tắt `A`.
+  - [x] Thêm tests.
+- [x] **P1.15** Vẽ hình chữ nhật Rectangle hỗ trợ bo góc (`FR-ANN-04`).
+  - [x] Hoàn thiện / rà soát `docs/2.Design/04_Annotation/04_05_RectangleAndCircle.md` (mục Rectangle).
+  - [x] Triển khai `RectangleAnnotation` với thuộc tính `CornerRadius`.
+  - [x] Triển khai `RectangleRenderer`.
+  - [x] Tích hợp `OverlayState` tool Rectangle.
+  - [x] Thêm phím tắt `R`.
+  - [x] Thêm tests.
+- [x] **P1.16** Vẽ hình tròn/elip Circle giữ `Ctrl` khóa tỉ lệ 1:1 (`FR-ANN-05`).
+  - [x] Hoàn thiện / rà soát `docs/2.Design/04_Annotation/04_05_RectangleAndCircle.md` (mục Circle/Ellipse).
+  - [x] Triển khai `CircleAnnotation`.
+  - [x] Triển khai `CircleRenderer`.
+  - [x] Tích hợp `OverlayState` tool Circle, xử lý modifier `Ctrl` để khóa tỉ lệ 1:1.
+  - [x] Thêm phím tắt `C`.
+  - [x] Thêm tests.
 - [ ] **P1.17** Bút nhớ Marker bán trong suốt Alpha Blend (`FR-ANN-06`).
   - [ ] Rà soát `docs/2.Design/04_Annotation/04_06_MarkerAndPixelate.md` phần Marker.
   - [ ] Triển khai `MarkerAnnotation` với điểm path và alpha blend.

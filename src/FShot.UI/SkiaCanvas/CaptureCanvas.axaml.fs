@@ -441,7 +441,16 @@ type CaptureCanvas() as this =
         | Key.T -> this.Dispatch(SelectTool TextTool)
         | Key.B -> this.Dispatch(SelectTool PixelateTool)
         | Key.S -> this.Dispatch(SelectTool SelectionTool)
+        | Key.LeftCtrl
+        | Key.RightCtrl -> this.Dispatch(CtrlModifier true)
         | _ -> this.Dispatch(KeyDown(keyString))
+
+    override this.OnKeyUp(e: KeyEventArgs) =
+        base.OnKeyUp(e)
+        match e.Key with
+        | Key.LeftCtrl
+        | Key.RightCtrl -> this.Dispatch(CtrlModifier false)
+        | _ -> ()
 
     /// Tạo WriteableBitmap từ CaptureResult.
     member private this.CreateBitmap(result: CaptureResult) : WriteableBitmap =
@@ -668,6 +677,63 @@ type CaptureCanvas() as this =
             | Tool.Line (startPoint, endPoint) ->
                 let pen = annotationPen annotation.Style
                 context.DrawLine(pen, avPoint startPoint, avPoint endPoint)
+
+            | Tool.Arrow (startPoint, endPoint, _) ->
+                let pen = annotationPen annotation.Style
+                let a = avPoint startPoint
+                let b = avPoint endPoint
+                context.DrawLine(pen, a, b)
+
+                // Vẽ mũi tên ở đầu B.
+                let dx = b.X - a.X
+                let dy = b.Y - a.Y
+                let len = Math.Sqrt(dx * dx + dy * dy)
+                if len > 1e-6 then
+                    let ux = dx / len
+                    let uy = dy / len
+                    let arrowLength = float annotation.Style.StrokeWidth.Value * scale * 4.0
+                    let theta = Math.PI / 6.0 // 30°
+                    let cosTheta = Math.Cos(theta)
+                    let sinTheta = Math.Sin(theta)
+
+                    let p1 =
+                        Avalonia.Point(
+                            float (b.X - arrowLength * (ux * cosTheta - uy * sinTheta)),
+                            float (b.Y - arrowLength * (ux * sinTheta + uy * cosTheta))
+                        )
+
+                    let p2 =
+                        Avalonia.Point(
+                            float (b.X - arrowLength * (ux * cosTheta + uy * sinTheta)),
+                            float (b.Y - arrowLength * (-ux * sinTheta + uy * cosTheta))
+                        )
+
+                    context.DrawLine(pen, b, p1)
+                    context.DrawLine(pen, b, p2)
+
+            | Tool.Rectangle (startPoint, endPoint, cornerRadius) ->
+                let pen = annotationPen annotation.Style
+                let x = Math.Min(startPoint.X, endPoint.X) * scale
+                let y = Math.Min(startPoint.Y, endPoint.Y) * scale
+                let w = Math.Abs(endPoint.X - startPoint.X) * scale
+                let h = Math.Abs(endPoint.Y - startPoint.Y) * scale
+                let rect = Avalonia.Rect(x, y, w, h)
+                let r = Math.Min(cornerRadius * scale, Math.Min(w / 2.0, h / 2.0))
+                context.DrawRectangle(null, pen, rect, r, r)
+
+            | Tool.Circle (startPoint, endPoint, aspectLocked) ->
+                let pen = annotationPen annotation.Style
+                let x = Math.Min(startPoint.X, endPoint.X)
+                let y = Math.Min(startPoint.Y, endPoint.Y)
+                let w = Math.Abs(endPoint.X - startPoint.X)
+                let h = Math.Abs(endPoint.Y - startPoint.Y)
+                let side = Math.Min(w, h)
+                let rect =
+                    if aspectLocked then
+                        Avalonia.Rect(x * scale, y * scale, side * scale, side * scale)
+                    else
+                        Avalonia.Rect(x * scale, y * scale, w * scale, h * scale)
+                context.DrawEllipse(null, pen, rect.Center, rect.Width / 2.0, rect.Height / 2.0)
 
             | _ -> ()
 

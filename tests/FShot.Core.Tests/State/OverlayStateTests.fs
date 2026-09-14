@@ -466,6 +466,111 @@ let ``Annotating PointerReleased commit và push history`` () =
         Assert.Equal(point 250.0 250.0, b)
     | _ -> Assert.True(false, "Expected Tool.Line")
 
+/// Kiểm tra vẽ Arrow và commit đúng loại annotation.
+[<Fact>]
+let ``Arrow PointerReleased commit annotation Arrow`` () =
+    let result =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool ArrowTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+
+    Assert.Equal(NoAnnotation, result.State.AnnotationInteraction)
+    Assert.Equal(1, List.length result.State.History.Current.Annotations)
+    let annotation = List.head result.State.History.Current.Annotations
+    match annotation.Tool with
+    | Tool.Arrow (a, b, _) ->
+        Assert.Equal(point 150.0 150.0, a)
+        Assert.Equal(point 250.0 250.0, b)
+    | _ -> Assert.True(false, "Expected Tool.Arrow")
+
+/// Kiểm tra vẽ Rectangle và commit đúng loại annotation.
+[<Fact>]
+let ``Rectangle PointerReleased commit annotation Rectangle`` () =
+    let result =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool RectangleTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+
+    Assert.Equal(NoAnnotation, result.State.AnnotationInteraction)
+    Assert.Equal(1, List.length result.State.History.Current.Annotations)
+    let annotation = List.head result.State.History.Current.Annotations
+    match annotation.Tool with
+    | Tool.Rectangle (a, b, radius) ->
+        Assert.Equal(point 150.0 150.0, a)
+        Assert.Equal(point 250.0 250.0, b)
+        Assert.Equal(0.0, radius)
+    | _ -> Assert.True(false, "Expected Tool.Rectangle")
+
+/// Kiểm tra vẽ Circle không giữ Ctrl tạo elip, giữ Ctrl tạo hình tròn tỉ lệ 1:1.
+[<Fact>]
+let ``Circle PointerReleased commit annotation Circle`` () =
+    let baseState =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool CircleTool)
+        |> (fun r -> r.State)
+
+    let resultNormal =
+        baseState
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+
+    Assert.Equal(1, List.length resultNormal.State.History.Current.Annotations)
+    let annotationNormal = List.head resultNormal.State.History.Current.Annotations
+    match annotationNormal.Tool with
+    | Tool.Circle (a, b, false) ->
+        Assert.Equal(point 150.0 150.0, a)
+        Assert.Equal(point 300.0 250.0, b)
+    | _ -> Assert.True(false, "Expected Tool.Circle without aspect lock")
+
+    let resultLocked =
+        baseState
+        |> update (CtrlModifier true)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+
+    Assert.Equal(1, List.length resultLocked.State.History.Current.Annotations)
+    let annotationLocked = List.head resultLocked.State.History.Current.Annotations
+    match annotationLocked.Tool with
+    | Tool.Circle (a, b, true) ->
+        Assert.Equal(point 150.0 150.0, a)
+        Assert.Equal(point 300.0 250.0, b)
+    | _ -> Assert.True(false, "Expected Tool.Circle with aspect lock")
+
 /// Kiểm tra Annotating + Cancel hủy preview.
 [<Fact>]
 let ``Annotating Cancel hủy preview`` () =

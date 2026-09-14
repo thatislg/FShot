@@ -28,6 +28,15 @@ let private createPencilAnnotation (points: Point list) (strokeWidth: float) : A
 let private createLineAnnotation (start: Point) (endPoint: Point) (color: Color) (strokeWidth: float) : Annotation =
     createAnnotation (Tool.Line(start, endPoint)) color strokeWidth
 
+let private createArrowAnnotation (start: Point) (endPoint: Point) (color: Color) (strokeWidth: float) : Annotation =
+    createAnnotation (Tool.Arrow(start, endPoint, ArrowStyle.Standard)) color strokeWidth
+
+let private createRectangleAnnotation (start: Point) (endPoint: Point) (color: Color) (strokeWidth: float) : Annotation =
+    createAnnotation (Tool.Rectangle(start, endPoint, 0.0)) color strokeWidth
+
+let private createCircleAnnotation (start: Point) (endPoint: Point) (aspectLocked: bool) (color: Color) (strokeWidth: float) : Annotation =
+    createAnnotation (Tool.Circle(start, endPoint, aspectLocked)) color strokeWidth
+
 let private hasPixelWithRed (bitmap: SKBitmap) : bool =
     let mutable found = false
     for y in 0 .. bitmap.Height - 1 do
@@ -115,3 +124,51 @@ let ``Line điểm trùng nhau không gây lỗi`` () =
     use canvas = new SKCanvas(bitmap)
     AnnotationRenderer.renderAnnotation canvas scale annotation
     Assert.True(true)
+
+/// Kiểm tra Arrow vẽ được pixel màu đỏ.
+[<Fact>]
+let ``Arrow render vẽ ít nhất một pixel màu đỏ`` () =
+    let start = { X = 5.0; Y = 5.0 }
+    let endPoint = { X = 45.0; Y = 45.0 }
+    let annotation = createArrowAnnotation start endPoint Color.Red 3.0
+    let scale = ScaleFactor.Create 1.0
+
+    use bitmap = new SKBitmap(50, 50, SKColorType.Bgra8888, SKAlphaType.Premul)
+    bitmap.Erase(SKColor.Empty)
+
+    use canvas = new SKCanvas(bitmap)
+    AnnotationRenderer.renderAnnotation canvas scale annotation
+
+    Assert.True(hasPixelWithRed bitmap, "Không tìm thấy pixel màu đỏ sau khi render Arrow.")
+
+/// Kiểm tra Rectangle vẽ được pixel màu xanh.
+[<Fact>]
+let ``Rectangle render vẽ ít nhất một pixel màu xanh`` () =
+    let start = { X = 10.0; Y = 10.0 }
+    let endPoint = { X = 40.0; Y = 40.0 }
+    let annotation = createRectangleAnnotation start endPoint Color.Blue 2.0
+    let scale = ScaleFactor.Create 1.0
+
+    use bitmap = new SKBitmap(50, 50, SKColorType.Bgra8888, SKAlphaType.Premul)
+    bitmap.Erase(SKColor.Empty)
+
+    use canvas = new SKCanvas(bitmap)
+    AnnotationRenderer.renderAnnotation canvas scale annotation
+
+    Assert.True(hasPixelWithBlue bitmap, "Không tìm thấy pixel màu xanh sau khi render Rectangle.")
+
+/// Kiểm tra Circle vẽ được pixel màu đỏ khi không khóa tỷ lệ.
+[<Fact>]
+let ``Circle render vẽ ít nhất một pixel màu đỏ`` () =
+    let start = { X = 10.0; Y = 15.0 }
+    let endPoint = { X = 40.0; Y = 35.0 }
+    let annotation = createCircleAnnotation start endPoint false Color.Red 2.0
+    let scale = ScaleFactor.Create 1.0
+
+    use bitmap = new SKBitmap(50, 50, SKColorType.Bgra8888, SKAlphaType.Premul)
+    bitmap.Erase(SKColor.Empty)
+
+    use canvas = new SKCanvas(bitmap)
+    AnnotationRenderer.renderAnnotation canvas scale annotation
+
+    Assert.True(hasPixelWithRed bitmap, "Không tìm thấy pixel màu đỏ sau khi render Circle.")

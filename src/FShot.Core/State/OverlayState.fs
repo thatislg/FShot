@@ -75,6 +75,8 @@ type OverlayEvent =
     | Cancel
     | TextCommitted of string
     | ExportCompleted of success: bool
+    /// Trạng thái phím Ctrl (hoặc phím modifier khóa tỉ lệ 1:1 cho Circle).
+    | CtrlModifier of bool
 
 /// Các lệnh UI cần thực hiện sau khi xử lý sự kiện.
 /// Xem 08_06_Integration.md.
@@ -102,6 +104,7 @@ type OverlayState = {
     History: HistoryStack
     CurrentTool: ToolKind
     CurrentStyle: AnnotationStyle
+    CtrlPressed: bool
 }
 
 /// Kết quả sau khi xử lý một sự kiện.
@@ -136,14 +139,14 @@ module OverlayStateLogic =
     }
 
     /// Tạo Tool từ ToolKind và điểm tương tác.
-    let private buildTool (kind: ToolKind) (start: Point) (current: Point) : Tool option =
+    let private buildTool (kind: ToolKind) (start: Point) (current: Point) (ctrlPressed: bool) : Tool option =
         match kind with
         | SelectionTool -> None
         | PencilTool -> Some (Tool.Pencil [ start; current ])
         | LineTool -> Some (Tool.Line(start, current))
         | ArrowTool -> Some (Tool.Arrow(start, current, ArrowStyle.Standard))
         | RectangleTool -> Some (Tool.Rectangle(start, current, 0.0))
-        | CircleTool -> Some (Tool.Circle(start, current, false))
+        | CircleTool -> Some (Tool.Circle(start, current, ctrlPressed))
         | MarkerTool -> Some (Tool.Marker [ start; current ])
         | PixelateTool -> Some (Tool.Pixelate(start, current, 10))
         | TextTool -> Some (Tool.Text(start, "", TextAlignment.Left))
@@ -162,7 +165,7 @@ module OverlayStateLogic =
     let private commitPreview (state: OverlayState) : Annotation option =
         match state.AnnotationInteraction with
         | DrawingPreview(start, current, kind) ->
-            buildTool kind start current
+            buildTool kind start current state.CtrlPressed
             |> Option.map (fun tool -> Annotation.FromPreview(tool, currentAnnotationStyle state))
         | FreehandDrawing(points, kind) ->
             let tool =
@@ -185,7 +188,7 @@ module OverlayStateLogic =
     let private currentPreview (state: OverlayState) : Annotation option =
         match state.AnnotationInteraction with
         | DrawingPreview(start, current, kind) ->
-            buildTool kind start current
+            buildTool kind start current state.CtrlPressed
             |> Option.map (fun tool -> Annotation.FromPreview(tool, currentAnnotationStyle state))
         | FreehandDrawing(points, kind) ->
             let tool =
@@ -315,6 +318,7 @@ module OverlayStateLogic =
           History = HistoryStack.Empty config.HistoryLimit
           CurrentTool = config.DefaultTool
           CurrentStyle = style
+          CtrlPressed = false
         }
 
     /// Tạo OverlayResult từ state và commands.
@@ -364,6 +368,10 @@ module OverlayStateLogic =
                   Height = state.Capture.VirtualBounds.Height }
             let newState = { state with Selection = { Selection.Empty with State = SelectionState.Selected; Bounds = fullScreen } }
             startExport ExportTarget.CopyToClipboard newState
+
+        // Ctrl modifier được xử lý ở mọi trạng thái để khóa tỉ lệ 1:1 cho Circle.
+        | _, _, CtrlModifier ctrl ->
+            emptyResult { state with CtrlPressed = ctrl }
 
         // --- Selecting ---
         | SelectionState.Selecting, _, PointerMoved point ->
