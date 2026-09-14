@@ -182,6 +182,10 @@ type CaptureCanvas() as this =
 
     override this.OnPointerPressed(e: PointerPressedEventArgs) =
         base.OnPointerPressed(e)
+
+        // Đảm bảo control có focus để nhận phím tắt.
+        this.Focus() |> ignore
+
         let point = this.ToVirtualPoint(e)
         FShotLog.write (sprintf "[CaptureCanvas] PointerPressed at (%.1f, %.1f)" point.X point.Y)
 
@@ -223,13 +227,22 @@ type CaptureCanvas() as this =
     override this.OnKeyDown(e: KeyEventArgs) =
         base.OnKeyDown(e)
         let keyString = this.ToKeyString(e)
-        FShotLog.write (sprintf "[CaptureCanvas] KeyDown: %s" keyString)
+        let isFocused = this.IsFocused
+        FShotLog.write (sprintf "[CaptureCanvas] KeyDown: %s | Focused: %b" keyString isFocused)
 
         // Phím tắt chuyển nhanh công cụ annotation.
-        if keyString.Equals("P", StringComparison.OrdinalIgnoreCase) then
-            this.Dispatch(SelectTool PencilTool)
-        else
-            this.Dispatch(KeyDown(keyString))
+        let normalized = keyString.ToLowerInvariant()
+        match normalized with
+        | "p" -> this.Dispatch(SelectTool PencilTool)
+        | "l" -> this.Dispatch(SelectTool LineTool)
+        | "a" -> this.Dispatch(SelectTool ArrowTool)
+        | "r" -> this.Dispatch(SelectTool RectangleTool)
+        | "c" -> this.Dispatch(SelectTool CircleTool)
+        | "m" -> this.Dispatch(SelectTool MarkerTool)
+        | "t" -> this.Dispatch(SelectTool TextTool)
+        | "b" -> this.Dispatch(SelectTool PixelateTool)
+        | "s" -> this.Dispatch(SelectTool SelectionTool)
+        | _ -> this.Dispatch(KeyDown(keyString))
 
     /// Tạo WriteableBitmap từ CaptureResult.
     member private this.CreateBitmap(result: CaptureResult) : WriteableBitmap =
