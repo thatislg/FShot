@@ -331,6 +331,57 @@ let ``Selected chọn LineTool và nhấn trong vùng bắt đầu Annotating`` 
         Assert.Equal(LineTool, kind)
     | _ -> Assert.True(false, "Expected DrawingPreview")
 
+/// Kiểm tra Selected + PencilTool + PointerPressed bắt đầu vẽ tự do.
+[<Fact>]
+let ``Selected chọn PencilTool và nhấn trong vùng bắt đầu FreehandDrawing`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool PencilTool)
+        |> (fun r -> r.State)
+
+    let result = state |> update (PointerPressed(point 150.0 150.0))
+    Assert.True(result.RenderModel.Preview.IsSome)
+    match result.State.AnnotationInteraction with
+    | FreehandDrawing(points, kind) ->
+        Assert.Equal(PencilTool, kind)
+        Assert.True(List.length points >= 1)
+        Assert.Equal(point 150.0 150.0, List.head points)
+    | _ -> Assert.True(false, "Expected FreehandDrawing")
+
+/// Kiểm tra vẽ Pencil và thả chuột commit đúng loại annotation.
+[<Fact>]
+let ``Pencil PointerReleased commit annotation Pencil`` () =
+    let result =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool PencilTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+
+    Assert.Equal(NoAnnotation, result.State.AnnotationInteraction)
+    Assert.Equal(1, List.length result.State.History.Current.Annotations)
+    let annotation = List.head result.State.History.Current.Annotations
+    match annotation.Tool with
+    | Tool.Pencil points ->
+        Assert.True(List.length points >= 2)
+        Assert.Equal(point 150.0 150.0, List.head points)
+    | _ -> Assert.True(false, "Expected Tool.Pencil")
+
 /// Kiểm tra Annotating + PointerMoved cập nhật preview.
 [<Fact>]
 let ``Annotating PointerMoved cập nhật preview`` () =

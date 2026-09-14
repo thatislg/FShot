@@ -548,6 +548,17 @@ module OverlayStateLogic =
             else
                 emptyResult state
 
+        // --- Tool selection (bắt kỳ trạng thái nào ngoài TextEditing đều chuyển được tool) ---
+        | _, NoAnnotation, SelectTool tool ->
+            emptyResult { state with CurrentTool = tool }
+
+        | _, (DrawingPreview _ | FreehandDrawing _), SelectTool tool ->
+            emptyResult { state with AnnotationInteraction = NoAnnotation; CurrentTool = tool }
+
+        | _, EditingText _, SelectTool tool ->
+            let newState = { state with AnnotationInteraction = NoAnnotation; CurrentTool = tool }
+            result [ HideTextInput ] newState
+
         // --- Fallback: giữ nguyên trạng thái ---
         | _ ->
             emptyResult state

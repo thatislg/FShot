@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <Compile Include="Geometry\TypesTests.fs" />
+    <Compile Include="Geometry\PathSmoothingTests.fs" />
     <Compile Include="Domain\CaptureTests.fs" />
     <Compile Include="Domain\SelectionTests.fs" />
     <Compile Include="Domain\AnnotationTests.fs" />

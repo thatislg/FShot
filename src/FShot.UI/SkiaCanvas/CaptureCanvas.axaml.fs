@@ -36,6 +36,31 @@ type CaptureCanvas() as this =
     let mutable lastFrameTimeMs = 0.0
     let mutable averageFrameTimeMs = 0.0
 
+    /// Chuyển điểm domain sang Avalonia Point tại tọa độ vật lý.
+    let toAvPoint (scale: float) (p: FShot.Core.Geometry.Point) =
+        Avalonia.Point(p.X * scale, p.Y * scale)
+
+    /// Tạo StreamGeometry cho nét Pencil đã làm mịn bằng đường cong bậc hai.
+    let buildPencilGeometry (scale: float) (strokeWidth: float) (points: FShot.Core.Geometry.Point list) =
+        let minDistance = max (strokeWidth * 0.25) 0.5
+        let simplified = PathSmoothing.simplifyPoints minDistance points
+        let segments = PathSmoothing.toQuadraticSegments simplified
+
+        if List.isEmpty segments then
+            None
+        else
+            let geometry = new StreamGeometry()
+            use context = geometry.Open()
+            let (start, ctrl, target) = List.head segments
+            context.BeginFigure(toAvPoint scale start, false)
+            context.QuadraticBezierTo(toAvPoint scale ctrl, toAvPoint scale target) |> ignore
+
+            for (_, c, e) in List.tail segments do
+                context.QuadraticBezierTo(toAvPoint scale c, toAvPoint scale e) |> ignore
+
+            context.EndFigure(false)
+            Some geometry
+
     /// Sự kiện khi state thay đổi.
     let stateChanged = Event<unit>()
     member this.StateChanged = stateChanged.Publish
@@ -200,7 +225,11 @@ type CaptureCanvas() as this =
         let keyString = this.ToKeyString(e)
         FShotLog.write (sprintf "[CaptureCanvas] KeyDown: %s" keyString)
 
-        this.Dispatch(KeyDown(keyString))
+        // Phím tắt chuyển nhanh công cụ annotation.
+        if keyString.Equals("P", StringComparison.OrdinalIgnoreCase) then
+            this.Dispatch(SelectTool PencilTool)
+        else
+            this.Dispatch(KeyDown(keyString))
 
     /// Tạo WriteableBitmap từ CaptureResult.
     member private this.CreateBitmap(result: CaptureResult) : WriteableBitmap =
@@ -380,13 +409,31 @@ type CaptureCanvas() as this =
         // Vẽ vùng chọn nếu có.
         renderModel.Selection |> Option.iter (fun sel -> this.RenderSelectionOverlay(context, sel))
 
-        // Vẽ annotations đã commit.
-        // Trong P1.11 chưa có annotation renderer; để trống cho P1.12+.
-        // renderModel.Annotations |> List.iter (fun annotation -> ...)
+        // Xác định hệ số phóng to từ CaptureResult.
+        let scale =
+            match captureResult with
+            | Some result -> result.ScaleFactor.Value
+            | None -> 1.0
 
-        // Vẽ preview annotation.
-        // Trong P1.11 chưa có preview renderer; để trống cho P1.12+.
-        // renderModel.Preview |> Option.iter (fun preview -> ...)
+        // Vẽ annotations đã commit.
+        let drawPencilAnnotation (annotation: Annotation) =
+            match annotation.Tool with
+            | Tool.Pencil points ->
+                buildPencilGeometry scale annotation.Style.StrokeWidth.Value points
+                |> Option.iter (fun geometry ->
+                    let color = annotation.Style.Color
+                    let mediaColor = Avalonia.Media.Color.FromArgb(color.A, color.R, color.G, color.B)
+                    let brush = new SolidColorBrush(mediaColor)
+                    let thickness = annotation.Style.StrokeWidth.Value * scale
+                    let pen = new Pen(brush, thickness)
+                    context.DrawGeometry(null, pen, geometry)
+                )
+            | _ -> ()
+
+        renderModel.Annotations |> List.iter drawPencilAnnotation
+
+        // Vẽ preview annotation đang vẽ.
+        renderModel.Preview |> Option.iter drawPencilAnnotation
 
         // Tính toán và cập nhật FPS.
         let frameEnd = Stopwatch.GetTimestamp()

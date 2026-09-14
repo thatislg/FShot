@@ -73,12 +73,12 @@ module SceneComposer =
             renderSelectionBorder canvas selection captureResult
             renderSelectionHandles canvas selection captureResult
 
-        // 4. Annotations (tối thiểu: vẽ bounding box để kiểm tra pipeline).
-        use annotationPaint = DomainToSkia.createStrokePaint FShot.Core.Geometry.Color.Red 2.0f
+        // 4. Annotations đã commit.
         for annotation in annotations do
-            let box = annotation.BoundingBox
-            let skBox = DomainToSkia.rectToSkPhysical captureResult.ScaleFactor box
-            canvas.DrawRect(skBox, annotationPaint)
+            AnnotationRenderer.renderAnnotation canvas captureResult.ScaleFactor annotation
+
+        // 5. Preview annotation đang vẽ.
+        ()
 
     /// Render ảnh cuối để xuất (crop theo selection).
     let renderExport
@@ -110,19 +110,15 @@ module SceneComposer =
         let destRect = SKRect(0.0f, 0.0f, float32 width, float32 height)
         canvas.DrawBitmap(fullBitmap, sourceRect, destRect)
 
-        // Vẽ annotations (bounding box stub).
-        use annotationPaint = DomainToSkia.createStrokePaint FShot.Core.Geometry.Color.Red 2.0f
-        for annotation in annotations do
-            let box = annotation.BoundingBox
-            let shiftedBox =
-                {
-                  box with
-                      X = box.X - selection.Bounds.X
-                      Y = box.Y - selection.Bounds.Y
-                }
+        // Vẽ annotations, dịch gốc tọa độ để nằm trong vùng crop.
+        let physicalSelection = captureResult.LogicalSelectionToPhysical selection.Bounds
+        canvas.Save() |> ignore
+        canvas.Translate(-float32 physicalSelection.X, -float32 physicalSelection.Y) |> ignore
 
-            let skBox = DomainToSkia.rectToSkPhysical captureResult.ScaleFactor shiftedBox
-            canvas.DrawRect(skBox, annotationPaint)
+        for annotation in annotations do
+            AnnotationRenderer.renderAnnotation canvas captureResult.ScaleFactor annotation
+
+        canvas.Restore() |> ignore
 
         use image = surface.Snapshot()
         SKBitmap.FromImage(image)

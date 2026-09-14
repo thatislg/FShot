@@ -119,13 +119,13 @@
   - [x] Quy tắc xuất từ Penpot sang XAML / Skia rendering.
 
 ### Epic 3: Bộ công cụ chú thích (Annotations)
-- [ ] **P1.12** Bút vẽ tự do (Pencil) tích hợp thuật toán làm mịn Bézier (`FR-ANN-01`).
-  - [ ] Rà soát `docs/2.Design/04_Annotation/04_03_Pencil.md` đảm bảo thuật toán smoothing phù hợp MVP.
-  - [ ] Triển khai `PencilAnnotation` trong `src/FShot.Core/Domain/Annotation.fs` (nếu chưa có).
-  - [ ] Triển khai `PencilRenderer` trong `src/FShot.Rendering.Skia/Renderers/`.
-  - [ ] Tích hợp `OverlayState`: nhận diện tool Pencil, bắt đầu vẽ, cập nhật preview, commit annotation.
-  - [ ] Thêm xử lý phím tắt `P` trong `OverlayState.update`.
-  - [ ] Thêm tests `tests/FShot.Rendering.Skia.Tests/PencilTests.fs` hoặc `AnnotationTests.fs`.
+- [x] **P1.12** Bút vẽ tự do (Pencil) tích hợp thuật toán làm mịn Bézier (`FR-ANN-01`).
+  - [x] Rà soát `docs/2.Design/04_Annotation/04_03_Pencil.md` đảm bảo thuật toán smoothing phù hợp MVP.
+  - [x] Triển khai `PencilAnnotation` trong `src/FShot.Core/Domain/Annotation.fs` (nếu chưa có).
+  - [x] Triển khai `PencilRenderer` trong `src/FShot.Rendering.Skia/Renderers/`.
+  - [x] Tích hợp `OverlayState`: nhận diện tool Pencil, bắt đầu vẽ, cập nhật preview, commit annotation.
+  - [x] Thêm xử lý phím tắt `P` trong `OverlayState.update`.
+  - [x] Thêm tests `tests/FShot.Rendering.Skia.Tests/PencilTests.fs` hoặc `AnnotationTests.fs`.
 - [ ] **P1.13** Vẽ đường thẳng Line (`FR-ANN-02`).
   - [ ] Hoàn thiện `docs/2.Design/04_Annotation/04_01_Line.md` nếu chưa đủ, hoặc rà soát.
   - [ ] Triển khai `LineAnnotation` trong `Annotation.fs`.
