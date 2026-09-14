@@ -289,6 +289,7 @@
 - **P1.01:** `docs/3.Progress/03_02_P1.01_Design_Report.md`
 - **P1.03:** `docs/3.Progress/03_02_P1.03_Design_Report.md` (thiết kế + triển khai Overlay State Machine)
 - **P1.05:** `docs/3.Progress/03_02_P1.05_Design_Report.md` (thiết kế + triển khai Dimming Overlay)
+- **P1.12:** `docs/3.Progress/03_02_P1.12_Report.md` (triển khai Pencil + toolbar tạm)
 
 ---
 
