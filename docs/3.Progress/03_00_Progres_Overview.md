@@ -120,14 +120,67 @@
 
 ### Epic 3: Bộ công cụ chú thích (Annotations)
 - [ ] **P1.12** Bút vẽ tự do (Pencil) tích hợp thuật toán làm mịn Bézier (`FR-ANN-01`).
+  - [ ] Rà soát `docs/2.Design/04_Annotation/04_03_Pencil.md` đảm bảo thuật toán smoothing phù hợp MVP.
+  - [ ] Triển khai `PencilAnnotation` trong `src/FShot.Core/Domain/Annotation.fs` (nếu chưa có).
+  - [ ] Triển khai `PencilRenderer` trong `src/FShot.Rendering.Skia/Renderers/`.
+  - [ ] Tích hợp `OverlayState`: nhận diện tool Pencil, bắt đầu vẽ, cập nhật preview, commit annotation.
+  - [ ] Thêm xử lý phím tắt `P` trong `OverlayState.update`.
+  - [ ] Thêm tests `tests/FShot.Rendering.Skia.Tests/PencilTests.fs` hoặc `AnnotationTests.fs`.
 - [ ] **P1.13** Vẽ đường thẳng Line (`FR-ANN-02`).
+  - [ ] Hoàn thiện `docs/2.Design/04_Annotation/04_01_Line.md` nếu chưa đủ, hoặc rà soát.
+  - [ ] Triển khai `LineAnnotation` trong `Annotation.fs`.
+  - [ ] Triển khai `LineRenderer` trong Skia.
+  - [ ] Tích hợp `OverlayState`: tool Line, preview khi kéo, commit khi thả.
+  - [ ] Thêm phím tắt `L`.
+  - [ ] Thêm tests.
 - [ ] **P1.14** Vẽ mũi tên Arrow có chóp định hướng (`FR-ANN-03`).
+  - [ ] Hoàn thiện `docs/2.Design/04_Annotation/04_02_Arrow.md`.
+  - [ ] Triển khai `ArrowAnnotation` với đầu mũi tên tam giác.
+  - [ ] Triển khai `ArrowRenderer`.
+  - [ ] Tích hợp `OverlayState` tool Arrow.
+  - [ ] Thêm phím tắt `A`.
+  - [ ] Thêm tests.
 - [ ] **P1.15** Vẽ hình chữ nhật Rectangle hỗ trợ bo góc (`FR-ANN-04`).
+  - [ ] Rà soát `docs/2.Design/04_Annotation/04_04_Rectangle.md`.
+  - [ ] Triển khai `RectangleAnnotation` với thuộc tính `CornerRadius`.
+  - [ ] Triển khai `RectangleRenderer`.
+  - [ ] Tích hợp `OverlayState` tool Rectangle.
+  - [ ] Thêm phím tắt `R`.
+  - [ ] Thêm tests.
 - [ ] **P1.16** Vẽ hình tròn/elip Circle giữ `Ctrl` khóa tỉ lệ 1:1 (`FR-ANN-05`).
+  - [ ] Rà soát `docs/2.Design/04_Annotation/04_05_Circle.md`.
+  - [ ] Triển khai `CircleAnnotation`.
+  - [ ] Triển khai `CircleRenderer`.
+  - [ ] Tích hợp `OverlayState` tool Circle, xử lý modifier `Ctrl` để khóa tỉ lệ 1:1.
+  - [ ] Thêm phím tắt `C`.
+  - [ ] Thêm tests.
 - [ ] **P1.17** Bút nhớ Marker bán trong suốt Alpha Blend (`FR-ANN-06`).
+  - [ ] Rà soát `docs/2.Design/04_Annotation/04_06_MarkerAndPixelate.md` phần Marker.
+  - [ ] Triển khai `MarkerAnnotation` với điểm path và alpha blend.
+  - [ ] Triển khai `MarkerRenderer`.
+  - [ ] Tích hợp `OverlayState` tool Marker.
+  - [ ] Thêm phím tắt `M`.
+  - [ ] Thêm tests.
 - [ ] **P1.18** Chèn văn bản Text (gõ qua Avalonia TextBox, commit phẳng vào Skia) (`FR-ANN-07`).
+  - [ ] Rà soát `docs/2.Design/04_Annotation/04_07_TextTool.md`.
+  - [ ] Triển khai `TextAnnotation` với `TextAlignment`, `FontSize`.
+  - [ ] Triển khai `TextRenderer` vẽ text phẳng bằng Skia.
+  - [ ] Thiết kế cơ chế edit: `OverlayState` chuyển sang `TextEditing`, UI hiện Avalonia TextBox tạm thời.
+  - [ ] Tích hợp UI `CaptureCanvas` để chỉ định vị trí TextBox overlay.
+  - [ ] Thêm phím tắt `T`.
+  - [ ] Thêm tests.
 - [ ] **P1.19** Che mờ Pixelate xử lý trực tiếp trên mảng byte (`FR-ANN-08`).
+  - [ ] Rà soát `docs/2.Design/04_Annotation/04_06_MarkerAndPixelate.md` phần Pixelate.
+  - [ ] Triển khai `PixelateAnnotation` với `BlockSize`.
+  - [ ] Triển khai `PixelateRenderer` xử lý trên raw byte (hoặc Skia bitmap sampling nếu đơn giản hơn).
+  - [ ] Tích hợp `OverlayState` tool Pixelate.
+  - [ ] Thêm phím tắt `B`.
+  - [ ] Thêm tests.
 - [ ] **P1.20** Phím tắt chuyển nhanh công cụ (`P/D/A/S/R/C/M/T/B/I`).
+  - [ ] Rà soát `docs/2.Design/08_OverlayState/08_03_Events.md` và `08_04_Transitions.md`.
+  - [ ] Đảm bảo `OverlayState.update` xử lý đủ phím tắt cho 9 công cụ annotation.
+  - [ ] Mapping phím: `P` Pencil, `L` Line, `A` Arrow, `R` Rectangle, `C` Circle, `M` Marker, `T` Text, `B` Pixelate, `Esc` hoặc `S` Selection tool.
+  - [ ] Kiểm thử từng phím tắt chuyển tool.
 
 ### Epic 4: Undo, Redo & Toolbar
 - [ ] **P1.21** Hoàn tác Undo `Ctrl+Z` (`FR-UNDO-01`).
