@@ -75,7 +75,8 @@ type OverlayEvent =
     | Cancel
     | TextCommitted of string
     | ExportCompleted of success: bool
-    /// Trạng thái phím Ctrl (hoặc phím modifier khóa tỉ lệ 1:1 cho Circle).
+    /// Trạng thái phím Ctrl (modifier khóa tỉ lệ 1:1 cho Circle, FR-ANN-05).
+    /// Lưu trạng thái riêng thay vì đọc từ KeyDown string để tránh bị bộ gõ chặn mất Ctrl.
     | CtrlModifier of bool
 
 /// Các lệnh UI cần thực hiện sau khi xử lý sự kiện.
@@ -104,6 +105,9 @@ type OverlayState = {
     History: HistoryStack
     CurrentTool: ToolKind
     CurrentStyle: AnnotationStyle
+    /// Trạng thái Ctrl đang được giữ; dùng cho Circle aspect-ratio lock.
+    /// Lưu ý: trạng thái này phụ thuộc vào UI gửi đúng CtrlModifier true/false;
+    /// nếu window mất focus trong khi Ctrl đang giữ thì trạng thái có thể cũ (chấp nhận cho MVP).
     CtrlPressed: bool
 }
 
@@ -139,6 +143,8 @@ module OverlayStateLogic =
     }
 
     /// Tạo Tool từ ToolKind và điểm tương tác.
+    /// Tham số ctrlPressed chỉ có ý nghĩa với CircleTool: khi true thì bounding box vuông,
+    /// tức là ép vẽ hình tròn thay vì elip (FR-ANN-05). Với các tool khác tham số này bị bỏ qua.
     let private buildTool (kind: ToolKind) (start: Point) (current: Point) (ctrlPressed: bool) : Tool option =
         match kind with
         | SelectionTool -> None
@@ -146,6 +152,7 @@ module OverlayStateLogic =
         | LineTool -> Some (Tool.Line(start, current))
         | ArrowTool -> Some (Tool.Arrow(start, current, ArrowStyle.Standard))
         | RectangleTool -> Some (Tool.Rectangle(start, current, 0.0))
+        // MVP: cornerRadius luôn là 0.0; UI chưa cho phép điều chỉnh bo góc.
         | CircleTool -> Some (Tool.Circle(start, current, ctrlPressed))
         | MarkerTool -> Some (Tool.Marker [ start; current ])
         | PixelateTool -> Some (Tool.Pixelate(start, current, 10))
@@ -370,6 +377,7 @@ module OverlayStateLogic =
             startExport ExportTarget.CopyToClipboard newState
 
         // Ctrl modifier được xử lý ở mọi trạng thái để khóa tỉ lệ 1:1 cho Circle.
+        // Cập nhật trực tiếp CtrlPressed, không sinh command hoặc thay đổi trạng thái khác.
         | _, _, CtrlModifier ctrl ->
             emptyResult { state with CtrlPressed = ctrl }
 

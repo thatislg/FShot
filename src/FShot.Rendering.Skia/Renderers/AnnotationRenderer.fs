@@ -8,6 +8,8 @@ open SkiaSharp
 
 /// Vẽ các annotation lên Skia canvas.
 /// Xem tài liệu 09_04_AnnotationRenderer.md.
+/// Đã triển khai: Pencil, Line, Arrow, Rectangle, Circle.
+/// Marker, Text, Pixelate còn lại cho P1.17–P1.19.
 module AnnotationRenderer =
 
     /// Vẽ một Annotation lên canvas tại tọa độ vật lý.
@@ -57,6 +59,9 @@ module AnnotationRenderer =
             use paint = DomainToSkia.createStrokePaint annotation.Style.Color strokeWidth
             canvas.DrawLine(a, b, paint)
 
+            // Chóp mũi tên tam giác nằm ở đầu đích B.
+            // Góc giữa mỗi cạnh chóp và trục chính là 30° (π/6); chiều dài chóp = 4 × stroke width.
+            // Nếu start/end trùng nhau (len ≈ 0) thì bỏ qua để tránh chia cho 0.
             let dx = float (b.X - a.X)
             let dy = float (b.Y - a.Y)
             let len = Math.Sqrt(dx * dx + dy * dy)
@@ -77,21 +82,25 @@ module AnnotationRenderer =
                 canvas.DrawLine(b, SKPoint(float32 p2x, float32 p2y), paint)
 
         | Tool.Rectangle (startPoint, endPoint, cornerRadius) ->
+            // Luôn vẽ từ góc trên-trái vì start/end có thể ở bất kỳ hướng kéo nào.
             let x = Math.Min(startPoint.X, endPoint.X) * scale.Value
             let y = Math.Min(startPoint.Y, endPoint.Y) * scale.Value
             let w = Math.Abs(endPoint.X - startPoint.X) * scale.Value
             let h = Math.Abs(endPoint.Y - startPoint.Y) * scale.Value
             let rect = SKRect(float32 x, float32 y, float32 (x + w), float32 (y + h))
+            // Giới hạn bán kính bo góc không vượt quá nửa cạnh ngắn hơn để tránh lỗi hình học.
             let r = Math.Min(cornerRadius * scale.Value, Math.Min(w / 2.0, h / 2.0)) |> float32
             let strokeWidth = DomainToSkia.strokeWidthToSkPhysical scale annotation.Style.StrokeWidth
             use paint = DomainToSkia.createStrokePaint annotation.Style.Color strokeWidth
             canvas.DrawRoundRect(rect, r, r, paint)
 
         | Tool.Circle (startPoint, endPoint, aspectLocked) ->
+            // Tương tự Rectangle: normalize về góc trên-trái.
             let x = Math.Min(startPoint.X, endPoint.X)
             let y = Math.Min(startPoint.Y, endPoint.Y)
             let w = Math.Abs(endPoint.X - startPoint.X)
             let h = Math.Abs(endPoint.Y - startPoint.Y)
+            // Khi aspectLocked (Ctrl), dùng cạnh ngắn hơn cho cả width và height → hình tròn.
             let side = Math.Min(w, h)
             let rect =
                 if aspectLocked then

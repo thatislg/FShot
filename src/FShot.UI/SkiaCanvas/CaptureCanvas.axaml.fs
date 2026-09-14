@@ -441,12 +441,15 @@ type CaptureCanvas() as this =
         | Key.T -> this.Dispatch(SelectTool TextTool)
         | Key.B -> this.Dispatch(SelectTool PixelateTool)
         | Key.S -> this.Dispatch(SelectTool SelectionTool)
+        // Ctrl modifier được gửi riêng để state machine biết khi nào đang khóa tỉ lệ.
+        // Sử dụng e.Key thay vì modifier string để tránh IME nuốt mất sự kiện Ctrl khi đang gõ tiếng Việt.
         | Key.LeftCtrl
         | Key.RightCtrl -> this.Dispatch(CtrlModifier true)
         | _ -> this.Dispatch(KeyDown(keyString))
 
     override this.OnKeyUp(e: KeyEventArgs) =
         base.OnKeyUp(e)
+        // Chỉ cần reset Ctrl modifier; các phím tắt tool đã xử lý ở OnKeyDown.
         match e.Key with
         | Key.LeftCtrl
         | Key.RightCtrl -> this.Dispatch(CtrlModifier false)
@@ -684,7 +687,8 @@ type CaptureCanvas() as this =
                 let b = avPoint endPoint
                 context.DrawLine(pen, a, b)
 
-                // Vẽ mũi tên ở đầu B.
+                // Vẽ mũi tên ở đầu B theo cùng công thức hình học với Skia renderer.
+                // Dùng Avalonia DrawingContext để preview trên UI có cùng hình dạng với committed.
                 let dx = b.X - a.X
                 let dy = b.Y - a.Y
                 let len = Math.Sqrt(dx * dx + dy * dy)
@@ -713,11 +717,13 @@ type CaptureCanvas() as this =
 
             | Tool.Rectangle (startPoint, endPoint, cornerRadius) ->
                 let pen = annotationPen annotation.Style
+                // Normalize về góc trên-trái vì người dùng có thể kéo ngược hướng.
                 let x = Math.Min(startPoint.X, endPoint.X) * scale
                 let y = Math.Min(startPoint.Y, endPoint.Y) * scale
                 let w = Math.Abs(endPoint.X - startPoint.X) * scale
                 let h = Math.Abs(endPoint.Y - startPoint.Y) * scale
                 let rect = Avalonia.Rect(x, y, w, h)
+                // Giới hạn bo góc để không vượt quá nửa cạnh ngắn hơn.
                 let r = Math.Min(cornerRadius * scale, Math.Min(w / 2.0, h / 2.0))
                 context.DrawRectangle(null, pen, rect, r, r)
 
@@ -727,6 +733,7 @@ type CaptureCanvas() as this =
                 let y = Math.Min(startPoint.Y, endPoint.Y)
                 let w = Math.Abs(endPoint.X - startPoint.X)
                 let h = Math.Abs(endPoint.Y - startPoint.Y)
+                // aspectLocked từ Ctrl: dùng cạnh ngắn hơn làm width/height → hình tròn.
                 let side = Math.Min(w, h)
                 let rect =
                     if aspectLocked then
