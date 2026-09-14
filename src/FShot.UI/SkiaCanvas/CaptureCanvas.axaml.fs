@@ -57,16 +57,24 @@ type CaptureCanvas() as this =
     let toolbarPadding = 4.0
     let toolbarOffsetFromSelection = 8.0
 
-    /// Tính vị trí toolbar bám theo dưới cùng của vùng chọn (theo tọa độ vật lý).
-    let toolbarBoundsFromSelection (scale: float) (selection: FShot.Core.Geometry.Rect) : Avalonia.Rect =
+    /// Tính vị trí toolbar bám theo vùng chọn (ưu tiên dưới, fallback trên nếu không đủ chỗ).
+    let toolbarBoundsFromSelection (scale: float) (selection: FShot.Core.Geometry.Rect) (canvasHeight: float) : Avalonia.Rect =
         let count = float (List.length toolbarTools)
         let width = count * toolbarButtonSize + (count - 1.0) * toolbarGap + 2.0 * toolbarPadding
         let height = toolbarButtonSize + 2.0 * toolbarPadding
-        // Căn giữa theo chiều ngang của vùng chọn.
         let selectionCenterX = selection.X * scale + (selection.Width * scale) / 2.0
         let x = selectionCenterX - width / 2.0
-        let y = selection.Bottom * scale + toolbarOffsetFromSelection
-        Avalonia.Rect(max 0.0 x, y, width, height)
+        let bottomY = selection.Bottom * scale + toolbarOffsetFromSelection
+        let topY = selection.Y * scale - toolbarOffsetFromSelection - height
+
+        // Nếu đặt dưới mà toolbar vượt quá chiều cao canvas, chuyển lên trên.
+        let y =
+            if bottomY + height <= canvasHeight then
+                bottomY
+            else
+                topY
+
+        Avalonia.Rect(max 0.0 x, max 0.0 y, width, height)
 
     /// Tìm tool tương ứng với tọa độ click trên toolbar.
     let hitToolbarTool (toolbarBounds: Avalonia.Rect) (point: Avalonia.Point) : ToolKind option =
@@ -239,7 +247,7 @@ type CaptureCanvas() as this =
             overlayState
             |> Option.map buildRenderModel
             |> Option.bind (fun rm -> rm.Selection)
-            |> Option.map (fun sel -> toolbarBoundsFromSelection scale sel.Bounds)
+            |> Option.map (fun sel -> toolbarBoundsFromSelection scale sel.Bounds this.Bounds.Height)
 
         match toolbarBounds with
         | Some bounds when bounds.Contains avPoint ->
@@ -408,7 +416,7 @@ type CaptureCanvas() as this =
                     | Some result -> result.ScaleFactor.Value
                     | None -> 1.0
 
-                let bounds = toolbarBoundsFromSelection scale selection.Bounds
+                let bounds = toolbarBoundsFromSelection scale selection.Bounds this.Bounds.Height
                 let backgroundBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(200uy, 30uy, 30uy, 30uy))
                 let borderPen = new Pen(new SolidColorBrush(Avalonia.Media.Color.FromArgb(255uy, 80uy, 80uy, 80uy)), 1.0)
                 let activeBorderPen = new Pen(Brushes.White, 2.0)
