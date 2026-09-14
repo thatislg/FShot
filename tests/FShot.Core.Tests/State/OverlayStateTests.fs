@@ -431,6 +431,13 @@ let ``Annotating PointerReleased commit và push history`` () =
     Assert.True(result.State.History.CanUndo)
     Assert.False(result.RenderModel.Preview.IsSome)
 
+    let annotation = List.head result.State.History.Current.Annotations
+    match annotation.Tool with
+    | Tool.Line (a, b) ->
+        Assert.Equal(point 150.0 150.0, a)
+        Assert.Equal(point 250.0 250.0, b)
+    | _ -> Assert.True(false, "Expected Tool.Line")
+
 /// Kiểm tra Annotating + Cancel hủy preview.
 [<Fact>]
 let ``Annotating Cancel hủy preview`` () =

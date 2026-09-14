@@ -40,6 +40,14 @@ module AnnotationRenderer =
                     use paint = DomainToSkia.createStrokePaint annotation.Style.Color strokeWidth
                     canvas.DrawPath(path, paint)
 
+        | Tool.Line (startPoint, endPoint) ->
+            let a = DomainToSkia.pointToSkPhysical scale startPoint
+            let b = DomainToSkia.pointToSkPhysical scale endPoint
+            let strokeWidth =
+                DomainToSkia.strokeWidthToSkPhysical scale annotation.Style.StrokeWidth
+            use paint = DomainToSkia.createStrokePaint annotation.Style.Color strokeWidth
+            canvas.DrawLine(a, b, paint)
+
         | _ ->
             // Các tool khác sẽ được triển khai sau.
             ()

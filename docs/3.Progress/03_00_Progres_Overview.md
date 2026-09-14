@@ -1,8 +1,8 @@
 # F-Shot Master Progress Tracking
 
 - **Cập nhật gần nhất:** 2026-09-14
-- **Tiến độ tổng quan:** `[ 24 / 84 ] Tasks hoàn thành (~28.6%)` (Phase 0 PoC đã verify xong; Epic 1 P1.01–P1.04, Epic 2 P1.05–P1.11, và Epic 2.5 E2.5.01–E2.5.05 đã hoàn thiện)
-- **Mục tiêu hiện tại:** Bắt đầu Epic 3: triển khai bộ công cụ chú thích (Annotations) từ P1.12
+- **Tiến độ tổng quan:** `[ 25 / 84 ] Tasks hoàn thành (~29.8%)` (Phase 0 PoC đã verify xong; Epic 1 P1.01–P1.04, Epic 2 P1.05–P1.11, Epic 2.5 E2.5.01–E2.5.05, và P1.12–P1.13 đã hoàn thiện)
+- **Mục tiêu hiện tại:** Tiếp tục Epic 3: P1.14 Arrow annotation.
 
 ---
 
@@ -11,7 +11,7 @@
 | Phase | Mục tiêu | Trạng thái | Hoàn thành |
 | :--- | :--- | :---: | :---: |
 | **Phase 0: PoC** | Khung Solution, Screen Capture, Overlay Canvas, đo 60 FPS | **DONE** | **8 / 8** (đã verify trên desktop Windows) |
-| **Phase 1: MVP Core** | Bounding box, 8 Annotation tools, Undo/Redo, Save/Clipboard | **IN PROGRESS** | 16 / 29 (~55%) |
+| **Phase 1: MVP Core** | Bounding box, 8 Annotation tools, Undo/Redo, Save/Clipboard | **IN PROGRESS** | 17 / 29 (~59%) |
 | **Phase 2: Windows v1.0** | Tray, Hotkeys, Real Capture, Config UI, Pin Widget, Advanced tools | **PENDING** | 0 / 39 (0%) |
 | **Phase 3: Advanced** | Imgur upload, Snap-to-grid, Tùy biến nâng cao | **PENDING** | 0 / 8 (0%) |
 
@@ -126,13 +126,14 @@
   - [x] Tích hợp `OverlayState`: nhận diện tool Pencil, bắt đầu vẽ, cập nhật preview, commit annotation.
   - [x] Thêm xử lý phím tắt `P` trong `OverlayState.update`.
   - [x] Thêm tests `tests/FShot.Rendering.Skia.Tests/PencilTests.fs` hoặc `AnnotationTests.fs`.
-- [ ] **P1.13** Vẽ đường thẳng Line (`FR-ANN-02`).
-  - [ ] Hoàn thiện `docs/2.Design/04_Annotation/04_01_Line.md` nếu chưa đủ, hoặc rà soát.
-  - [ ] Triển khai `LineAnnotation` trong `Annotation.fs`.
-  - [ ] Triển khai `LineRenderer` trong Skia.
-  - [ ] Tích hợp `OverlayState`: tool Line, preview khi kéo, commit khi thả.
-  - [ ] Thêm phím tắt `L`.
-  - [ ] Thêm tests.
+- [x] **P1.13** Vẽ đường thẳng Line (`FR-ANN-02`).
+  - [x] Hoàn thiện / rà soát `docs/2.Design/04_Annotation/04_04_LineAndArrow.md` (mục Line).
+  - [x] Triển khai `Tool.Line` trong `Annotation.fs` (đã có từ thiết kế P1.01).
+  - [x] Triển khai vẽ Line trong `CaptureCanvas.axaml.fs` (preview + committed).
+  - [x] Triển khai `LineRenderer` trong Skia (`AnnotationRenderer.fs`).
+  - [x] Tích hợp `OverlayState`: tool Line, preview khi kéo, commit khi thả (đã có từ P1.03).
+  - [x] Thêm phím tắt `L` trên toolbar tạm.
+  - [x] Thêm tests (render + state commit).
 - [ ] **P1.14** Vẽ mũi tên Arrow có chóp định hướng (`FR-ANN-03`).
   - [ ] Hoàn thiện `docs/2.Design/04_Annotation/04_02_Arrow.md`.
   - [ ] Triển khai `ArrowAnnotation` với đầu mũi tên tam giác.

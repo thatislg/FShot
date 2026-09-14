@@ -643,25 +643,38 @@ type CaptureCanvas() as this =
             | Some result -> result.ScaleFactor.Value
             | None -> 1.0
 
-        // Vẽ annotations đã commit.
-        let drawPencilAnnotation (annotation: Annotation) =
+        // Helpers dùng chung cho việc vẽ annotation lên Avalonia DrawingContext.
+        let avaloniaColor (color: Color) =
+            Avalonia.Media.Color.FromArgb(color.A, color.R, color.G, color.B)
+
+        let annotationPen (style: AnnotationStyle) : Pen =
+            let mediaColor = avaloniaColor style.Color
+            let brush = new SolidColorBrush(mediaColor)
+            let thickness = style.StrokeWidth.Value * scale
+            new Pen(brush, thickness)
+
+        let avPoint (p: Point) = Avalonia.Point(p.X * scale, p.Y * scale)
+
+        // Vẽ một annotation đã commit hoặc đang preview.
+        let drawAnnotation (annotation: Annotation) =
             match annotation.Tool with
             | Tool.Pencil points ->
                 PencilPreview.buildGeometry scale annotation.Style.StrokeWidth.Value points
                 |> Option.iter (fun (geometry: Geometry) ->
-                    let color = annotation.Style.Color
-                    let mediaColor = Avalonia.Media.Color.FromArgb(color.A, color.R, color.G, color.B)
-                    let brush = new SolidColorBrush(mediaColor)
-                    let thickness = annotation.Style.StrokeWidth.Value * scale
-                    let pen = new Pen(brush, thickness)
+                    let pen = annotationPen annotation.Style
                     context.DrawGeometry(null, pen, geometry)
                 )
+
+            | Tool.Line (startPoint, endPoint) ->
+                let pen = annotationPen annotation.Style
+                context.DrawLine(pen, avPoint startPoint, avPoint endPoint)
+
             | _ -> ()
 
-        renderModel.Annotations |> List.iter drawPencilAnnotation
+        renderModel.Annotations |> List.iter drawAnnotation
 
         // Vẽ preview annotation đang vẽ.
-        renderModel.Preview |> Option.iter drawPencilAnnotation
+        renderModel.Preview |> Option.iter drawAnnotation
 
         // Vẽ toolbar.
         this.RenderToolbar(context, renderModel)

@@ -23,6 +23,12 @@ Ví dụ: A = `(100, 100)`, B = `(400, 100)`.
 `Width = |Bx - Ax|`
 `Height = |By - Ay|`
 
+### 1.3 Preview và commit
+
+Trong quá trình vẽ, preview hiển thị đoạn thẳng từ điểm bắt đầu `A` đến vị trí con trỏ hiện tại `C`. Khi thả chuột, preview được commit thành annotation `Line(A, C)` với màu sắc và độ dày lấy từ `AnnotationStyle` hiện tại.
+
+Không giới hạn hướng vẽ: điểm kết thúc có thể nằm ở bất kỳ phía nào so với điểm bắt đầu.
+
 ## 2. Arrow
 
 Arrow là đường thẳng kèm mũi tên ở đầu B. Mũi tên gồm hai cánh tạo góc với đường chính.
