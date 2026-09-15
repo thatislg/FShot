@@ -15,6 +15,7 @@ open System
 open System.Diagnostics
 
 open FShot.UI.Logging
+open FShot.UI.SkiaCanvas
 
 /// Vị trí đặt toolbar quanh vùng chọn.
 type ToolbarPlacement =
@@ -33,16 +34,16 @@ module Toolbar =
     let toolbarOffset = 8.0
 
     let tools = [
-        SelectionTool, "S"
-        PencilTool, "P"
-        LineTool, "L"
-        ArrowTool, "A"
-        RectangleTool, "R"
-        CircleTool, "C"
-        MarkerTool, "M"
-        TextTool, "T"
-        PixelateTool, "B"
-        IconTool, "I"
+        SelectionTool
+        PencilTool
+        LineTool
+        ArrowTool
+        RectangleTool
+        CircleTool
+        MarkerTool
+        TextTool
+        PixelateTool
+        IconTool
     ]
 
     let toolCount = List.length tools
@@ -138,7 +139,7 @@ module Toolbar =
                     int ((point.Y - tb.Y - toolbarPadding) / (toolbarButtonSize + toolbarGap))
 
             if index >= 0 && index < toolCount then
-                Some (fst (List.item index tools))
+                Some (List.item index tools)
             else
                 None
 
@@ -147,20 +148,27 @@ module Toolbar =
         (tb: Avalonia.Rect)
         (currentTool: ToolKind) =
 
-        let backgroundBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(200uy, 30uy, 30uy, 30uy))
-        let borderPen = new Pen(new SolidColorBrush(Avalonia.Media.Color.FromArgb(255uy, 80uy, 80uy, 80uy)), 1.0)
-        let activeBorderPen = new Pen(Brushes.White, 2.0)
-        let textBrush = Brushes.White
+        // Màu theo Design Tokens chuẩn Kawaii Claymorphism.
+        let bgColor = Avalonia.Media.Color.FromRgb(0xFFuy, 0xFDuy, 0xF9uy)     // BaseContainer
+        let borderColor = Avalonia.Media.Color.FromRgb(0xE2uy, 0xE8uy, 0xF0uy) // BorderLight
+        let shadowColor = Avalonia.Media.Color.FromArgb(0x1Auy, 0uy, 0uy, 0uy)   // Shadow 10%
+        let activeAccent = Avalonia.Media.Color.FromRgb(0x38uy, 0xBDuy, 0xF8uy) // ActiveAccent
 
+        let backgroundBrush = new SolidColorBrush(bgColor)
+        let borderPen = new Pen(new SolidColorBrush(borderColor), 1.0)
+        let shadowBrush = new SolidColorBrush(shadowColor)
+        let activeBorderPen = new Pen(new SolidColorBrush(activeAccent), 2.0)
+
+        // Bóng đổ mềm (hộp bóng đơn giản, lệch xuống 4px).
+        let shadowRect = Avalonia.Rect(tb.X + 2.0, tb.Y + 4.0, tb.Width, tb.Height)
+        context.FillRectangle(shadowBrush, shadowRect)
         context.FillRectangle(backgroundBrush, tb)
         context.DrawRectangle(null, borderPen, tb)
 
-        let typeface = Typeface.Default
-        let textSize = 14.0
         let isHorizontal = tb.Width >= tb.Height
 
         tools
-        |> List.iteri (fun i (tool, label) ->
+        |> List.iteri (fun i tool ->
             let (x, y) =
                 if isHorizontal then
                     (tb.X + toolbarPadding + float i * (toolbarButtonSize + toolbarGap),
@@ -172,22 +180,30 @@ module Toolbar =
             let buttonRect = Avalonia.Rect(x, y, toolbarButtonSize, toolbarButtonSize)
             let isActive = currentTool = tool
 
+            // Hover visual chưa có (cần track mouse tách biệt); hiện chỉ active.
             if isActive then
-                context.DrawRectangle(null, activeBorderPen, buttonRect)
+                let activeBg = new SolidColorBrush(activeAccent)
+                let cornerRadius = 6.0f
+                context.FillRectangle(activeBg, buttonRect, cornerRadius)
+                context.DrawRectangle(null, activeBorderPen, buttonRect, float cornerRadius, float cornerRadius)
 
-            let formatted =
-                new FormattedText(
-                    label,
-                    System.Globalization.CultureInfo.CurrentCulture,
-                    FlowDirection.LeftToRight,
-                    typeface,
-                    textSize,
-                    textBrush
-                )
+            match ToolbarIcons.pathFor tool with
+            | Some pathData ->
+                let geometry = StreamGeometry.Parse(pathData)
+                use _transform =
+                    // Scale từ viewBox 32x32 về kích thước icon trong nút.
+                    let iconSize = 20.0
+                    let iconOffsetX = buttonRect.Center.X - iconSize / 2.0
+                    let iconOffsetY = buttonRect.Center.Y - iconSize / 2.0
+                    let scale = iconSize / 32.0
+                    let matrix = Matrix.CreateScale(scale, scale) * Matrix.CreateTranslation(iconOffsetX, iconOffsetY)
+                    context.PushTransform(matrix)
 
-            let textX = buttonRect.Center.X - formatted.Width / 2.0
-            let textY = buttonRect.Center.Y - formatted.Height / 2.0
-            context.DrawText(formatted, Avalonia.Point(textX, textY))
+                let fillBrush = new SolidColorBrush(ToolbarIcons.fillColor tool)
+                let strokePen = new Pen(new SolidColorBrush(ToolbarIcons.strokeColor tool), 1.5)
+                context.DrawGeometry(fillBrush, strokePen, geometry)
+            | None ->
+                ()
         )
 
 /// Helper vẽ preview Pencil trong UI layer.
