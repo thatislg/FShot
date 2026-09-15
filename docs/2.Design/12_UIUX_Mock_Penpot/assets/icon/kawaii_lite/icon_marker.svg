@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Marker / Highlighter - Kawaii Lite -->
+  <!-- Yellow body, Dark Walnut outline -->
+  <!-- Body -->
+  <path d="M22 6 l4 4 -10 10 -4 -4 z"
+        fill="#FACC15"
+        stroke="#B45309"
+        stroke-width="1.5"
+        stroke-linejoin="round"
+        stroke-linecap="round"/>
+  <!-- Tip -->
+  <path d="M12 16 l-6 10 10 -6 z"
+        fill="#FDE047"
+        stroke="#B45309"
+        stroke-width="1.5"
+        stroke-linejoin="round"
+        stroke-linecap="round"/>
+  <circle cx="22" cy="7" r="1.2" fill="#FFFFFF" opacity="0.85"/>
+</svg>

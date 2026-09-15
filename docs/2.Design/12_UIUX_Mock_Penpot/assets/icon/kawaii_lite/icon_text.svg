@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Text Tool - Kawaii Lite -->
+  <!-- Peach Orange fill, Dark Walnut outline -->
+  <path d="M8 7 h16 v4 h-6 v14 h-4 v-14 h-6 z"
+        fill="#FDBA74"
+        stroke="#9A3412"
+        stroke-width="1.5"
+        stroke-linejoin="round"
+        stroke-linecap="round"/>
+  <circle cx="24" cy="8" r="1.5" fill="#FFFFFF" opacity="0.85"/>
+</svg>
