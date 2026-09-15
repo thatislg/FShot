@@ -190,20 +190,24 @@ module Toolbar =
             match ToolbarIcons.pathFor tool with
             | Some pathData ->
                 let geometry = StreamGeometry.Parse(pathData)
+                let bounds = geometry.Bounds
+                FShotLog.write (sprintf "[Toolbar] Drawing icon %A bounds=%A button=%A" tool bounds buttonRect)
                 use _transform =
-                    // Scale từ viewBox 32x32 về kích thước icon trong nút.
-                    let iconSize = 20.0
+                    // Scale từ viewBox 32x32 về kích thước icon trong nút, rồi dịch vào giữa button.
+                    // Thứ tự: scale trước, translate sau (WPF/Avalonia dùng prepend, nên translate * scale).
+                    let iconSize = 24.0
                     let iconOffsetX = buttonRect.Center.X - iconSize / 2.0
                     let iconOffsetY = buttonRect.Center.Y - iconSize / 2.0
                     let scale = iconSize / 32.0
-                    let matrix = Matrix.CreateScale(scale, scale) * Matrix.CreateTranslation(iconOffsetX, iconOffsetY)
-                    context.PushTransform(matrix)
+                    let scaleMatrix = Matrix.CreateScale(scale, scale)
+                    let translateMatrix = Matrix.CreateTranslation(iconOffsetX, iconOffsetY)
+                    context.PushTransform(translateMatrix * scaleMatrix)
 
                 let fillBrush = new SolidColorBrush(ToolbarIcons.fillColor tool)
                 let strokePen = new Pen(new SolidColorBrush(ToolbarIcons.strokeColor tool), 1.5)
                 context.DrawGeometry(fillBrush, strokePen, geometry)
             | None ->
-                ()
+                FShotLog.write (sprintf "[Toolbar] No icon path for tool %A" tool)
         )
 
 /// Helper vẽ preview Pencil trong UI layer.
