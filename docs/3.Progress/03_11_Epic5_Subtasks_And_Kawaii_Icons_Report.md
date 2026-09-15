@@ -1,17 +1,19 @@
-# Báo cáo: Chi tiết Subtask Epic 5 & Tích hợp Icon Kawaii (Arrow, Pixelate, Save)
+# Báo cáo: Chi tiết Subtask Epic 5 & Tích hợp Toàn diện Bộ Icon Kawaii Claymorphism
 
 - **Ngày thực hiện:** 2026-09-15
 - **Phạm vi:** 
   - Hoàn thiện chi tiết subtask cho Epic 5: Xuất dữ liệu & CLI (P1.24–P1.29) trong tiến độ tổng quan.
-  - Tích hợp thử nghiệm và render vector đa màu sắc các icon Kawaii Claymorphism từ `docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/` vào toolbar thực tế của phần mềm (`ArrowTool`, `PixelateTool`, `SaveAction`).
-- **Trạng thái:** Hoàn thành, build thành công, 198 / 198 tests pass (174 Core + 21 Skia + 3 UI).
+  - Tiếp nhận toàn bộ bộ sưu tập 27 vector SVG Kawaii Claymorphism tại `docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/`.
+  - Tích hợp và nâng cấp toàn bộ hệ thống biểu tượng thanh công cụ (Toolbar: 10 Annotation Tools + 5 Actions) trong ứng dụng FShot sang giao diện Kawaii Claymorphism đa màu sắc, mềm mại, có vệt phản chiếu (specular highlight) và đường viền đậm nét đặc trưng.
+- **Trạng thái:** Hoàn thành xuất sắc, biên dịch 0 lỗi 0 cảnh báo, 198 / 198 unit tests Passed (174 Core + 21 Skia + 3 UI). Đã commit và push nhánh `main` (`bd0e30e`).
 
 ---
 
 ## 1. Mục tiêu công việc
 
-1. **Quy hoạch chi tiết Epic 5:** Phân rã toàn bộ 6 task cấp cao của Epic 5 (P1.24 đến P1.29) thành các subtask rõ ràng, bao gồm các bước từ hoàn thiện tài liệu thiết kế, triển khai logic domain, platform IO, tích hợp giao diện và kịch bản verify runtime trên Windows.
-2. **Tích hợp Icon Kawaii vào Runtime:** Chuyển đổi các icon vector Kawaii 2.5D nhiều màu sắc từ catalog thiết kế (`kawaii/`) sang hệ tọa độ lưới 32×32 của toolbar, đưa vào `ToolbarIcons.fs` và nâng cấp bộ render trong `CaptureCanvas.axaml.fs` để hiển thị màu sắc đầy đủ thay vì đơn sắc.
+1. **Quy hoạch chi tiết Epic 5 (P1.24–P1.29):** Phân rã 6 task cấp cao thành các subtask rõ ràng, bao gồm phân giải tên file ngày giờ, logic lưu tức thì / Save As, copy PNG vào clipboard với DIB fallback, CLI parser với Argu, độ trễ chụp (`-d / --delay`) và cấu hình `%APPDATA%\FShot\config.json`.
+2. **Tiếp nhận & Chuẩn hóa bộ Vector Kawaii:** Đọc và phân loại 27 file SVG Kawaii Claymorphism được bổ sung vào `docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/`.
+3. **Hiện thực hóa giao diện Toolbar Kawaii trên Runtime:** Chuyển đổi toàn bộ icon từ phong cách đơn sắc (monochrome) sang cơ chế render đa lớp (multi-color / multi-layer) với bảng màu pastel, viền nét nâu đậm `#3D2B1F` bo tròn và điểm sáng 2.5D trong [ToolbarIcons.fs](file:///d:/Kojin/FShot/src/FShot.UI/SkiaCanvas/ToolbarIcons.fs) và [CaptureCanvas.axaml.fs](file:///d:/Kojin/FShot/src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs).
 
 ---
 
@@ -25,70 +27,111 @@
 - **P1.28 (Cấu hình độ trễ `-d / --delay`):** Ánh xạ tham số CLI vào `CaptureRequest.DelayMs`, chèn `Async.Sleep` trước khi chụp và xử lý validation.
 - **P1.29 (Nạp & lưu cấu hình JSON):** Xây dựng `AppConfig` trong Core, triển khai `ConfigStore` đọc/ghi `%APPDATA%\FShot\config.json`, tự động sinh file mặc định và kết nối vào startup.
 
-### 2.2 Tích hợp Icon Kawaii vào Toolbar Runtime
+---
 
-| Icon | File SVG gốc | Kỹ thuật chuyển đổi & Render |
-|------|-------------|------------------------------|
-| **Arrow (Mũi tên)** | `kawaii/arrow.svg` (64×64) | • Tọa độ Bézier bậc 3 chia đôi về lưới 32×32: `M7 23 C 7 15, 12 9, 19 9...`<br>• Thân mũi tên tô màu **Vàng bơ** `#FDE047`, viền **Nâu hạt óc chó** `#3D2B1F` bo tròn.<br>• Vệt sáng phản chiếu (specular highlight) `M21 10 L 24.5 13` màu trắng `#FFFFFF`. |
-| **Pixelate (Làm mờ mosaic)** | `kawaii/pixelate.svg` (64×64) | • Ma trận 3×3 gồm 9 khối kẹo dẻo `6×6px`, bo góc tròn `rx = 2.0`.<br>• Phối màu xen kẽ pastel: San hô `#FF7A70`, Vàng bơ `#FDE047`, Bạc hà `#86EFAC`, Xanh biển `#7BD5F5`.<br>• Viền nâu đậm `#3D2B1F` 1.4px đồng bộ. |
-| **Save (Lưu file)** | `kawaii/save.svg` (64×64) | • Mô phỏng chiếc đĩa mềm mini 3.5 inch Kawaii.<br>• Thân đĩa: **Xanh bạc hà** `#86EFAC`, viền xanh rừng `#15803D`.<br>• Cửa trượt kim loại trắng `#FFFFFF` kèm khe trượt xanh rừng.<br>• Nhãn dán kem trắng `#FFFDF9`. |
+### 2.2 Tích hợp Bộ Icon Kawaii vào Runtime Thanh công cụ
+
+Trước đây, thanh công cụ sử dụng cơ chế vẽ đơn sắc (tất cả biểu tượng dùng chung màu `#3D2B1F` hoặc `#8A7B70`). Trong đợt cập nhật này, toàn bộ 15 thành phần thanh công cụ đã được chuyển đổi sang hình học vector 32×32 và cơ chế render đa màu đặc trưng phong cách Kawaii Claymorphism:
+
+#### 10 Annotation Tools (Công cụ vẽ & chú thích):
+| Tool | File SVG nguồn | Màu sắc chủ đạo | Đặc trưng trực quan Kawaii Claymorphism |
+|------|---------------|-----------------|----------------------------------------|
+| **SelectionTool** | `selection.svg` | Xám `#9CA3AF` / Trắng `#FFFFFF` | Khung đứt bo tròn 4 góc mềm, con trỏ chuột mập lùn trắng viền nâu kèm vệt highlight. |
+| **PencilTool** | `pencil.svg` | Vàng mật `#FDE047` / Hồng phấn `#F472B6` | Thân bút chì mập ú, đầu gôm hồng kẹo ngọt, ngòi chì gỗ viền đậm nét mượt. |
+| **LineTool** | `line.svg` | Vàng be pastel `#FDE68A` | Thước kẻ bo tròn góc, vạch đo độ dài xinh xắn, chấm tròn điểm nhấn đầu cuối. |
+| **ArrowTool** | `arrow.svg` | Cam san hô `#FB923C` / Trắng `#FFFFFF` | Mũi tên uốn lượn mềm mại thân thiện, điểm nhấn vệt sáng phản chiếu (specular). |
+| **RectangleTool** | `rectangle.svg` | Xanh da trời `#93C5FD` | Khối chữ nhật bo tròn góc lớn phồng như kẹo dẻo, viền nâu hạt dẻ `#3D2B1F`. |
+| **CircleTool** | `circle.svg` | Vàng đào `#FBBF24` | Quả cầu tròn trịa phong cách đất sét nặn clay, đốm sáng bóng góc 45 độ. |
+| **MarkerTool** | `marker.svg` | Xanh bạc hà `#34D399` | Bút dạ quang nắp cài vát chéo, thân hình trụ ngắn bo tròn đáng yêu. |
+| **TextTool** | `text.svg` | Tím oải hương `#C084FC` | Khối chữ "T" mập mạp, các góc bo tròn lớn không góc cạnh sắc nhọn. |
+| **PixelateTool** | `pixelate.svg` | Tím pastel `#C084FC` & Tím đậm `#7C3AED` | Ma trận các ô vuông mosaic so le 2 tone tím phong cách pixel art dễ thương. |
+| **IconTool** | `pin.svg` | Đỏ dâu `#F87171` & Xám bạc `#9CA3AF` | Chiếc đinh ghim bảng đầu tròn phồng, kim ghim kim loại vát nhọn sáng bóng. |
+
+#### 5 Toolbar Actions (Thao tác thanh công cụ):
+| Action | File SVG nguồn | Màu sắc chủ đạo | Đặc trưng trực quan Kawaii Claymorphism |
+|--------|---------------|-----------------|----------------------------------------|
+| **UndoAction** | `undo.svg` | Xanh dương `#60A5FA` | Mũi tên uốn cong 180° quay về trước, đầu mũi tên to bè mềm mại. |
+| **RedoAction** | `redo.svg` | Tím lavender `#A78BFA` | Mũi tên uốn cong tiến về trước đối xứng, tạo nhịp điệu tương phản màu sắc. |
+| **CopyAction** | `copy.svg` | Trắng kem & Vàng nhạt `#FEF08A` | Hai tờ giấy bo góc xếp chồng lệch, kẹp tài liệu vàng xinh xắn. |
+| **SaveAction** | `save.svg` | Xanh mint `#86EFAC` / Xanh rừng `#15803D` | Đĩa mềm mini 3.5 inch, cửa trượt kim loại trắng có rãnh, nhãn dán kem và dòng kẻ dữ liệu. |
+| **CancelAction** | `cancel.svg` | Đỏ dâu `#F87171` | Nút tròn dấu X phồng bong bóng, vệt sáng góc trên bên trái thể hiện độ bóng 2.5D. |
 
 ---
 
-## 3. Các file thay đổi
+## 3. Tổng hợp 27 Asset Kawaii SVG đã tiếp nhận & lưu trữ
 
-- `docs/3.Progress/03_00_Progres_Overview.md`: Cập nhật chi tiết các subtask cho P1.24–P1.29, chuẩn hóa phạm vi Epic 5.
-- `src/FShot.UI/SkiaCanvas/ToolbarIcons.fs`: Bổ sung path vector 32×32 cho `arrow`, `arrowHighlight`, `pixelate`, `save`.
-- `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`: Mở rộng phương thức `DrawToolbar` với nhánh render đa màu sắc cho `ArrowTool`, `PixelateTool`, `SaveAction`.
-- `docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/`: Lưu trữ các file SVG vector Kawaii gốc.
-
----
-
-## 4. Kết quả kiểm thử
+Toàn bộ các tệp vector thiết kế đã được tổ chức và quản lý tại [docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/](file:///d:/Kojin/FShot/docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii):
 
 ```text
-FShot.Core.Tests.dll        Passed: 174 / 174
-FShot.Rendering.Skia.Tests  Passed:  21 /  21
-FShot.UI.Tests.dll          Passed:   3 /   3
-Tổng cộng:                  Passed: 198 / 198 (100%)
+docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/
+├── [Nhóm 1: Toolbar Annotation Tools]
+│   ├── selection.svg       (Crop / Selection tool)
+│   ├── pencil.svg          (Bút vẽ tự do)
+│   ├── line.svg            (Đường thẳng)
+│   ├── arrow.svg           (Mũi tên chỉ hướng)
+│   ├── rectangle.svg       (Hình chữ nhật)
+│   ├── circle.svg          (Hình tròn / elip)
+│   ├── marker.svg          (Bút dạ quang)
+│   ├── text.svg            (Chèn văn bản)
+│   ├── pixelate.svg        (Làm mờ pixelate mosaic)
+│   ├── blur.svg            (Làm mờ mịn Gaussian - chuẩn bị Phase 2)
+│   ├── counter-bubble.svg  (Đánh số bước tuần tự - chuẩn bị Phase 2)
+│   └── invert.svg          (Đảo màu âm bản - chuẩn bị Phase 2)
+│
+├── [Nhóm 2: Toolbar Action Buttons]
+│   ├── undo.svg            (Hoàn tác)
+│   ├── redo.svg            (Làm lại)
+│   ├── copy.svg            (Sao chép clipboard)
+│   ├── save.svg            (Lưu file đĩa)
+│   ├── cancel.svg          (Đóng / Hủy chụp)
+│   ├── pin.svg             (Ghim ảnh nổi màn hình / IconTool)
+│   ├── open-app.svg        (Mở ảnh trong ứng dụng ngoài)
+│   └── upload-img.svg      (Tải ảnh lên Imgur / Cloud)
+│
+└── [Nhóm 3: App Mascot, Branding & Windows Packaging]
+    ├── fshot-bird.svg      (Linh vật chú chim FShot Kawaii)
+    ├── app-logo.svg        (Logo ống kính máy ảnh tia sét)
+    ├── tray-icon.svg       (Biểu tượng khay hệ thống Windows Taskbar)
+    ├── Square44x44Logo.svg (Logo ứng dụng Start Menu / Taskbar)
+    ├── Square150x150Logo.svg (Logo ứng dụng Medium Tile)
+    ├── StoreLogo.svg       (Logo trang Microsoft Store)
+    └── SplashScreen.svg    (Màn hình chào khởi động splash)
 ```
-
-Biên dịch: `0 Warning(s), 0 Error(s)` trên toàn solution.
 
 ---
 
-## 5. Danh mục toàn bộ Icon cần tạo ảnh / vector tiếp theo
+## 4. Các file mã nguồn thay đổi
 
-Dựa trên tài liệu thiết kế `12_06_Icon_Asset_Production_Guide.md`, `12_04_ToolbarLayout.md`, SRS và lộ trình Phase 1–Phase 2, danh mục đầy đủ các icon cần sản xuất asset bao gồm:
+1. [ToolbarIcons.fs](file:///d:/Kojin/FShot/src/FShot.UI/SkiaCanvas/ToolbarIcons.fs):
+   - Cung cấp path vector 32×32 chuẩn hóa cho toàn bộ các công cụ và thao tác.
+   - Bổ sung các đường path phụ trợ (highlights, details) phục vụ render đa lớp.
+2. [CaptureCanvas.axaml.fs](file:///d:/Kojin/FShot/src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs):
+   - Thay thế nhánh render đơn sắc cũ bằng các nhánh pattern match riêng biệt theo từng `item.Label`.
+   - Sử dụng các lệnh vẽ trực tiếp của Avalonia `DrawingContext` (`DrawRectangle`, `DrawEllipse`, `DrawGeometry`, `DrawLine`) phối hợp các cọ vẽ `SolidColorBrush` và bút vẽ `Pen` có bo góc (`LineCap.Round`, `LineJoin.Round`).
+   - Tự động hạ độ mờ (`alpha = 0x66uy`) khi nút ở trạng thái `disabled`.
+3. [03_00_Progres_Overview.md](file:///d:/Kojin/FShot/docs/3.Progress/03_00_Progres_Overview.md):
+   - Cập nhật liên kết tài liệu báo cáo và chi tiết 6 task Epic 5.
 
-### Nhóm 1: Icon trên Toolbar Chú thích (Annotation Tools)
-1. `selection.svg` — Vùng chọn / Crop (Khung nét đứt bo tròn góc, 4 nút quăn tai thỏ).
-2. `pencil.svg` — Bút vẽ tự do (Bút chì sáp lùn màu đỏ cam `#FF7A70`, đầu gỗ be).
-3. `line.svg` — Đường thẳng (Thanh kẹo dẻo tròn 2 đầu màu xanh bạc hà `#86EFAC`).
-4. `arrow.svg` — Mũi tên (*Đã có mẫu Kawaii và tích hợp*).
-5. `rectangle.svg` — Khung chữ nhật (Khung tranh phồng bong bóng màu xanh da trời `#7BD5F5`).
-6. `circle.svg` — Hình tròn / Elip (Bánh donut tròn phồng màu hồng đào `#F472B6`).
-7. `marker.svg` — Bút dạ quang (Bút nhớ béo ú pastel vàng neon `#FACC15`, vát chéo 45°).
-8. `text.svg` — Chèn chữ (Chữ 'A' béo tròn phồng như gối hơi màu cam đào `#FDBA74`).
-9. `pixelate.svg` — Che mờ Mosaic (*Đã có mẫu Kawaii và tích hợp*).
-10. `counter-bubble.svg` — Đánh số bước thứ tự (Bong bóng thoại xanh tuyết `#BAE6FD` chứa số ① trắng — *đã có SVG draft*).
-11. `invert.svg` — Đảo ngược màu (Âm bản mặt trời / mặt trăng chia đôi đen trắng).
-12. `blur.svg` — Làm mờ mịn Gaussian (Đám mây nhỏ màu tím lavender `#DDD6FE`).
+---
 
-### Nhóm 2: Icon Thao tác Toolbar (Action Buttons)
-13. `undo.svg` — Hoàn tác (Mũi tên vòng cung móng ngựa tím pastel `#C4B5FD`).
-14. `redo.svg` — Làm lại (Mũi tên vòng cung hướng phải tím pastel `#C4B5FD`).
-15. `copy.svg` — Sao chép vào clipboard (Hai tờ giấy bo góc kẹp bằng ghim tròn vàng bơ `#FEF08A`).
-16. `save.svg` — Lưu ra file đĩa (*Đã có mẫu Kawaii và tích hợp*).
-17. `cancel.svg` — Hủy bỏ / Đóng overlay (Dấu X mập mạp màu đỏ dâu tây `#FB7185`).
-18. `pin.svg` — Ghim ảnh nổi trên màn hình (Đinh ghim bảng đầu nhựa tròn xanh `#7BD5F5`).
-19. `open-app.svg` — Mở ảnh bằng ứng dụng ngoài (Cửa sổ có mũi tên bật ra ngoài).
-20. `upload-imgur.svg` — Tải ảnh lên đám mây Imgur (Đám mây Kawaii có mũi tên hướng lên).
+## 5. Kết quả kiểm thử & Build
 
-### Nhóm 3: Icon Hệ thống & Ứng dụng (App Branding & System Tray)
-21. `tray-icon.ico` / `tray-icon.svg` — Biểu tượng Khay hệ thống Windows (Logo F-Shot thu nhỏ rõ nét ở 16×16, 24×24, 32×32).
-22. `app-logo.svg` / `master-512.png` — Logo ứng dụng F-Shot Master (Ống kính máy ảnh Kawaii kết hợp tia sét sáng).
-23. `Square44x44Logo.png` — Icon Taskbar / Start Menu (các tỷ lệ scale 100%, 125%, 150%, 200%, 400%).
-24. `Square150x150Logo.png` — Medium Tile / Search preview (các tỷ lệ scale 100%, 125%, 150%, 200%, 400%).
-25. `StoreLogo.png` — Icon trang Microsoft Store / Installer.
-26. `SplashScreen.png` — Màn hình khởi động ứng dụng (620×300 px nền tối `#111827`).
+### 5.1 Kiểm thử tự động (Unit Tests)
+```text
+Test run for FShot.Rendering.Skia.Tests.dll:
+  Passed!  - Failed: 0, Passed:  21, Skipped: 0, Total:  21, Duration: 267 ms
+
+Test run for FShot.UI.Tests.dll:
+  Passed!  - Failed: 0, Passed:   3, Skipped: 0, Total:   3, Duration: 345 ms
+
+Test run for FShot.Core.Tests.dll:
+  Passed!  - Failed: 0, Passed: 174, Skipped: 0, Total: 174, Duration:  68 ms
+
+================================================================================
+TỔNG CỘNG: 198 / 198 tests PASSED (Tỉ lệ thành công: 100%)
+================================================================================
+```
+
+### 5.2 Lịch sử Git
+- **Commit:** `bd0e30e` (`feat(ui): integrate Kawaii Claymorphism icon set into toolbar rendering and assets`)
+- **Remote:** Đã đẩy thành công lên nhánh `origin/main`.

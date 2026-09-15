@@ -369,7 +369,7 @@
 - **P1.12:** `docs/3.Progress/03_02_P1.12_Report.md` (triển khai Pencil + toolbar tạm)
 - **P1.23:** `docs/3.Progress/03_02_P1.23_Report.md` (triển khai toolbar với SVG icons, transform fix, màu sắc design tokens)
 - **P1.24–P1.26:** `docs/3.Progress/03_10_P1.24_P1.26_Toolbar_Actions_Report.md` (kết nối 5 action buttons trên toolbar)
-- **Epic 5 & Kawaii Icons:** `docs/3.Progress/03_11_Epic5_Subtasks_And_Kawaii_Icons_Report.md` (chi tiết subtask Epic 5 + tích hợp icon Kawaii Arrow, Pixelate, Save)
+- **Epic 5 & Toàn bộ Icon Kawaii:** `docs/3.Progress/03_11_Epic5_Subtasks_And_Kawaii_Icons_Report.md` (chi tiết subtask Epic 5 + tích hợp toàn diện bộ icon Kawaii Claymorphism)
 
 ---
 
