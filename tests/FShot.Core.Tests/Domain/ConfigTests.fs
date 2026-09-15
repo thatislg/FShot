@@ -14,10 +14,18 @@ let ``ConfigSnapshot default có giá trị hợp lệ`` () =
     Assert.Equal(14.0, config.DefaultFontSize)
     Assert.Equal(100, config.HistoryLimit)
     Assert.True(config.CloseAfterExport)
+    Assert.Equal(SaveOptions.Default, config.SaveOptions)
 
 /// Kiểm tra ConfigSnapshot có thể tạo với giá trị tùy chỉnh.
 [<Fact>]
 let ``ConfigSnapshot tùy chỉnh lưu đúng giá trị`` () =
+    let customSave = {
+        SaveOptions.Default with
+            Path = Some "C:\\Screenshots"
+            FileNamePattern = "custom_%Y%m%d"
+            Format = Jpg
+            JpegQuality = 85
+    }
     let config = {
         DefaultTool = LineTool
         DefaultColor = Color.Blue
@@ -25,6 +33,7 @@ let ``ConfigSnapshot tùy chỉnh lưu đúng giá trị`` () =
         DefaultFontSize = 20.0
         HistoryLimit = 50
         CloseAfterExport = false
+        SaveOptions = customSave
     }
     Assert.Equal(LineTool, config.DefaultTool)
     Assert.Equal(Color.Blue, config.DefaultColor)
@@ -32,6 +41,9 @@ let ``ConfigSnapshot tùy chỉnh lưu đúng giá trị`` () =
     Assert.Equal(20.0, config.DefaultFontSize)
     Assert.Equal(50, config.HistoryLimit)
     Assert.False(config.CloseAfterExport)
+    Assert.Equal(Some "C:\\Screenshots", config.SaveOptions.Path)
+    Assert.Equal(Jpg, config.SaveOptions.Format)
+    Assert.Equal(85, config.SaveOptions.JpegQuality)
 
 /// Kiểm tra ConfigSnapshot dùng để khởi tạo OverlayState tạo đúng style.
 [<Fact>]
@@ -53,6 +65,7 @@ let ``ConfigSnapshot khởi tạo OverlayState tạo đúng CurrentStyle`` () =
         DefaultFontSize = 18.0
         HistoryLimit = 20
         CloseAfterExport = true
+        SaveOptions = SaveOptions.Default
     }
     let state = FShot.Core.State.OverlayStateLogic.init capture config
     Assert.Equal(ArrowTool, state.CurrentTool)

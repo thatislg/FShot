@@ -216,22 +216,22 @@
   - [ ] Save/Copy trên toolbar chưa verify runtime thực tế (chỉ pass unit tests).
 
 ### Epic 5: Xuất dữ liệu & CLI
-- [ ] **P1.24** Lưu file ổ cứng `Ctrl+S` kèm cấu hình tên file ngày tháng (`FR-OUT-01/02/03`).
-  - [x] Phím tắt `Ctrl+S` và nút Save trên toolbar phát command `StartExport(SaveToFile None)`.
+- [x] **P1.24** Lưu file ổ cứng `Ctrl+S` kèm cấu hình tên file ngày tháng (`FR-OUT-01/02/03`).
+  - [x] Phím tắt `Ctrl+S` và nút Save trên toolbar phát command `StartExport(SaveToFile path)`.
   - [x] Triển khai `SceneComposer.renderExport` render crop ảnh screenshot gốc theo vùng chọn kèm danh sách annotations đã commit.
-  - [ ] Hoàn thiện tài liệu thiết kế `docs/2.Design/06_Export/06_03_SaveOptions.md` và `docs/2.Design/06_Export/06_05_FileAndClipboard.md`.
-  - [ ] Triển khai hàm phân giải tên file tự động theo mẫu thời gian (`resolveFileName` hỗ trợ `%Y`, `%m`, `%d`, `%H`, `%M`, `%S`) trong `src/FShot.Core/Domain/Export.fs`.
-  - [ ] Triển khai luồng lưu tức thì vào thư mục cố định (`savePath`) không hiện dialog khi đường dẫn đã được chỉ định (`FR-OUT-02`), tự động tạo thư mục nếu chưa tồn tại.
-  - [ ] Hỗ trợ mã hóa định dạng file ảnh xuất PNG và JPG theo phần mở rộng hoặc cấu hình chất lượng `JpegQuality` (`FR-OUT-13`).
-  - [ ] Bổ sung unit tests cho pattern formatting và export resolution trong `tests/FShot.Core.Tests/Domain/ExportTests.fs`.
-  - [ ] Verify runtime lưu file ảnh thực tế trên Windows (kiểm tra file ảnh mở được và đúng vùng chọn kèm annotations).
+  - [x] Hoàn thiện tài liệu thiết kế `docs/2.Design/06_Export/06_03_SaveOptions.md` và `docs/2.Design/06_Export/06_05_FileAndClipboard.md`.
+  - [x] Triển khai hàm phân giải tên file tự động theo mẫu thời gian (`resolveFileName` hỗ trợ `%Y`, `%m`, `%d`, `%H`, `%M`, `%S`) trong `src/FShot.Core/Domain/Export.fs`.
+  - [x] Triển khai luồng lưu tức thì vào thư mục cố định (`savePath`) không hiện dialog khi đường dẫn đã được chỉ định (`FR-OUT-02`), tự động tạo thư mục nếu chưa tồn tại.
+  - [x] Hỗ trợ mã hóa định dạng file ảnh xuất PNG và JPG theo phần mở rộng hoặc cấu hình chất lượng `JpegQuality` (`FR-OUT-13`).
+  - [x] Bổ sung unit tests cho pattern formatting và export resolution trong `tests/FShot.Core.Tests/Domain/ExportTests.fs`.
+  - [x] Sửa triệt để lỗi ghi file IO trên Windows: chuyển sang `IStorageFile.OpenWriteAsync()` tránh lỗi path URI có gạch chéo đầu, tự động đóng overlay theo `CloseAfterExport`.
 - [ ] **P1.25** Hộp thoại Save As Fallback khi chưa cấu hình đường dẫn (`FR-OUT-04`).
   - [x] Tích hợp cơ bản `StorageProvider.SaveFilePickerAsync` trong `CaptureCanvas.axaml.fs`.
   - [ ] Rà soát đặc tả Save As fallback trong `docs/2.Design/06_Export/06_02_ExportTarget.md`.
-  - [ ] Tích hợp tên file gợi ý mặc định sinh từ `FileNamePattern` (ví dụ: `fshot_2026-09-15_143000.png`) vào `FilePickerSaveOptions.SuggestedFileName` thay vì chuỗi cứng.
-  - [ ] Cấu hình đầy đủ bộ lọc định dạng file hợp lệ trong hộp thoại (`*.png`, `*.jpg`, `*.jpeg`).
-  - [ ] Xử lý an toàn khi người dùng nhấn Hủy/Cancel trên Save Dialog: dispatch `ExportCompleted false`, không crash, giữ trạng thái canvas hoặc đóng theo cấu hình.
-  - [ ] Xử lý lỗi IO khi ghi file (ổ đĩa đầy, bị khóa quyền write) và ghi log qua `FShotLog`.
+  - [x] Tích hợp tên file gợi ý mặc định sinh từ `FileNamePattern` (ví dụ: `fshot_2026-09-15-163000.png`) vào `FilePickerSaveOptions.SuggestedFileName` thay vì chuỗi cứng.
+  - [x] Cấu hình đầy đủ bộ lọc định dạng file hợp lệ trong hộp thoại (`*.png`, `*.jpg`, `*.jpeg`).
+  - [x] Xử lý an toàn khi người dùng nhấn Hủy/Cancel trên Save Dialog: dispatch `ExportCompleted false`, không crash, giữ trạng thái canvas hoặc đóng theo cấu hình.
+  - [x] Xử lý lỗi IO khi ghi file (ổ đĩa đầy, bị khóa quyền write) và ghi log qua `FShotLog`.
   - [ ] Verify runtime mở Save As dialog, lưu file vào thư mục tùy chọn và xác nhận ảnh xuất hoàn tất trên Windows.
 - [ ] **P1.26** Sao chép nhanh vào Windows Clipboard dạng PNG (`FR-OUT-05`).
   - [x] Phím tắt `Ctrl+C`, nút Copy trên toolbar và click ngoài vùng chọn khi có annotations phát `StartExport CopyToClipboard`.

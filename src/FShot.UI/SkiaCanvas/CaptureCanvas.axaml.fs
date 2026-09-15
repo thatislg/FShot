@@ -671,31 +671,110 @@ type CaptureCanvas() as this =
                 try
                     let exportBitmap = SceneComposer.renderExport result state.Selection (committedAnnotations state)
                     match target with
-                    | SaveToFile _ ->
-                        let options = FilePickerSaveOptions()
-                        options.SuggestedFileName <- "fshot_capture.png"
-                        let pngType = FilePickerFileType("PNG")
-                        pngType.Patterns <- ResizeArray["*.png"]
-                        let jpgType = FilePickerFileType("JPEG")
-                        jpgType.Patterns <- ResizeArray["*.jpg"; "*.jpeg"]
-                        options.FileTypeChoices <- ResizeArray[ pngType; jpgType ]
-                        let! file = w.StorageProvider.SaveFilePickerAsync(options) |> Async.AwaitTask
-                        match file with
-                        | null ->
-                            FShotLog.write "[CaptureCanvas] Save cancelled by user"
-                            Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted false) |> ignore)
-                        | f ->
-                            let path = f.Path.AbsolutePath
+                    | SaveToFile (Some specifiedPath) ->
+                        // Lưu tức thì không hiện dialog khi đường dẫn đã được chỉ định (FR-OUT-02)
+                        let defaultFolder =
+                            let pictures = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)
+                            if String.IsNullOrWhiteSpace pictures then
+                                Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+                            else
+                                Path.Combine(pictures, "Screenshots")
+
+                        let resolvedPath = state.Config.SaveOptions.ResolveSavePath(Some specifiedPath, defaultFolder, DateTime.Now)
+                        let dir = Path.GetDirectoryName(resolvedPath)
+                        if not (String.IsNullOrEmpty dir) && not (Directory.Exists dir) then
+                            Directory.CreateDirectory(dir) |> ignore
+
+                        let format =
+                            if resolvedPath.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                               resolvedPath.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) then
+                                SKEncodedImageFormat.Jpeg
+                            else
+                                SKEncodedImageFormat.Png
+
+                        let quality = state.Config.SaveOptions.NormalizedJpegQuality
+                        use data = exportBitmap.Encode(format, quality)
+                        use stream = File.Create(resolvedPath)
+                        data.SaveTo(stream)
+                        stream.Flush()
+                        FShotLog.write (sprintf "[CaptureCanvas] Instant save succeeded: %s" resolvedPath)
+                        Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted true) |> ignore)
+
+                    | SaveToFile None ->
+                        // Nếu config đã có sẵn Path cố định thì lưu tức thì (FR-OUT-02)
+                        match state.Config.SaveOptions.Path with
+                        | Some configuredPath when not (String.IsNullOrWhiteSpace configuredPath) ->
+                            let defaultFolder =
+                                let pictures = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)
+                                if String.IsNullOrWhiteSpace pictures then
+                                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+                                else
+                                    Path.Combine(pictures, "Screenshots")
+
+                            let resolvedPath = state.Config.SaveOptions.ResolveSavePath(Some configuredPath, defaultFolder, DateTime.Now)
+                            let dir = Path.GetDirectoryName(resolvedPath)
+                            if not (String.IsNullOrEmpty dir) && not (Directory.Exists dir) then
+                                Directory.CreateDirectory(dir) |> ignore
+
                             let format =
-                                if path.ToLowerInvariant().EndsWith(".jpg") || path.ToLowerInvariant().EndsWith(".jpeg") then
+                                if resolvedPath.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                                   resolvedPath.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) then
                                     SKEncodedImageFormat.Jpeg
                                 else
                                     SKEncodedImageFormat.Png
-                            use data = exportBitmap.Encode(format, 100)
-                            use stream = File.OpenWrite(path)
+
+                            let quality = state.Config.SaveOptions.NormalizedJpegQuality
+                            use data = exportBitmap.Encode(format, quality)
+                            use stream = File.Create(resolvedPath)
                             data.SaveTo(stream)
-                            FShotLog.write (sprintf "[CaptureCanvas] Saved to %s" path)
+                            stream.Flush()
+                            FShotLog.write (sprintf "[CaptureCanvas] Instant save (from config) succeeded: %s" resolvedPath)
                             Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted true) |> ignore)
+
+                        | _ ->
+                            // Fallback Save As Dialog (FR-OUT-04)
+                            let options = FilePickerSaveOptions()
+                            let suggestedName = state.Config.SaveOptions.ResolveFileName(DateTime.Now)
+                            options.SuggestedFileName <- suggestedName
+
+                            let defaultPictures = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)
+                            if not (String.IsNullOrWhiteSpace defaultPictures) && Directory.Exists defaultPictures then
+                                let! folder = w.StorageProvider.TryGetFolderFromPathAsync(defaultPictures) |> Async.AwaitTask
+                                if not (isNull folder) then
+                                    options.SuggestedStartLocation <- folder
+
+                            let pngType = FilePickerFileType("PNG Image (*.png)")
+                            pngType.Patterns <- ResizeArray[ "*.png" ]
+                            let jpgType = FilePickerFileType("JPEG Image (*.jpg; *.jpeg)")
+                            jpgType.Patterns <- ResizeArray[ "*.jpg"; "*.jpeg" ]
+                            options.FileTypeChoices <- ResizeArray[ pngType; jpgType ]
+
+                            let! file = w.StorageProvider.SaveFilePickerAsync(options) |> Async.AwaitTask
+                            match file with
+                            | null ->
+                                FShotLog.write "[CaptureCanvas] Save cancelled by user"
+                                Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted false) |> ignore)
+                            | f ->
+                                let localPath =
+                                    match f.TryGetLocalPath() with
+                                    | null | "" ->
+                                        if f.Path.IsFile then f.Path.LocalPath else f.Path.ToString()
+                                    | p -> p
+
+                                let format =
+                                    if localPath.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                                       localPath.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) then
+                                        SKEncodedImageFormat.Jpeg
+                                    else
+                                        SKEncodedImageFormat.Png
+
+                                let quality = state.Config.SaveOptions.NormalizedJpegQuality
+                                use data = exportBitmap.Encode(format, quality)
+                                use! stream = f.OpenWriteAsync() |> Async.AwaitTask
+                                data.SaveTo(stream)
+                                stream.Flush()
+                                FShotLog.write (sprintf "[CaptureCanvas] Saved to %s" localPath)
+                                Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted true) |> ignore)
                     | CopyToClipboard ->
                         let clipboard = w.Clipboard
                         if clipboard <> null then

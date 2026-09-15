@@ -378,7 +378,7 @@ module OverlayStateLogic =
                   Width = state.Capture.VirtualBounds.Width
                   Height = state.Capture.VirtualBounds.Height }
             let newState = { state with Selection = { Selection.Empty with State = SelectionState.Selected; Bounds = fullScreen } }
-            startExport (ExportTarget.SaveToFile None) newState
+            startExport (ExportTarget.SaveToFile state.Config.SaveOptions.Path) newState
 
         | SelectionState.Idle, _, Copy ->
             let fullScreen =
@@ -496,7 +496,7 @@ module OverlayStateLogic =
             emptyResult (performRedo state)
 
         | SelectionState.Selected, NoAnnotation, ToolbarAction SaveAction ->
-            startExport (ExportTarget.SaveToFile None) state
+            startExport (ExportTarget.SaveToFile state.Config.SaveOptions.Path) state
 
         | SelectionState.Selected, NoAnnotation, ToolbarAction CopyAction ->
             startExport ExportTarget.CopyToClipboard state
@@ -511,7 +511,7 @@ module OverlayStateLogic =
             emptyResult (performRedo state)
 
         | SelectionState.Selected, NoAnnotation, Save ->
-            startExport (ExportTarget.SaveToFile None) state
+            startExport (ExportTarget.SaveToFile state.Config.SaveOptions.Path) state
 
         | SelectionState.Selected, NoAnnotation, Copy ->
             startExport ExportTarget.CopyToClipboard state

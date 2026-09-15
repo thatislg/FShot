@@ -23,6 +23,9 @@ type ConfigSnapshot = {
 
     /// Có đóng overlay ngay sau khi xuất thành công không.
     CloseAfterExport: bool
+
+    /// Tùy chọn lưu file mặc định (đường dẫn, mẫu tên file, format, chất lượng JPEG).
+    SaveOptions: SaveOptions
 } with
     /// Cấu hình mặc định cho MVP.
     static member Default = {
@@ -32,4 +35,5 @@ type ConfigSnapshot = {
         DefaultFontSize = 14.0
         HistoryLimit = HistoryStack.DefaultLimit
         CloseAfterExport = true
+        SaveOptions = SaveOptions.Default
     }
