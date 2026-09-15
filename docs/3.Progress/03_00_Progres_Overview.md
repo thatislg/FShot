@@ -1,8 +1,8 @@
 # F-Shot Master Progress Tracking
 
-- **Cập nhật gần nhất:** 2026-09-14
-- **Tiến độ tổng quan:** `[ 32 / 84 ] Tasks hoàn thành (~38.1%)` (Phase 0 PoC đã verify xong; Epic 1 P1.01–P1.04, Epic 2 P1.05–P1.11, Epic 2.5 E2.5.01–E2.5.05, và Epic 3 P1.12–P1.20 đã hoàn thiện)
-- **Mục tiêu hiện tại:** Tiếp tục Epic 4: Undo/Redo toolbar (P1.21–P1.23).
+- **Cập nhật gần nhất:** 2026-09-15
+- **Tiến độ tổng quan:** `[ 33 / 84 ] Tasks hoàn thành (~39.3%)` (Phase 0 PoC đã verify xong; Epic 1 P1.01–P1.04, Epic 2 P1.05–P1.11, Epic 2.5 E2.5.01–E2.5.05, Epic 3 P1.12–P1.20, và Epic 4 P1.21–P1.23 đã hoàn thiện)
+- **Mục tiêu hiện tại:** Tiếp tục Epic 5: Xuất dữ liệu & CLI (P1.24–P1.30).
 
 ---
 
@@ -11,7 +11,7 @@
 | Phase | Mục tiêu | Trạng thái | Hoàn thành |
 | :--- | :--- | :---: | :---: |
 | **Phase 0: PoC** | Khung Solution, Screen Capture, Overlay Canvas, đo 60 FPS | **DONE** | **8 / 8** (đã verify trên desktop Windows) |
-| **Phase 1: MVP Core** | Bounding box, 9 Annotation tools, Undo/Redo, Save/Clipboard | **IN PROGRESS** | 24 / 29 (~83%) |
+| **Phase 1: MVP Core** | Bounding box, 9 Annotation tools, Undo/Redo, Save/Clipboard | **IN PROGRESS** | 25 / 29 (~86%) |
 | **Phase 2: Windows v1.0** | Tray, Hotkeys, Real Capture, Config UI, Pin Widget, Advanced tools | **PENDING** | 0 / 39 (0%) |
 | **Phase 3: Advanced** | Imgur upload, Snap-to-grid, Tùy biến nâng cao | **PENDING** | 0 / 8 (0%) |
 
@@ -207,10 +207,12 @@
   - [x] Tạo bộ icon SVG Kawaii Lite trong `docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii_lite/` (9 tool: Selection, Pencil, Line, Arrow, Rectangle, Circle, Marker, Text, Pixelate).
   - [x] Tạo module `src/FShot.UI/SkiaCanvas/ToolbarIcons.fs` chứa path data và màu sắc cho từng tool.
   - [x] Cập nhật `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`: thay thế vẽ chữ bằng vẽ icon geometry qua `StreamGeometry.Parse`, cập nhật màu toolbar nền kem, viền xám, active accent xanh.
-  - [x] Thêm visual feedback active tool: nền xanh + viền xanh dày 2px, bo góc 6px.
+  - [x] Sửa transform matrix: icon về đúng giữa toolbar (scale trước, translate sau); fix icon bị lệch về góc màn hình (~2 cm).
+  - [x] Thêm visual feedback active tool: nền xanh #38BDF8 + viền xanh dương đậm #1D4ED8 dày 2px, bo góc 6px.
   - [x] Giữ layout và hit-test toolbar hiện tại; toolbar vẫn bám quanh capture region và tự chuyển hướng bottom/top/left/right khi vùng chọn sát mép.
-  - [x] Build và chạy tests: 167 Core + 21 Skia + 1 UI pass.
+  - [x] Build và chạy tests: 167 Core + 21 Skia + 3 UI pass.
   - [ ] Hover visual (nền vàng bơ nhạt) cần track mouse tách biệt, thuộc nợ kỹ thuật UI.
+  - [ ] Tích hợp nút Undo/Redo/Copy/Save/Cancel trên toolbar (hiện chỉ có 10 tool annotation).
 
 ### Epic 5: Xuất dữ liệu & CLI
 - [ ] **P1.24** Lưu file ổ cứng `Ctrl+S` kèm cấu hình tên file ngày tháng (`FR-OUT-01/02/03`).
@@ -315,6 +317,7 @@
 - **P1.03:** `docs/3.Progress/03_02_P1.03_Design_Report.md` (thiết kế + triển khai Overlay State Machine)
 - **P1.05:** `docs/3.Progress/03_02_P1.05_Design_Report.md` (thiết kế + triển khai Dimming Overlay)
 - **P1.12:** `docs/3.Progress/03_02_P1.12_Report.md` (triển khai Pencil + toolbar tạm)
+- **P1.23:** `docs/3.Progress/03_02_P1.23_Report.md` (triển khai toolbar với SVG icons, transform fix, màu sắc design tokens)
 
 ---
 

@@ -148,16 +148,17 @@ module Toolbar =
         (tb: Avalonia.Rect)
         (currentTool: ToolKind) =
 
-        // Màu theo Design Tokens chuẩn Kawaii Claymorphism.
-        let bgColor = Avalonia.Media.Color.FromRgb(0xFFuy, 0xFDuy, 0xF9uy)     // BaseContainer
-        let borderColor = Avalonia.Media.Color.FromRgb(0xE2uy, 0xE8uy, 0xF0uy) // BorderLight
-        let shadowColor = Avalonia.Media.Color.FromArgb(0x1Auy, 0uy, 0uy, 0uy)   // Shadow 10%
-        let activeAccent = Avalonia.Media.Color.FromRgb(0x38uy, 0xBDuy, 0xF8uy) // ActiveAccent
+        // Màu theo Design Tokens (12_01_DesignTokens.md).
+        let bgColor = Avalonia.Media.Color.FromArgb(0xFAuy, 0xFFuy, 0xFDuy, 0xF9uy)  // Toolbar.BackgroundColor #FFFDF9, opacity 0.98
+        let borderColor = Avalonia.Media.Color.FromRgb(0xE2uy, 0xE8uy, 0xF0uy)          // Toolbar.BorderColor
+        let shadowColor = Avalonia.Media.Color.FromArgb(0x1Auy, 0uy, 0uy, 0uy)         // Toolbar.ShadowColor, opacity 10%
+        let activeAccent = Avalonia.Media.Color.FromRgb(0x38uy, 0xBDuy, 0xF8uy)      // ToolButton.Active.Background #38BDF8
+        let activeBorderColor = Avalonia.Media.Color.FromRgb(0x1Duy, 0x4Euy, 0xD8uy)   // ToolButton.Active.BorderColor #1D4ED8
 
         let backgroundBrush = new SolidColorBrush(bgColor)
         let borderPen = new Pen(new SolidColorBrush(borderColor), 1.0)
         let shadowBrush = new SolidColorBrush(shadowColor)
-        let activeBorderPen = new Pen(new SolidColorBrush(activeAccent), 2.0)
+        let activeBorderPen = new Pen(new SolidColorBrush(activeBorderColor), 2.0)
 
         // Bóng đổ mềm (hộp bóng đơn giản, lệch xuống 4px).
         let shadowRect = Avalonia.Rect(tb.X + 2.0, tb.Y + 4.0, tb.Width, tb.Height)
@@ -194,17 +195,27 @@ module Toolbar =
                 FShotLog.write (sprintf "[Toolbar] Drawing icon %A bounds=%A button=%A" tool bounds buttonRect)
                 use _transform =
                     // Scale từ viewBox 32x32 về kích thước icon trong nút, rồi dịch vào giữa button.
-                    // Thứ tự: scale trước, translate sau (WPF/Avalonia dùng prepend, nên translate * scale).
+                    // Trong Avalonia điểm được nhân theo row-vector (P * M), nên để scale trước rồi translate
+                    // sau thì cần scaleMatrix * translateMatrix.
                     let iconSize = 24.0
                     let iconOffsetX = buttonRect.Center.X - iconSize / 2.0
                     let iconOffsetY = buttonRect.Center.Y - iconSize / 2.0
                     let scale = iconSize / 32.0
                     let scaleMatrix = Matrix.CreateScale(scale, scale)
                     let translateMatrix = Matrix.CreateTranslation(iconOffsetX, iconOffsetY)
-                    context.PushTransform(translateMatrix * scaleMatrix)
+                    context.PushTransform(scaleMatrix * translateMatrix)
 
-                let fillBrush = new SolidColorBrush(ToolbarIcons.fillColor tool)
-                let strokePen = new Pen(new SolidColorBrush(ToolbarIcons.strokeColor tool), 1.5)
+                // Khi active: icon trắng đậm trên nền accent xanh.
+                // Khi default: icon màu nâu đậm (#3D2B1F) theo token ToolButton.Default.IconColor,
+                // với fill 80% và stroke 90% opacity để nổi trên nền toolbar kem trắng.
+                let fillBrush, strokePen =
+                    if isActive then
+                        let white = new SolidColorBrush(ToolbarIcons.activeIconColor)
+                        white, new Pen(white, 1.5)
+                    else
+                        new SolidColorBrush(ToolbarIcons.fillColor tool),
+                        new Pen(new SolidColorBrush(ToolbarIcons.strokeColor tool), 1.5)
+
                 context.DrawGeometry(fillBrush, strokePen, geometry)
             | None ->
                 FShotLog.write (sprintf "[Toolbar] No icon path for tool %A" tool)
