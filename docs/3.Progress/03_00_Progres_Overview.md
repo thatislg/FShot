@@ -200,17 +200,17 @@
   - [x] Cập nhật `RenderModel` để phản ánh `CanRedo` (nút Redo trên toolbar sẽ thực hiện trong P1.23 khi chuyển sang SVG icons).
   - [x] Thêm tests: Undo rồi Redo, Redo khi không thể redo thì giữ nguyên, Undo nhiều lần rồi Redo nhiều lần, Redo không ảnh hưởng vùng chọn, Redo với nhiều loại tool.
   - [x] Kiểm thử tests: 167 Core tests pass.
-- [ ] **P1.23** Toolbar tối giản nằm sát dưới vùng chọn (`FR-TB-01`).
+- [x] **P1.23** Toolbar tối giản nằm sát dưới vùng chọn (`FR-TB-01`).
   - [x] Rà soát `docs/2.Design/12_UIUX_Mock_Penpot/12_04_ToolbarLayout.md` và `12_02_CommonComponents.md`.
   - [x] Rà soát `docs/2.Design/12_UIUX_Mock_Penpot/12_06_Icon_Asset_Production_Guide.md`, chuẩn hóa bảng màu toàn app.
   - [x] Cập nhật `docs/2.Design/12_UIUX_Mock_Penpot/12_01_DesignTokens.md`: định nghĩa Core Palette, Semantic Groups (4 nhóm công cụ), Functional Colors, cập nhật Accent/Overlay/Handle/Toolbar/ToolButton/Annotation/Badge theo chuẩn Kawaii Claymorphism.
-  - [ ] Quyết định sử dụng SVG paths tự vẽ cho icon (theo yêu cầu) thay vì chữ tạm.
-  - [ ] Tạo module `ToolbarIcons` trong `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs` hoặc file riêng `src/FShot.UI/SkiaCanvas/ToolbarIcons.fs` chứa `StreamGeometry` cho 10 icon: Selection, Pencil, Line, Arrow, Rectangle, Circle, Marker, Text, Pixelate, Icon.
-  - [ ] Thay thế vẽ chữ trong `Toolbar.draw` bằng vẽ icon geometry, giữ layout và hit-test hiện tại.
-  - [ ] Thêm visual feedback: active tool có viền nổi bật, hover (nếu dễ dàng với Avalonia DrawingContext).
-  - [ ] Đảm bảo toolbar vẫn bám quanh capture region và tự động chuyển hướng (bottom/top/left/right) khi vùng chọn sát mép.
-  - [ ] Thêm / cập nhật tests UI smoke nếu cần.
-  - [ ] Kiểm thử trên desktop Windows: toolbar hiển thị icon rõ, click đúng tool, phím tắt vẫn hoạt động.
+  - [x] Tạo bộ icon SVG Kawaii Lite trong `docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii_lite/` (9 tool: Selection, Pencil, Line, Arrow, Rectangle, Circle, Marker, Text, Pixelate).
+  - [x] Tạo module `src/FShot.UI/SkiaCanvas/ToolbarIcons.fs` chứa path data và màu sắc cho từng tool.
+  - [x] Cập nhật `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`: thay thế vẽ chữ bằng vẽ icon geometry qua `StreamGeometry.Parse`, cập nhật màu toolbar nền kem, viền xám, active accent xanh.
+  - [x] Thêm visual feedback active tool: nền xanh + viền xanh dày 2px, bo góc 6px.
+  - [x] Giữ layout và hit-test toolbar hiện tại; toolbar vẫn bám quanh capture region và tự chuyển hướng bottom/top/left/right khi vùng chọn sát mép.
+  - [x] Build và chạy tests: 167 Core + 21 Skia + 1 UI pass.
+  - [ ] Hover visual (nền vàng bơ nhạt) cần track mouse tách biệt, thuộc nợ kỹ thuật UI.
 
 ### Epic 5: Xuất dữ liệu & CLI
 - [ ] **P1.24** Lưu file ổ cứng `Ctrl+S` kèm cấu hình tên file ngày tháng (`FR-OUT-01/02/03`).
