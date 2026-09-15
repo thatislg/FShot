@@ -66,6 +66,7 @@ type OverlayEvent =
     | PointerReleased
     | KeyDown of key: string
     | SelectTool of ToolKind
+    | ToolbarAction of ToolbarAction
     | SetColor of Color
     | SetStrokeWidth of StrokeWidth
     | Undo
@@ -478,6 +479,22 @@ module OverlayStateLogic =
         | SelectionState.Selected, NoAnnotation, SetStrokeWidth width ->
             let newStyle = { state.CurrentStyle with StrokeWidth = width }
             emptyResult { state with CurrentStyle = newStyle }
+
+        | SelectionState.Selected, NoAnnotation, ToolbarAction UndoAction ->
+            emptyResult (performUndo state)
+
+        | SelectionState.Selected, NoAnnotation, ToolbarAction RedoAction ->
+            emptyResult (performRedo state)
+
+        | SelectionState.Selected, NoAnnotation, ToolbarAction SaveAction ->
+            startExport (ExportTarget.SaveToFile None) state
+
+        | SelectionState.Selected, NoAnnotation, ToolbarAction CopyAction ->
+            startExport ExportTarget.CopyToClipboard state
+
+        | SelectionState.Selected, NoAnnotation, ToolbarAction CancelAction ->
+            let newState = { state with Selection = Selection.Empty }
+            result [ CloseOverlay ] newState
 
         | SelectionState.Selected, NoAnnotation, Undo ->
             emptyResult (performUndo state)

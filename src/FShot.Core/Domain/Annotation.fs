@@ -50,6 +50,15 @@ type ToolKind =
     | IconTool
     /// Xem tài liệu 04_02_ToolModel.md, mục 2.9.
 
+/// Hành động có thể kích hoạt từ toolbar (ngoài annotation tool).
+/// Không phải ToolKind vì không chuyển đổi công cụ vẽ.
+type ToolbarAction =
+    | UndoAction
+    | RedoAction
+    | CopyAction
+    | SaveAction
+    | CancelAction
+
 /// Tập hợp các thuộc tính hình ảnh chung cho một Annotation.
 /// Thay vì mỗi tool tự lưu màu sắc và độ dày, tất cả các tool dùng chung
 /// một style container để tránh lặp lại dữ liệu và logic.

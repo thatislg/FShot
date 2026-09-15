@@ -48,6 +48,26 @@ module ToolbarIcons =
     let iconTool =
         "M16 5 a11 11 0 0 1 0 22 a11 11 0 0 1 0 -22 z M12 12 h8 v8 h-8 z"
 
+    /// Undo - curved arrow pointing left.
+    let undo =
+        "M10 18 A10 10 0 0 1 20 8 h4 v4 l6 -6 -6 -6 v4 h-4 A14 14 0 0 0 6 18 z"
+
+    /// Redo - curved arrow pointing right.
+    let redo =
+        "M22 18 A10 10 0 0 0 12 8 h-4 v4 l-6 -6 6 -6 v4 h4 A14 14 0 0 1 26 18 z"
+
+    /// Copy - two overlapping rectangles.
+    let copy =
+        "M8 12 h12 v12 h-12 z M12 8 h12 v12 h-2 v-10 h-10 z"
+
+    /// Save - floppy disk / arrow down into tray.
+    let save =
+        "M8 6 h16 a2 2 0 0 1 2 2 v16 a2 2 0 0 1 -2 2 h-16 a2 2 0 0 1 -2 -2 v-16 a2 2 0 0 1 2 -2 z M8 22 h16 v2 h-16 z M12 6 v8 h8 v-8 z"
+
+    /// Cancel - X cross.
+    let cancel =
+        "M8 8 l16 16 M24 8 l-16 16"
+
     let pathFor (tool: FShot.Core.Domain.ToolKind) : string option =
         match tool with
         | FShot.Core.Domain.SelectionTool -> Some selection
@@ -60,6 +80,14 @@ module ToolbarIcons =
         | FShot.Core.Domain.TextTool -> Some text
         | FShot.Core.Domain.PixelateTool -> Some pixelate
         | FShot.Core.Domain.IconTool -> Some iconTool
+
+    let actionPathFor (action: FShot.Core.Domain.ToolbarAction) : string option =
+        match action with
+        | FShot.Core.Domain.UndoAction -> Some undo
+        | FShot.Core.Domain.RedoAction -> Some redo
+        | FShot.Core.Domain.CopyAction -> Some copy
+        | FShot.Core.Domain.SaveAction -> Some save
+        | FShot.Core.Domain.CancelAction -> Some cancel
 
     /// Màu icon mặc định trên nền toolbar kem trắng, theo token ToolButton.Default.IconColor (#3D2B1F).
     let defaultIconColor = Avalonia.Media.Color.FromRgb(0x3Duy, 0x2Buy, 0x1Fuy)

@@ -32,6 +32,7 @@ module Toolbar =
     let toolbarGap = 4.0
     let toolbarPadding = 4.0
     let toolbarOffset = 8.0
+    let groupGap = 12.0
 
     let tools = [
         SelectionTool
@@ -46,18 +47,38 @@ module Toolbar =
         IconTool
     ]
 
+    let actions = [
+        UndoAction
+        RedoAction
+        CopyAction
+        SaveAction
+        CancelAction
+    ]
+
     let toolCount = List.length tools
+    let actionCount = List.length actions
+    let totalItemCount = toolCount + actionCount
+
+    let hasSeparator = actionCount > 0
 
     let sizeHorizontal () =
-        let count = float toolCount
-        let width = count * toolbarButtonSize + (count - 1.0) * toolbarGap + 2.0 * toolbarPadding
+        let count = float totalItemCount
+        let width =
+            float toolCount * toolbarButtonSize + float (toolCount - 1) * toolbarGap
+            + (if hasSeparator then groupGap * 2.0 + 1.0 else 0.0)
+            + float actionCount * toolbarButtonSize + float (actionCount - 1) * toolbarGap
+            + 2.0 * toolbarPadding
         let height = toolbarButtonSize + 2.0 * toolbarPadding
         Avalonia.Size(width, height)
 
     let sizeVertical () =
-        let count = float toolCount
+        let count = float totalItemCount
         let width = toolbarButtonSize + 2.0 * toolbarPadding
-        let height = count * toolbarButtonSize + (count - 1.0) * toolbarGap + 2.0 * toolbarPadding
+        let height =
+            float toolCount * toolbarButtonSize + float (toolCount - 1) * toolbarGap
+            + (if hasSeparator then groupGap * 2.0 + 1.0 else 0.0)
+            + float actionCount * toolbarButtonSize + float (actionCount - 1) * toolbarGap
+            + 2.0 * toolbarPadding
         Avalonia.Size(width, height)
 
     let physicalRect (scale: float) (rect: FShot.Core.Geometry.Rect) = {
@@ -127,26 +148,53 @@ module Toolbar =
             let y = p.Y + p.Height / 2.0 - vSize.Height / 2.0
             Avalonia.Rect(max 0.0 x, max 0.0 y, vSize.Width, vSize.Height)
 
-    let hitTool (tb: Avalonia.Rect) (point: Avalonia.Point) : ToolKind option =
+    type ToolbarHit =
+        | ToolHit of ToolKind
+        | ActionHit of ToolbarAction
+
+    let (|ToolHit|ActionHit|) (hit: ToolbarHit) =
+        match hit with
+        | ToolHit tool -> ToolHit tool
+        | ActionHit action -> ActionHit action
+
+    let hitTool (tb: Avalonia.Rect) (point: Avalonia.Point) : ToolbarHit option =
         if not (tb.Contains point) then
             None
         else
             let isHorizontal = tb.Width >= tb.Height
+            let separatorThickness = 1.0
+            let along =
+                if isHorizontal then point.X - tb.X - toolbarPadding
+                else point.Y - tb.Y - toolbarPadding
+
+            let toolSpan = float toolCount * toolbarButtonSize + float (toolCount - 1) * toolbarGap
+
             let index =
-                if isHorizontal then
-                    int ((point.X - tb.X - toolbarPadding) / (toolbarButtonSize + toolbarGap))
+                if along < toolSpan then
+                    int (along / (toolbarButtonSize + toolbarGap))
+                elif along < toolSpan + groupGap then
+                    -1
+                elif along < toolSpan + groupGap + separatorThickness then
+                    -1
+                elif along < toolSpan + groupGap * 2.0 + separatorThickness then
+                    -1
                 else
-                    int ((point.Y - tb.Y - toolbarPadding) / (toolbarButtonSize + toolbarGap))
+                    let actionStart = toolSpan + groupGap * 2.0 + separatorThickness
+                    int ((along - actionStart) / (toolbarButtonSize + toolbarGap)) + toolCount
 
             if index >= 0 && index < toolCount then
-                Some (List.item index tools)
+                Some (ToolHit (List.item index tools))
+            elif index >= toolCount && index < totalItemCount then
+                Some (ActionHit (List.item (index - toolCount) actions))
             else
                 None
 
     let draw
         (context: DrawingContext)
         (tb: Avalonia.Rect)
-        (currentTool: ToolKind) =
+        (currentTool: ToolKind)
+        (canUndo: bool)
+        (canRedo: bool) =
 
         // Màu theo Design Tokens (12_01_DesignTokens.md).
         let bgColor = Avalonia.Media.Color.FromArgb(0xFAuy, 0xFFuy, 0xFDuy, 0xF9uy)  // Toolbar.BackgroundColor #FFFDF9, opacity 0.98
@@ -168,40 +216,42 @@ module Toolbar =
 
         let isHorizontal = tb.Width >= tb.Height
 
-        tools
-        |> List.iteri (fun i tool ->
-            let (x, y) =
-                if isHorizontal then
-                    (tb.X + toolbarPadding + float i * (toolbarButtonSize + toolbarGap),
-                     tb.Y + toolbarPadding)
+        // Helper tính tọa độ item thứ i, có tách nhóm.
+        let itemXy i =
+            let isAction = i >= toolCount
+            let localIndex = if isAction then i - toolCount else i
+            let separatorThickness = 1.0
+            let offset =
+                if isAction then
+                    float toolCount * (toolbarButtonSize + toolbarGap) + groupGap * 2.0 + separatorThickness
+                    + float localIndex * (toolbarButtonSize + toolbarGap)
                 else
-                    (tb.X + toolbarPadding,
-                     tb.Y + toolbarPadding + float i * (toolbarButtonSize + toolbarGap))
+                    float localIndex * (toolbarButtonSize + toolbarGap)
 
+            if isHorizontal then
+                (tb.X + toolbarPadding + offset, tb.Y + toolbarPadding)
+            else
+                (tb.X + toolbarPadding, tb.Y + toolbarPadding + offset)
+
+        let drawItem (i: int) (pathOpt: string option) (isActive: bool) (enabled: bool) (label: string) =
+            let (x, y) = itemXy i
             let buttonRect = Avalonia.Rect(x, y, toolbarButtonSize, toolbarButtonSize)
-            let isActive = currentTool = tool
 
-            // Hover visual chưa có (cần track mouse tách biệt); hiện chỉ active.
-            if isActive then
+            if isActive && enabled then
                 let activeBg = new SolidColorBrush(activeAccent)
                 let cornerRadius = 6.0f
                 context.FillRectangle(activeBg, buttonRect, cornerRadius)
 
-                // Vẽ viền active ra ngoài button 1px để cả 2px viền nằm trên nền toolbar,
-                // tránh bị nền xanh active làm nhạt màu viền.
                 let borderRect = Avalonia.Rect(buttonRect.X - 1.0, buttonRect.Y - 1.0, buttonRect.Width + 2.0, buttonRect.Height + 2.0)
                 let roundedActiveBorderPen = new Pen(new SolidColorBrush(activeBorderColor), 2.0, lineJoin = PenLineJoin.Round)
                 context.DrawRectangle(null, roundedActiveBorderPen, borderRect, float cornerRadius, float cornerRadius)
 
-            match ToolbarIcons.pathFor tool with
+            match pathOpt with
             | Some pathData ->
                 let geometry = StreamGeometry.Parse(pathData)
                 let bounds = geometry.Bounds
-                FShotLog.write (sprintf "[Toolbar] Drawing icon %A bounds=%A button=%A" tool bounds buttonRect)
+                FShotLog.write (sprintf "[Toolbar] Drawing icon %s bounds=%A button=%A" label bounds buttonRect)
                 use _transform =
-                    // Scale từ viewBox 32x32 về kích thước icon trong nút, rồi dịch vào giữa button.
-                    // Trong Avalonia điểm được nhân theo row-vector (P * M), nên để scale trước rồi translate
-                    // sau thì cần scaleMatrix * translateMatrix.
                     let iconSize = 24.0
                     let iconOffsetX = buttonRect.Center.X - iconSize / 2.0
                     let iconOffsetY = buttonRect.Center.Y - iconSize / 2.0
@@ -210,20 +260,49 @@ module Toolbar =
                     let translateMatrix = Matrix.CreateTranslation(iconOffsetX, iconOffsetY)
                     context.PushTransform(scaleMatrix * translateMatrix)
 
-                // Khi active: icon trắng đậm trên nền accent xanh.
-                // Khi default: icon màu nâu đậm (#3D2B1F) theo token ToolButton.Default.IconColor,
-                // với fill 80% và stroke 90% opacity để nổi trên nền toolbar kem trắng.
-                let fillBrush, strokePen =
-                    if isActive then
-                        let white = new SolidColorBrush(ToolbarIcons.activeIconColor)
-                        white, new Pen(white, 1.5)
+                let iconColor =
+                    if not enabled then
+                        Avalonia.Media.Color.FromArgb(0x66uy, 0x94uy, 0xA3uy, 0xB8uy)
+                    elif isActive then
+                        ToolbarIcons.activeIconColor
                     else
-                        new SolidColorBrush(ToolbarIcons.fillColor tool),
-                        new Pen(new SolidColorBrush(ToolbarIcons.strokeColor tool), 1.5)
+                        ToolbarIcons.defaultIconColor
 
+                let fillBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(0xCCuy, iconColor.R, iconColor.G, iconColor.B))
+                let strokePen = new Pen(new SolidColorBrush(Avalonia.Media.Color.FromArgb(0xE6uy, iconColor.R, iconColor.G, iconColor.B)), 1.5)
                 context.DrawGeometry(fillBrush, strokePen, geometry)
             | None ->
-                FShotLog.write (sprintf "[Toolbar] No icon path for tool %A" tool)
+                FShotLog.write (sprintf "[Toolbar] No icon path for %s" label)
+
+        // Vẽ separator giữa 2 nhóm.
+        let separatorThickness = 1.0
+        let sepOffset = float toolCount * (toolbarButtonSize + toolbarGap) + groupGap
+        let sepColor = Avalonia.Media.Color.FromRgb(0xE2uy, 0xE8uy, 0xF0uy)
+        let sepBrush = new SolidColorBrush(sepColor)
+        let sepLength = toolbarButtonSize + toolbarPadding * 2.0 - 8.0
+        if isHorizontal then
+            let sepX = tb.X + toolbarPadding + sepOffset
+            let sepY = tb.Y + (tb.Height - sepLength) / 2.0
+            context.FillRectangle(sepBrush, Avalonia.Rect(sepX, sepY, separatorThickness, sepLength))
+        else
+            let sepX = tb.X + (tb.Width - sepLength) / 2.0
+            let sepY = tb.Y + toolbarPadding + sepOffset
+            context.FillRectangle(sepBrush, Avalonia.Rect(sepX, sepY, sepLength, separatorThickness))
+
+        tools
+        |> List.iteri (fun i tool ->
+            let isActive = currentTool = tool
+            drawItem i (ToolbarIcons.pathFor tool) isActive true (string tool)
+        )
+
+        actions
+        |> List.iteri (fun i action ->
+            let enabled =
+                match action with
+                | UndoAction -> canUndo
+                | RedoAction -> canRedo
+                | _ -> true
+            drawItem (toolCount + i) (ToolbarIcons.actionPathFor action) false enabled (string action)
         )
 
 /// Helper vẽ preview Pencil trong UI layer.
@@ -558,9 +637,14 @@ type CaptureCanvas() as this =
         match toolbarBounds with
         | Some tb when tb.Contains avPoint ->
             match Toolbar.hitTool tb avPoint with
-            | Some tool ->
-                FShotLog.write (sprintf "[CaptureCanvas] Toolbar click -> SelectTool %A" tool)
-                this.Dispatch(SelectTool tool)
+            | Some hit ->
+                match hit with
+                | Toolbar.ToolHit tool ->
+                    FShotLog.write (sprintf "[CaptureCanvas] Toolbar click -> SelectTool %A" tool)
+                    this.Dispatch(SelectTool tool)
+                | Toolbar.ActionHit action ->
+                    FShotLog.write (sprintf "[CaptureCanvas] Toolbar click -> ToolbarAction %A" action)
+                    this.Dispatch(ToolbarAction action)
             | None ->
                 // Click vào toolbar nhưng không trúng nút; bỏ qua.
                 ()
@@ -745,7 +829,7 @@ type CaptureCanvas() as this =
                     | None -> 1.0
 
                 let tb = Toolbar.bounds scale selection.Bounds this.Bounds.Width this.Bounds.Height
-                Toolbar.draw context tb renderModel.CurrentTool
+                Toolbar.draw context tb renderModel.CurrentTool renderModel.CanUndo renderModel.CanRedo
 
     /// Vẽ vùng chọn và các handle lên overlay.
     member private this.RenderSelectionOverlay(context: DrawingContext, selection: Selection) =
