@@ -49,6 +49,7 @@ type CaptureOverlayWindow() as this =
         // Không dùng Window.Opacity < 1.0 để tránh toàn bộ cửa sổ bị mờ.
         this.Background <- Media.Brushes.Transparent
         this.Opacity <- 1.0
+        this.Cursor <- new Avalonia.Input.Cursor(StandardCursorType.Cross)
 
     /// Mở cửa sổ phủ toàn Virtual Screen và chụp ảnh nền.
     member this.ShowOverlayAsync() =

@@ -522,6 +522,7 @@ type CaptureCanvas() as this =
 
     do
         this.Focusable <- true
+        this.Cursor <- new Avalonia.Input.Cursor(StandardCursorType.Cross)
 
     let mutable captureResult: CaptureResult option = None
     let mutable cachedBitmap: WriteableBitmap option = None
@@ -922,8 +923,34 @@ type CaptureCanvas() as this =
 
         this.Dispatch(PointerMoved(point))
 
-        // Giảm log spam: chỉ log moved khi vùng chọn thay đổi đáng kể.
+        // Cập nhật con trỏ chuột linh hoạt theo vị trí:
         let sel = this.Selection
+        let isInside =
+            point.X >= sel.Bounds.Left && point.X <= sel.Bounds.Right
+            && point.Y >= sel.Bounds.Top && point.Y <= sel.Bounds.Bottom
+
+        let cursor =
+            match sel.State with
+            | Selected | Resizing _ ->
+                match sel.HitTestHandle(point) with
+                | Some TopLeft | Some BottomRight -> new Avalonia.Input.Cursor(StandardCursorType.TopLeftCorner)
+                | Some TopRight | Some BottomLeft -> new Avalonia.Input.Cursor(StandardCursorType.TopRightCorner)
+                | Some Top | Some Bottom -> new Avalonia.Input.Cursor(StandardCursorType.SizeNorthSouth)
+                | Some Left | Some Right -> new Avalonia.Input.Cursor(StandardCursorType.SizeWestEast)
+                | None ->
+                    if isInside then
+                        match overlayState with
+                        | Some s when s.CurrentTool = SelectionTool -> new Avalonia.Input.Cursor(StandardCursorType.SizeAll)
+                        | _ -> new Avalonia.Input.Cursor(StandardCursorType.Cross)
+                    else
+                        new Avalonia.Input.Cursor(StandardCursorType.Cross)
+            | Moving ->
+                new Avalonia.Input.Cursor(StandardCursorType.SizeAll)
+            | _ ->
+                new Avalonia.Input.Cursor(StandardCursorType.Cross)
+        this.Cursor <- cursor
+
+        // Giảm log spam: chỉ log moved khi vùng chọn thay đổi đáng kể.
         if sel.State <> SelectionState.Idle then
             if int sel.Bounds.Width % 20 = 0 || int sel.Bounds.Height % 20 = 0 then
                 FShotLog.write (sprintf "[CaptureCanvas] PointerMoved -> bounds: %A" sel.Bounds)
@@ -938,6 +965,21 @@ type CaptureCanvas() as this =
         this.Dispatch(PointerReleased)
 
         let sel = this.Selection
+        let point = this.ToVirtualPoint(e)
+        let isInside =
+            point.X >= sel.Bounds.Left && point.X <= sel.Bounds.Right
+            && point.Y >= sel.Bounds.Top && point.Y <= sel.Bounds.Bottom
+
+        this.Cursor <-
+            match sel.State with
+            | Selected ->
+                if isInside && (overlayState |> Option.map (fun s -> s.CurrentTool) = Some SelectionTool) then
+                    new Avalonia.Input.Cursor(StandardCursorType.SizeAll)
+                else
+                    new Avalonia.Input.Cursor(StandardCursorType.Cross)
+            | _ ->
+                new Avalonia.Input.Cursor(StandardCursorType.Cross)
+
         match sel.State with
         | Selecting ->
             FShotLog.write (sprintf "[CaptureCanvas] Vùng chọn hoàn tất: %A" sel.Bounds)
@@ -1040,14 +1082,14 @@ type CaptureCanvas() as this =
             )
 
     /// Vẽ dimming layer ngoài vùng chọn.
-    /// Flameshot-style: màu xanh #45b6f7 với alpha 50%.
-    /// Trước khi chọn vùng: toàn màn hình được phủ mờ.
-    /// Sau khi chọn vùng: 4 strips ngoài vùng chọn được phủ mờ; capture region trong suốt.
+    /// Flameshot-style: nền tối trung tính #000000 với alpha ~70% (180/255).
+    /// Trước khi chọn vùng: toàn màn hình được phủ mờ tối êm dịu, không gắt mắt.
+    /// Sau khi chọn vùng: 4 strips ngoài vùng chọn được phủ mờ tối; capture region trong suốt sáng rõ.
     /// Xem 11_09_OverlayStateIntegration.md, mục 5.2.
     member private this.RenderDimming(context: DrawingContext, selectionOption: Selection option) =
         let fullBounds = this.Bounds
-        // #45b6f7 với alpha 128 (~50%).
-        let outerBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(128uy, 69uy, 182uy, 247uy))
+        // Nền tối Flameshot: đen với alpha 180 (khoảng 70.5%).
+        let outerBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(180uy, 0uy, 0uy, 0uy))
 
         match selectionOption with
         | Some selection when selection.State <> SelectionState.Idle ->
@@ -1062,14 +1104,14 @@ type CaptureCanvas() as this =
                         selection.Bounds.Height * scale
                     )
 
-                // Vẽ 4 strips xanh xung quanh vùng chọn.
+                // Vẽ 4 strips đen mờ xung quanh vùng chọn.
                 context.FillRectangle(outerBrush, Rect(0.0, 0.0, fullBounds.Width, selectionRect.Y))
                 context.FillRectangle(outerBrush, Rect(0.0, selectionRect.Bottom, fullBounds.Width, fullBounds.Height - selectionRect.Bottom))
                 context.FillRectangle(outerBrush, Rect(0.0, selectionRect.Y, selectionRect.X, selectionRect.Height))
                 context.FillRectangle(outerBrush, Rect(selectionRect.Right, selectionRect.Y, fullBounds.Width - selectionRect.Right, selectionRect.Height))
             | None -> ()
         | _ ->
-            // Chưa có vùng chọn: dimming xanh toàn màn hình.
+            // Chưa có vùng chọn: dimming tối toàn màn hình.
             context.FillRectangle(outerBrush, fullBounds)
 
     /// Vẽ toolbar đơn giản quanh vùng chọn.
@@ -1088,7 +1130,7 @@ type CaptureCanvas() as this =
                 let tb = Toolbar.bounds scale selection.Bounds this.Bounds.Width this.Bounds.Height
                 Toolbar.draw context tb renderModel.CurrentTool renderModel.CanUndo renderModel.CanRedo
 
-    /// Vẽ vùng chọn và các handle lên overlay.
+    /// Vẽ vùng chọn và các handle lên overlay theo thiết kế Claymorphism / SVG Knob.
     member private this.RenderSelectionOverlay(context: DrawingContext, selection: Selection) =
         match captureResult with
         | Some result ->
@@ -1101,18 +1143,19 @@ type CaptureCanvas() as this =
                     selection.Bounds.Height * scale
                 )
 
-            // Capture region hiển thị desktop gốc rõ; không tô màu che phủ.
-            // Chỉ vẽ viền và handle để đánh dấu vùng chọn.
-            let innerBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(0uy, 0uy, 150uy, 255uy))
-            context.FillRectangle(innerBrush, selectionRect)
+            // Viền ngoài nét liền màu xanh pastel #5FA8D3, độ dày 2.0px.
+            let borderColor = Avalonia.Media.Color.FromRgb(95uy, 168uy, 211uy) // #5fa8d3
+            let outerPen = new Pen(new SolidColorBrush(borderColor), 2.0)
+            context.DrawRectangle(null, outerPen, selectionRect)
 
-            // Border vùng chọn màu trắng dày 2.5px + bóng mờ đen để nổi.
-            let shadowPen = new Pen(Brushes.Black, 5.0)
-            let pen = new Pen(Brushes.White, 2.5)
-            context.DrawRectangle(null, shadowPen, selectionRect)
-            context.DrawRectangle(null, pen, selectionRect)
+            // Viền trong nét đứt: lùi vào 7.0px, nét đứt 10px / 8px bo tròn.
+            if selectionRect.Width > 22.0 && selectionRect.Height > 22.0 then
+                let innerRect = selectionRect.Inflate(-7.0)
+                let dashStyle = new DashStyle([| 10.0; 8.0 |], 0.0)
+                let innerPen = new Pen(new SolidColorBrush(borderColor), 2.0, lineCap = PenLineCap.Round, dashStyle = dashStyle)
+                context.DrawRectangle(null, innerPen, innerRect)
 
-            // Vẽ 8 handle vuông nhỏ khi vùng đã chọn hoặc đang tương tác.
+            // Vẽ 8 knob handle khi vùng đã chọn hoặc đang tương tác.
             let shouldDrawHandles =
                 match selection.State with
                 | Selected
@@ -1121,28 +1164,28 @@ type CaptureCanvas() as this =
                 | _ -> false
 
             if shouldDrawHandles then
-                let handleHalfSize = Selection.HandleSize / 2.0
-                let handleBrush = new SolidColorBrush(Colors.White)
-                let handleShadow = new SolidColorBrush(Colors.Black)
+                let knobRadius = 6.5
+                let shadowBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(90uy, 43uy, 109uy, 153uy)) // #2b6d99 alpha 35%
+                let knobBrush =
+                    let b = new LinearGradientBrush()
+                    b.StartPoint <- RelativePoint(0.2, 0.2, RelativeUnit.Relative)
+                    b.EndPoint <- RelativePoint(0.8, 0.8, RelativeUnit.Relative)
+                    b.GradientStops.Add(GradientStop(Avalonia.Media.Color.FromRgb(191uy, 227uy, 245uy), 0.0)) // #bfe3f5
+                    b.GradientStops.Add(GradientStop(Avalonia.Media.Color.FromRgb(107uy, 183uy, 222uy), 1.0)) // #6bb7de
+                    b
+                let knobPen = new Pen(Brushes.White, 2.5)
+                let highlightBrush = Brushes.White
+
                 for (_, center) in selection.HandleCenters do
-                    let handleRect =
-                        Rect(
-                            center.X * scale - handleHalfSize,
-                            center.Y * scale - handleHalfSize,
-                            Selection.HandleSize,
-                            Selection.HandleSize
-                        )
+                    let cx = center.X * scale
+                    let cy = center.Y * scale
 
-                    let shadowRect =
-                        Rect(
-                            center.X * scale - handleHalfSize + 1.0,
-                            center.Y * scale - handleHalfSize + 1.0,
-                            Selection.HandleSize,
-                            Selection.HandleSize
-                        )
-
-                    context.FillRectangle(handleShadow, shadowRect)
-                    context.FillRectangle(handleBrush, handleRect)
+                    // Drop shadow dưới knob
+                    context.DrawEllipse(shadowBrush, null, Avalonia.Point(cx, cy + 1.8), knobRadius, knobRadius)
+                    // Thân knob gradient có viền trắng 2.5px
+                    context.DrawEllipse(knobBrush, knobPen, Avalonia.Point(cx, cy), knobRadius, knobRadius)
+                    // Điểm phản chiếu ánh sáng trắng (specular highlight)
+                    context.DrawEllipse(highlightBrush, null, Avalonia.Point(cx - 2.0, cy - 2.0), 1.8, 1.8)
         | None -> ()
 
     override this.Render(context: DrawingContext) =

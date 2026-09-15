@@ -1,7 +1,7 @@
 # Báo cáo: Chi tiết Subtask Epic 5 & Tích hợp Toàn diện Bộ Icon Kawaii Claymorphism
 
 - **Ngày thực hiện:** 2026-09-15
-- **Phạm vi:** 
+- **Phạm vi:**
   - Hoàn thiện chi tiết subtask cho Epic 5: Xuất dữ liệu & CLI (P1.24–P1.29) trong tiến độ tổng quan.
   - Tiếp nhận toàn bộ bộ sưu tập 27 vector SVG Kawaii Claymorphism tại `docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/`.
   - Tích hợp và nâng cấp toàn bộ hệ thống biểu tượng thanh công cụ (Toolbar: 10 Annotation Tools + 5 Actions) trong ứng dụng FShot sang giao diện Kawaii Claymorphism đa màu sắc, mềm mại, có vệt phản chiếu (specular highlight) và đường viền đậm nét đặc trưng.
@@ -20,6 +20,7 @@
 ## 2. Chi tiết công việc đã thực hiện
 
 ### 2.1 Chi tiết hóa Subtask Epic 5 trong `03_00_Progres_Overview.md`
+
 - **P1.24 (Lưu file `Ctrl+S`):** Bổ sung subtask phân giải mẫu tên file ngày tháng (`resolveFileName`), lưu tức thì khi có `savePath` cố định (`FR-OUT-02`), mã hóa PNG/JPG và unit tests.
 - **P1.25 (Save As Fallback):** Chuẩn hóa luồng `SaveFilePickerAsync`, sinh `SuggestedFileName` động từ pattern, cấu hình filter đuôi file, bắt lỗi IO và xử lý Cancel.
 - **P1.26 (Sao chép Clipboard PNG):** Chuẩn hóa đưa PNG bytes vào clipboard, bổ sung fallback DIB/Bitmap cho ứng dụng Windows bên thứ ba, tự động đóng overlay theo cấu hình.
@@ -34,27 +35,29 @@
 Trước đây, thanh công cụ sử dụng cơ chế vẽ đơn sắc (tất cả biểu tượng dùng chung màu `#3D2B1F` hoặc `#8A7B70`). Trong đợt cập nhật này, toàn bộ 15 thành phần thanh công cụ đã được chuyển đổi sang hình học vector 32×32 và cơ chế render đa màu đặc trưng phong cách Kawaii Claymorphism:
 
 #### 10 Annotation Tools (Công cụ vẽ & chú thích):
-| Tool | File SVG nguồn | Màu sắc chủ đạo | Đặc trưng trực quan Kawaii Claymorphism |
-|------|---------------|-----------------|----------------------------------------|
-| **SelectionTool** | `selection.svg` | Xám `#9CA3AF` / Trắng `#FFFFFF` | Khung đứt bo tròn 4 góc mềm, con trỏ chuột mập lùn trắng viền nâu kèm vệt highlight. |
-| **PencilTool** | `pencil.svg` | Vàng mật `#FDE047` / Hồng phấn `#F472B6` | Thân bút chì mập ú, đầu gôm hồng kẹo ngọt, ngòi chì gỗ viền đậm nét mượt. |
-| **LineTool** | `line.svg` | Vàng be pastel `#FDE68A` | Thước kẻ bo tròn góc, vạch đo độ dài xinh xắn, chấm tròn điểm nhấn đầu cuối. |
-| **ArrowTool** | `arrow.svg` | Cam san hô `#FB923C` / Trắng `#FFFFFF` | Mũi tên uốn lượn mềm mại thân thiện, điểm nhấn vệt sáng phản chiếu (specular). |
-| **RectangleTool** | `rectangle.svg` | Xanh da trời `#93C5FD` | Khối chữ nhật bo tròn góc lớn phồng như kẹo dẻo, viền nâu hạt dẻ `#3D2B1F`. |
-| **CircleTool** | `circle.svg` | Vàng đào `#FBBF24` | Quả cầu tròn trịa phong cách đất sét nặn clay, đốm sáng bóng góc 45 độ. |
-| **MarkerTool** | `marker.svg` | Xanh bạc hà `#34D399` | Bút dạ quang nắp cài vát chéo, thân hình trụ ngắn bo tròn đáng yêu. |
-| **TextTool** | `text.svg` | Tím oải hương `#C084FC` | Khối chữ "T" mập mạp, các góc bo tròn lớn không góc cạnh sắc nhọn. |
-| **PixelateTool** | `pixelate.svg` | Tím pastel `#C084FC` & Tím đậm `#7C3AED` | Ma trận các ô vuông mosaic so le 2 tone tím phong cách pixel art dễ thương. |
-| **IconTool** | `pin.svg` | Đỏ dâu `#F87171` & Xám bạc `#9CA3AF` | Chiếc đinh ghim bảng đầu tròn phồng, kim ghim kim loại vát nhọn sáng bóng. |
+
+| Tool                    | File SVG nguồn   | Màu sắc chủ đạo                            | Đặc trưng trực quan Kawaii Claymorphism                                                        |
+| ----------------------- | ----------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **SelectionTool** | `selection.svg` | Xám`#9CA3AF` / Trắng `#FFFFFF`            | Khung đứt bo tròn 4 góc mềm, con trỏ chuột mập lùn trắng viền nâu kèm vệt highlight. |
+| **PencilTool**    | `pencil.svg`    | Vàng mật`#FDE047` / Hồng phấn `#F472B6` | Thân bút chì mập ú, đầu gôm hồng kẹo ngọt, ngòi chì gỗ viền đậm nét mượt.      |
+| **LineTool**      | `line.svg`      | Vàng be pastel`#FDE68A`                      | Thước kẻ bo tròn góc, vạch đo độ dài xinh xắn, chấm tròn điểm nhấn đầu cuối.    |
+| **ArrowTool**     | `arrow.svg`     | Cam san hô`#FB923C` / Trắng `#FFFFFF`     | Mũi tên uốn lượn mềm mại thân thiện, điểm nhấn vệt sáng phản chiếu (specular).     |
+| **RectangleTool** | `rectangle.svg` | Xanh da trời`#93C5FD`                        | Khối chữ nhật bo tròn góc lớn phồng như kẹo dẻo, viền nâu hạt dẻ`#3D2B1F`.         |
+| **CircleTool**    | `circle.svg`    | Vàng đào`#FBBF24`                          | Quả cầu tròn trịa phong cách đất sét nặn clay, đốm sáng bóng góc 45 độ.            |
+| **MarkerTool**    | `marker.svg`    | Xanh bạc hà`#34D399`                        | Bút dạ quang nắp cài vát chéo, thân hình trụ ngắn bo tròn đáng yêu.                  |
+| **TextTool**      | `text.svg`      | Tím oải hương`#C084FC`                    | Khối chữ "T" mập mạp, các góc bo tròn lớn không góc cạnh sắc nhọn.                    |
+| **PixelateTool**  | `pixelate.svg`  | Tím pastel`#C084FC` & Tím đậm `#7C3AED` | Ma trận các ô vuông mosaic so le 2 tone tím phong cách pixel art dễ thương.               |
+| **IconTool**      | `pin.svg`       | Đỏ dâu`#F87171` & Xám bạc `#9CA3AF`    | Chiếc đinh ghim bảng đầu tròn phồng, kim ghim kim loại vát nhọn sáng bóng.             |
 
 #### 5 Toolbar Actions (Thao tác thanh công cụ):
-| Action | File SVG nguồn | Màu sắc chủ đạo | Đặc trưng trực quan Kawaii Claymorphism |
-|--------|---------------|-----------------|----------------------------------------|
-| **UndoAction** | `undo.svg` | Xanh dương `#60A5FA` | Mũi tên uốn cong 180° quay về trước, đầu mũi tên to bè mềm mại. |
-| **RedoAction** | `redo.svg` | Tím lavender `#A78BFA` | Mũi tên uốn cong tiến về trước đối xứng, tạo nhịp điệu tương phản màu sắc. |
-| **CopyAction** | `copy.svg` | Trắng kem & Vàng nhạt `#FEF08A` | Hai tờ giấy bo góc xếp chồng lệch, kẹp tài liệu vàng xinh xắn. |
-| **SaveAction** | `save.svg` | Xanh mint `#86EFAC` / Xanh rừng `#15803D` | Đĩa mềm mini 3.5 inch, cửa trượt kim loại trắng có rãnh, nhãn dán kem và dòng kẻ dữ liệu. |
-| **CancelAction** | `cancel.svg` | Đỏ dâu `#F87171` | Nút tròn dấu X phồng bong bóng, vệt sáng góc trên bên trái thể hiện độ bóng 2.5D. |
+
+| Action                 | File SVG nguồn | Màu sắc chủ đạo                          | Đặc trưng trực quan Kawaii Claymorphism                                                                |
+| ---------------------- | --------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **UndoAction**   | `undo.svg`    | Xanh dương`#60A5FA`                       | Mũi tên uốn cong 180° quay về trước, đầu mũi tên to bè mềm mại.                              |
+| **RedoAction**   | `redo.svg`    | Tím lavender`#A78BFA`                      | Mũi tên uốn cong tiến về trước đối xứng, tạo nhịp điệu tương phản màu sắc.              |
+| **CopyAction**   | `copy.svg`    | Trắng kem & Vàng nhạt`#FEF08A`           | Hai tờ giấy bo góc xếp chồng lệch, kẹp tài liệu vàng xinh xắn.                                  |
+| **SaveAction**   | `save.svg`    | Xanh mint`#86EFAC` / Xanh rừng `#15803D` | Đĩa mềm mini 3.5 inch, cửa trượt kim loại trắng có rãnh, nhãn dán kem và dòng kẻ dữ liệu. |
+| **CancelAction** | `cancel.svg`  | Đỏ dâu`#F87171`                          | Nút tròn dấu X phồng bong bóng, vệt sáng góc trên bên trái thể hiện độ bóng 2.5D.          |
 
 ---
 
@@ -117,6 +120,7 @@ docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/
 ## 5. Kết quả kiểm thử & Build
 
 ### 5.1 Kiểm thử tự động (Unit Tests)
+
 ```text
 Test run for FShot.Rendering.Skia.Tests.dll:
   Passed!  - Failed: 0, Passed:  21, Skipped: 0, Total:  21, Duration: 267 ms
@@ -133,5 +137,6 @@ TỔNG CỘNG: 198 / 198 tests PASSED (Tỉ lệ thành công: 100%)
 ```
 
 ### 5.2 Lịch sử Git
+
 - **Commit:** `bd0e30e` (`feat(ui): integrate Kawaii Claymorphism icon set into toolbar rendering and assets`)
 - **Remote:** Đã đẩy thành công lên nhánh `origin/main`.
