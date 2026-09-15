@@ -2,7 +2,7 @@
 
 - **Cập nhật gần nhất:** 2026-09-15
 - **Tiến độ tổng quan:** `[ 35 / 84 ] Tasks hoàn thành (~41.7%)` (Phase 0 PoC đã verify xong; Phase 1 MVP Core P1.01–P1.26 đang triển khai)
-- **Mục tiêu hiện tại:** Tiếp tục Epic 5: Xuất dữ liệu & CLI (P1.24–P1.30).
+- **Mục tiêu hiện tại:** Tiếp tục Epic 5: Xuất dữ liệu & CLI (P1.24–P1.29).
 
 ---
 
@@ -217,16 +217,60 @@
 
 ### Epic 5: Xuất dữ liệu & CLI
 - [ ] **P1.24** Lưu file ổ cứng `Ctrl+S` kèm cấu hình tên file ngày tháng (`FR-OUT-01/02/03`).
-  - [x] `ToolbarAction SaveAction` và phím tắt `Ctrl+S` phát `StartExport(SaveToFile None)`.
-  - [ ] `CaptureCanvas.ExecuteStartExport` mở `SaveFilePickerAsync`, render ảnh qua `SceneComposer.renderExport`, lưu PNG/JPG — **chưa verify runtime**.
+  - [x] Phím tắt `Ctrl+S` và nút Save trên toolbar phát command `StartExport(SaveToFile None)`.
+  - [x] Triển khai `SceneComposer.renderExport` render crop ảnh screenshot gốc theo vùng chọn kèm danh sách annotations đã commit.
+  - [ ] Hoàn thiện tài liệu thiết kế `docs/2.Design/06_Export/06_03_SaveOptions.md` và `docs/2.Design/06_Export/06_05_FileAndClipboard.md`.
+  - [ ] Triển khai hàm phân giải tên file tự động theo mẫu thời gian (`resolveFileName` hỗ trợ `%Y`, `%m`, `%d`, `%H`, `%M`, `%S`) trong `src/FShot.Core/Domain/Export.fs`.
+  - [ ] Triển khai luồng lưu tức thì vào thư mục cố định (`savePath`) không hiện dialog khi đường dẫn đã được chỉ định (`FR-OUT-02`), tự động tạo thư mục nếu chưa tồn tại.
+  - [ ] Hỗ trợ mã hóa định dạng file ảnh xuất PNG và JPG theo phần mở rộng hoặc cấu hình chất lượng `JpegQuality` (`FR-OUT-13`).
+  - [ ] Bổ sung unit tests cho pattern formatting và export resolution trong `tests/FShot.Core.Tests/Domain/ExportTests.fs`.
+  - [ ] Verify runtime lưu file ảnh thực tế trên Windows (kiểm tra file ảnh mở được và đúng vùng chọn kèm annotations).
 - [ ] **P1.25** Hộp thoại Save As Fallback khi chưa cấu hình đường dẫn (`FR-OUT-04`).
-  - [ ] Chưa có cấu hình đường dẫn lưu → cần dùng `StorageProvider.SaveFilePickerAsync` làm fallback và verify.
+  - [x] Tích hợp cơ bản `StorageProvider.SaveFilePickerAsync` trong `CaptureCanvas.axaml.fs`.
+  - [ ] Rà soát đặc tả Save As fallback trong `docs/2.Design/06_Export/06_02_ExportTarget.md`.
+  - [ ] Tích hợp tên file gợi ý mặc định sinh từ `FileNamePattern` (ví dụ: `fshot_2026-09-15_143000.png`) vào `FilePickerSaveOptions.SuggestedFileName` thay vì chuỗi cứng.
+  - [ ] Cấu hình đầy đủ bộ lọc định dạng file hợp lệ trong hộp thoại (`*.png`, `*.jpg`, `*.jpeg`).
+  - [ ] Xử lý an toàn khi người dùng nhấn Hủy/Cancel trên Save Dialog: dispatch `ExportCompleted false`, không crash, giữ trạng thái canvas hoặc đóng theo cấu hình.
+  - [ ] Xử lý lỗi IO khi ghi file (ổ đĩa đầy, bị khóa quyền write) và ghi log qua `FShotLog`.
+  - [ ] Verify runtime mở Save As dialog, lưu file vào thư mục tùy chọn và xác nhận ảnh xuất hoàn tất trên Windows.
 - [ ] **P1.26** Sao chép nhanh vào Windows Clipboard dạng PNG (`FR-OUT-05`).
-  - [x] `ToolbarAction CopyAction` và phím tắt `Ctrl+C` / click ngoài vùng khi có annotations phát `StartExport CopyToClipboard`.
-  - [ ] `ExecuteStartExport` đưa PNG bytes vào clipboard bằng `DataTransfer` + `DataTransferItem` + platform format `PNG` — **chưa verify runtime**.
+  - [x] Phím tắt `Ctrl+C`, nút Copy trên toolbar và click ngoài vùng chọn khi có annotations phát `StartExport CopyToClipboard`.
+  - [x] Mã hóa bitmap vùng chọn + annotations sang mảng byte PNG qua `SKImage.Encode`.
+  - [x] Đưa byte PNG vào clipboard Avalonia bằng `DataTransfer` + `DataTransferItem` với platform format `PNG`.
+  - [ ] Hoàn thiện tài liệu thiết kế `docs/2.Design/06_Export/06_05_FileAndClipboard.md`.
+  - [ ] Thêm fallback hỗ trợ bitmap/DIB format cho clipboard Windows để tương thích tối đa với các ứng dụng Office / Paint / chat app không đọc raw platform PNG.
+  - [ ] Đảm bảo overlay tự động đóng sau khi copy thành công khi `ConfigSnapshot.CloseAfterExport = true`.
+  - [ ] Bổ sung / cập nhật unit tests cho luồng copy trong `tests/FShot.Core.Tests/State/OverlayStateTests.fs`.
+  - [ ] Verify runtime thực tế trên Windows: dán (`Ctrl+V`) ảnh đã copy vào Paint, Word, Telegram/Discord hoặc trình duyệt web.
 - [ ] **P1.27** Parser lệnh dòng lệnh bằng Argu (`fshot gui`, `fshot full`) (`FR-CLI-01/02`).
+  - [ ] Thêm package `Argu` (v6.2.4) vào `src/FShot.UI/FShot.UI.fsproj`.
+  - [ ] Hoàn thiện tài liệu thiết kế CLI trong `docs/2.Design/10_CLI/10_01_CliParser.md` (hoặc `docs/2.Design/06_Export/06_06_CliOutput.md`).
+  - [ ] Khai báo cây tham số dòng lệnh dạng F# Discriminated Union với thuộc tính Argu (`CliArguments.fs`): subcommands `gui`, `full`, `screen` và các tùy chọn `-p/--path`, `-c/--clipboard`, `-d/--delay`, `--version`, `--help`.
+  - [ ] Tích hợp `ArgumentParser.Create<CliArgs>()` trong `src/FShot.UI/Program.fs`, hiển thị thông tin hướng dẫn chuẩn khi gọi `--help` hoặc nhập sai tham số (`FR-CLI-07`).
+  - [ ] Định tuyến thực thi theo subcommand:
+    - [ ] `gui`: khởi chạy Avalonia interactive overlay window (`CaptureOverlayWindow`).
+    - [ ] `full`: chụp trực tiếp toàn màn hình (headless/direct), render xuất thẳng ra file hoặc clipboard theo tham số `-p` / `-c`, thoát app mà không hiện GUI.
+  - [ ] Viết unit tests cho CLI parser với các kịch bản tham số hợp lệ và không hợp lệ trong `tests/FShot.UI.Tests/`.
+  - [ ] Verify chạy các lệnh thực tế từ PowerShell: `fshot gui`, `fshot full -c`, `fshot full -p output.png`, `fshot --help`.
 - [ ] **P1.28** Cấu hình độ trễ chụp (`-d / --delay`) (`FR-CAP-05`).
+  - [x] Định nghĩa trường `DelayMs: int` trong `CaptureRequest` domain model.
+  - [ ] Rà soát `docs/2.Design/02_Capture/02_03_CaptureRequest.md` mục cấu hình độ trễ.
+  - [ ] Ánh xạ tham số `-d` / `--delay <ms>` từ Argu parser vào `CaptureRequest.DelayMs`.
+  - [ ] Triển khai `Async.Sleep delayMs` trước thời điểm gọi `CaptureAdapter.CaptureVirtualScreen()` trong cả chế độ `gui` và `full`.
+  - [ ] Xử lý validation giá trị delay (clamp $\ge 0$, bỏ qua giá trị âm hoặc không hợp lệ).
+  - [ ] Viết unit tests kiểm thử parse delay flag và kiểm tra không block bất thường khi `delay = 0`.
+  - [ ] Verify runtime trên Windows: chạy `fshot gui -d 3000`, xác nhận overlay xuất hiện đúng sau 3 giây chờ để kịp chuẩn bị màn hình.
 - [ ] **P1.29** Lưu trữ và nạp cấu hình cơ bản từ JSON tại `%APPDATA%\FShot\config.json`.
+  - [ ] Hoàn thiện tài liệu thiết kế `docs/2.Design/07_Config/07_02_Schema.md`, `07_03_MvpConfig.md`, `07_04_FileStore.md`.
+  - [ ] Định nghĩa `AppConfig` record trong `src/FShot.Core/Domain/Config.fs` gồm các trường MVP: `SavePath`, `FilenamePattern`, `DrawColor`, `DrawThickness`, `DefaultTool`, `CloseAfterExport` (`FR-CFG-001/003/200/201`).
+  - [ ] Triển khai hàm chuyển đổi giữa `AppConfig` và `ConfigSnapshot` trong `Config.fs`.
+  - [ ] Triển khai `ConfigStore` trong `src/FShot.Platform.Win32/Config/ConfigStore.fs`:
+    - [ ] Xác định đường dẫn thư mục cấu hình `%APPDATA%\FShot\` và file `config.json`.
+    - [ ] Hàm `LoadConfig()`: đọc và parse JSON qua `System.Text.Json`, tự động tạo file với cấu hình mặc định nếu chưa tồn tại, fallback an toàn nếu file JSON lỗi.
+    - [ ] Hàm `SaveConfig(config)`: serialize và ghi file JSON với định dạng indented.
+  - [ ] Tích hợp nạp cấu hình khi khởi động app (`Program.fs` / `App.axaml.fs`), truyền `ConfigSnapshot` vào `OverlayState` và áp dụng `SaveOptions`.
+  - [ ] Bổ sung unit tests cho serialize/deserialize JSON, load/save và fallback config trong `tests/FShot.Core.Tests/Domain/ConfigTests.fs`.
+  - [ ] Verify runtime: xác nhận file `%APPDATA%\FShot\config.json` được tạo tự động khi chạy lần đầu; sửa cấu hình file và xác nhận app nhận đúng thay đổi.
 
 ---
 
@@ -324,6 +368,8 @@
 - **P1.05:** `docs/3.Progress/03_02_P1.05_Design_Report.md` (thiết kế + triển khai Dimming Overlay)
 - **P1.12:** `docs/3.Progress/03_02_P1.12_Report.md` (triển khai Pencil + toolbar tạm)
 - **P1.23:** `docs/3.Progress/03_02_P1.23_Report.md` (triển khai toolbar với SVG icons, transform fix, màu sắc design tokens)
+- **P1.24–P1.26:** `docs/3.Progress/03_10_P1.24_P1.26_Toolbar_Actions_Report.md` (kết nối 5 action buttons trên toolbar)
+- **Epic 5 & Kawaii Icons:** `docs/3.Progress/03_11_Epic5_Subtasks_And_Kawaii_Icons_Report.md` (chi tiết subtask Epic 5 + tích hợp icon Kawaii Arrow, Pixelate, Save)
 
 ---
 

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <g stroke="#3D2B1F" stroke-width="3" rx="4">
+    <!-- Hàng 1 -->
+    <rect x="10" y="10" width="12" height="12" rx="4" fill="#FF7A70"/>
+    <rect x="26" y="10" width="12" height="12" rx="4" fill="#FDE047"/>
+    <rect x="42" y="10" width="12" height="12" rx="4" fill="#86EFAC"/>
+    <!-- Hàng 2 -->
+    <rect x="10" y="26" width="12" height="12" rx="4" fill="#FDE047"/>
+    <rect x="26" y="26" width="12" height="12" rx="4" fill="#86EFAC"/>
+    <rect x="42" y="26" width="12" height="12" rx="4" fill="#7BD5F5"/>
+    <!-- Hàng 3 -->
+    <rect x="10" y="42" width="12" height="12" rx="4" fill="#86EFAC"/>
+    <rect x="26" y="42" width="12" height="12" rx="4" fill="#7BD5F5"/>
+    <rect x="42" y="42" width="12" height="12" rx="4" fill="#FF7A70"/>
+  </g>
+</svg>

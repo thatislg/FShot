@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Thân mũi tên viền đậm -->
+  <path d="M14 46 C 14 30, 24 18, 38 18 L 38 12 C 38 10, 42 8, 45 11 L 56 22 C 58 24, 58 28, 56 30 L 45 41 C 42 44, 38 42, 38 40 L 38 34 C 28 34, 22 40, 20 48 C 19 51, 14 50, 14 46 Z" 
+        fill="#FDE047" stroke="#3D2B1F" stroke-width="4" stroke-linejoin="round" stroke-linecap="round"/>
+  <!-- Điểm nhấn ánh sáng trắng -->
+  <path d="M42 20 L 49 26" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+</svg>

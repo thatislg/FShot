@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Bong bóng thoại -->
+  <path d="M32 10 C 18 10, 8 19, 8 31 C 8 38, 12 44, 18 48 L 16 56 C 15 58, 18 60, 21 58 L 29 52 C 30 52, 31 52, 32 52 C 46 52, 56 43, 56 31 C 56 19, 46 10, 32 10 Z" 
+        fill="#BAE6FD" stroke="#1E293B" stroke-width="4" stroke-linejoin="round"/>
+  <!-- Số 1 tròn béo -->
+  <path d="M28 26 L 33 22 L 35 22 L 35 42 M 28 42 L 40 42" 
+        fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

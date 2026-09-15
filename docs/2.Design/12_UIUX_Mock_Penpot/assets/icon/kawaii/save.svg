@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Thân đĩa mềm -->
+  <rect x="10" y="10" width="44" height="44" rx="8" fill="#86EFAC" stroke="#15803D" stroke-width="4"/>
+  <!-- Cửa trượt kim loại phía trên -->
+  <rect x="20" y="10" width="24" height="16" rx="2" fill="#FFFFFF" stroke="#15803D" stroke-width="3"/>
+  <rect x="34" y="13" width="6" height="10" rx="1" fill="#15803D"/>
+  <!-- Nhãn dán phía dưới -->
+  <rect x="18" y="32" width="28" height="22" rx="3" fill="#FFFDF9" stroke="#15803D" stroke-width="3"/>
+</svg>

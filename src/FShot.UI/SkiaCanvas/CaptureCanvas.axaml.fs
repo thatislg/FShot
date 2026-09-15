@@ -262,17 +262,80 @@ module Toolbar =
                     let translateMatrix = Matrix.CreateTranslation(iconOffsetX, iconOffsetY)
                     context.PushTransform(scaleMatrix * translateMatrix)
 
-                let iconColor =
-                    if not enabled then
-                        Avalonia.Media.Color.FromArgb(0x66uy, 0x94uy, 0xA3uy, 0xB8uy)
-                    elif isActive then
-                        ToolbarIcons.activeIconColor
-                    else
-                        ToolbarIcons.defaultIconColor
+                if label = "ArrowTool" then
+                    let bodyFillColor =
+                        if not enabled then
+                            Avalonia.Media.Color.FromArgb(0x66uy, 0xFDuy, 0xE0uy, 0x47uy)
+                        else
+                            Avalonia.Media.Color.FromArgb(0xFFuy, 0xFDuy, 0xE0uy, 0x47uy)
+                    let bodyStrokeColor =
+                        if not enabled then
+                            Avalonia.Media.Color.FromArgb(0x66uy, 0x3Duy, 0x2Buy, 0x1Fuy)
+                        else
+                            Avalonia.Media.Color.FromArgb(0xFFuy, 0x3Duy, 0x2Buy, 0x1Fuy)
+                    let bodyFill = new SolidColorBrush(bodyFillColor)
+                    let bodyPen = new Pen(new SolidColorBrush(bodyStrokeColor), 1.8, lineCap = PenLineCap.Round, lineJoin = PenLineJoin.Round)
+                    context.DrawGeometry(bodyFill, bodyPen, geometry)
 
-                let fillBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(0xCCuy, iconColor.R, iconColor.G, iconColor.B))
-                let strokePen = new Pen(new SolidColorBrush(Avalonia.Media.Color.FromArgb(0xE6uy, iconColor.R, iconColor.G, iconColor.B)), 1.5)
-                context.DrawGeometry(fillBrush, strokePen, geometry)
+                    let highlightGeometry = StreamGeometry.Parse(ToolbarIcons.arrowHighlight)
+                    let highlightPen = new Pen(new SolidColorBrush(Avalonia.Media.Color.FromArgb(0xEEuy, 0xFFuy, 0xFFuy, 0xFFuy)), 1.4, lineCap = PenLineCap.Round)
+                    context.DrawGeometry(null, highlightPen, highlightGeometry)
+                elif label = "PixelateTool" then
+                    // Kawaii 3x3 jelly mosaic candies (từ docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/pixelate.svg)
+                    let alpha = if not enabled then 0x66uy else 0xFFuy
+                    let strokeColor =
+                        if not enabled then Avalonia.Media.Color.FromArgb(0x66uy, 0x3Duy, 0x2Buy, 0x1Fuy)
+                        else Avalonia.Media.Color.FromArgb(0xFFuy, 0x3Duy, 0x2Buy, 0x1Fuy)
+                    let blockPen = new Pen(new SolidColorBrush(strokeColor), 1.4, lineCap = PenLineCap.Round, lineJoin = PenLineJoin.Round)
+
+                    let colors = [|
+                        [| Avalonia.Media.Color.FromArgb(alpha, 0xFFuy, 0x7Auy, 0x70uy); Avalonia.Media.Color.FromArgb(alpha, 0xFDuy, 0xE0uy, 0x47uy); Avalonia.Media.Color.FromArgb(alpha, 0x86uy, 0xEFuy, 0xACuy) |]
+                        [| Avalonia.Media.Color.FromArgb(alpha, 0xFDuy, 0xE0uy, 0x47uy); Avalonia.Media.Color.FromArgb(alpha, 0x86uy, 0xEFuy, 0xACuy); Avalonia.Media.Color.FromArgb(alpha, 0x7Buy, 0xD5uy, 0xF5uy) |]
+                        [| Avalonia.Media.Color.FromArgb(alpha, 0x86uy, 0xEFuy, 0xACuy); Avalonia.Media.Color.FromArgb(alpha, 0x7Buy, 0xD5uy, 0xF5uy); Avalonia.Media.Color.FromArgb(alpha, 0xFFuy, 0x7Auy, 0x70uy) |]
+                    |]
+
+                    let xs = [| 5.0; 13.0; 21.0 |]
+                    let ys = [| 5.0; 13.0; 21.0 |]
+                    for r in 0 .. 2 do
+                        for c in 0 .. 2 do
+                            let brush = new SolidColorBrush(colors.[r].[c])
+                            context.DrawRectangle(brush, blockPen, Avalonia.Rect(xs.[c], ys.[r], 6.0, 6.0), 2.0, 2.0)
+                elif label = "SaveAction" then
+                    // Kawaii floppy disk (từ docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/save.svg)
+                    let alpha = if not enabled then 0x66uy else 0xFFuy
+                    let strokeColor =
+                        if not enabled then Avalonia.Media.Color.FromArgb(0x66uy, 0x15uy, 0x80uy, 0x3Duy)
+                        else Avalonia.Media.Color.FromArgb(0xFFuy, 0x15uy, 0x80uy, 0x3Duy)
+                    let outlinePen = new Pen(new SolidColorBrush(strokeColor), 1.8, lineCap = PenLineCap.Round, lineJoin = PenLineJoin.Round)
+                    let innerPen = new Pen(new SolidColorBrush(strokeColor), 1.4, lineCap = PenLineCap.Round, lineJoin = PenLineJoin.Round)
+
+                    // 1. Thân đĩa mềm (Mint Green #86EFAC)
+                    let bodyBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0x86uy, 0xEFuy, 0xACuy))
+                    context.DrawRectangle(bodyBrush, outlinePen, Avalonia.Rect(5.0, 5.0, 22.0, 22.0), 4.0, 4.0)
+
+                    // 2. Cửa trượt kim loại trên (Trắng #FFFFFF)
+                    let sliderBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFFuy, 0xFFuy, 0xFFuy))
+                    context.DrawRectangle(sliderBrush, innerPen, Avalonia.Rect(10.0, 5.0, 12.0, 8.0), 1.0, 1.0)
+
+                    // 3. Khe trượt (Xanh rừng #15803D)
+                    let notchBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0x15uy, 0x80uy, 0x3Duy))
+                    context.FillRectangle(notchBrush, Avalonia.Rect(17.0, 6.5, 3.0, 5.0))
+
+                    // 4. Nhãn dán dưới (Kem trắng #FFFDF9)
+                    let labelBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFFuy, 0xFDuy, 0xF9uy))
+                    context.DrawRectangle(labelBrush, innerPen, Avalonia.Rect(9.0, 16.0, 14.0, 11.0), 1.5, 1.5)
+                else
+                    let iconColor =
+                        if not enabled then
+                            Avalonia.Media.Color.FromArgb(0x66uy, 0x94uy, 0xA3uy, 0xB8uy)
+                        elif isActive then
+                            ToolbarIcons.activeIconColor
+                        else
+                            ToolbarIcons.defaultIconColor
+
+                    let fillBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(0xCCuy, iconColor.R, iconColor.G, iconColor.B))
+                    let strokePen = new Pen(new SolidColorBrush(Avalonia.Media.Color.FromArgb(0xE6uy, iconColor.R, iconColor.G, iconColor.B)), 1.5)
+                    context.DrawGeometry(fillBrush, strokePen, geometry)
             | None ->
                 FShotLog.write (sprintf "[Toolbar] No icon path for %s" label)
 
