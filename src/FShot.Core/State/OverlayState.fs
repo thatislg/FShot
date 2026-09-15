@@ -413,10 +413,10 @@ module OverlayStateLogic =
         // --- Selected ---
         | SelectionState.Selected, _, PointerPressed point ->
             match state.Selection.HitTestHandle point with
-            | Some handle ->
+            | Some handle when state.CurrentTool = SelectionTool ->
                 let newSelection = state.Selection.StartResizing handle point
                 emptyResult { state with Selection = newSelection }
-            | None ->
+            | _ ->
                 if not (state.Selection.Contains point) then
                     // Hành vi Flameshot: nếu đã có annotations, click ngoài = copy rồi close overlay.
                     // Nếu chưa có annotations, cho phép reselect bình thường.

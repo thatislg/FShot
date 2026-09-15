@@ -929,9 +929,14 @@ type CaptureCanvas() as this =
             point.X >= sel.Bounds.Left && point.X <= sel.Bounds.Right
             && point.Y >= sel.Bounds.Top && point.Y <= sel.Bounds.Bottom
 
+        let isSelectionTool =
+            match overlayState with
+            | Some s -> s.CurrentTool = SelectionTool
+            | None -> true
+
         let cursor =
             match sel.State with
-            | Selected | Resizing _ ->
+            | Selected when isSelectionTool ->
                 match sel.HitTestHandle(point) with
                 | Some TopLeft | Some BottomRight -> new Avalonia.Input.Cursor(StandardCursorType.TopLeftCorner)
                 | Some TopRight | Some BottomLeft -> new Avalonia.Input.Cursor(StandardCursorType.TopRightCorner)
@@ -939,11 +944,16 @@ type CaptureCanvas() as this =
                 | Some Left | Some Right -> new Avalonia.Input.Cursor(StandardCursorType.SizeWestEast)
                 | None ->
                     if isInside then
-                        match overlayState with
-                        | Some s when s.CurrentTool = SelectionTool -> new Avalonia.Input.Cursor(StandardCursorType.SizeAll)
-                        | _ -> new Avalonia.Input.Cursor(StandardCursorType.Cross)
+                        new Avalonia.Input.Cursor(StandardCursorType.SizeAll)
                     else
                         new Avalonia.Input.Cursor(StandardCursorType.Cross)
+            | Resizing _ ->
+                match sel.HitTestHandle(point) with
+                | Some TopLeft | Some BottomRight -> new Avalonia.Input.Cursor(StandardCursorType.TopLeftCorner)
+                | Some TopRight | Some BottomLeft -> new Avalonia.Input.Cursor(StandardCursorType.TopRightCorner)
+                | Some Top | Some Bottom -> new Avalonia.Input.Cursor(StandardCursorType.SizeNorthSouth)
+                | Some Left | Some Right -> new Avalonia.Input.Cursor(StandardCursorType.SizeWestEast)
+                | None -> new Avalonia.Input.Cursor(StandardCursorType.Cross)
             | Moving ->
                 new Avalonia.Input.Cursor(StandardCursorType.SizeAll)
             | _ ->
@@ -970,10 +980,15 @@ type CaptureCanvas() as this =
             point.X >= sel.Bounds.Left && point.X <= sel.Bounds.Right
             && point.Y >= sel.Bounds.Top && point.Y <= sel.Bounds.Bottom
 
+        let isSelectionTool =
+            match overlayState with
+            | Some s -> s.CurrentTool = SelectionTool
+            | None -> true
+
         this.Cursor <-
             match sel.State with
             | Selected ->
-                if isInside && (overlayState |> Option.map (fun s -> s.CurrentTool) = Some SelectionTool) then
+                if isInside && isSelectionTool then
                     new Avalonia.Input.Cursor(StandardCursorType.SizeAll)
                 else
                     new Avalonia.Input.Cursor(StandardCursorType.Cross)
@@ -1143,6 +1158,11 @@ type CaptureCanvas() as this =
                     selection.Bounds.Height * scale
                 )
 
+            // Capture region hiển thị desktop gốc rõ; bắt buộc fill brush trong suốt (alpha 0)
+            // để Avalonia HitTest nhận diện vùng chọn và bắt trọn các sự kiện chuột khi vẽ annotation.
+            let innerBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(0uy, 0uy, 150uy, 255uy))
+            context.FillRectangle(innerBrush, selectionRect)
+
             // Viền ngoài nét liền màu xanh pastel #5FA8D3, độ dày 2.0px.
             let borderColor = Avalonia.Media.Color.FromRgb(95uy, 168uy, 211uy) // #5fa8d3
             let outerPen = new Pen(new SolidColorBrush(borderColor), 2.0)
@@ -1191,6 +1211,11 @@ type CaptureCanvas() as this =
     override this.Render(context: DrawingContext) =
         base.Render(context)
         let frameStart = Stopwatch.GetTimestamp()
+
+        // Phủ toàn bộ Bounds bằng brush trong suốt để đảm bảo CaptureCanvas luôn bắt 100% sự kiện chuột
+        // trên toàn bộ màn hình, tránh việc click chuột bị lọt xuống ứng dụng phía sau.
+        let hitTestBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(0uy, 0uy, 150uy, 255uy))
+        context.FillRectangle(hitTestBrush, this.Bounds)
 
         // Flameshot-style: cửa sổ trong suốt, không vẽ screenshot stub đè lên desktop.
         // Capture result vẫn được lưu để export pipeline sử dụng.
