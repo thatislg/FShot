@@ -580,6 +580,24 @@ module OverlayStateLogic =
             else
                 emptyResult state
 
+        // --- Undo / Redo (bắt kỳ trạng thái nào, nhưng ưu tiên hủy annotation tạm nếu có) ---
+        | _, NoAnnotation, Undo when state.History.CanUndo ->
+            let newHistory, _ = state.History.Undo()
+            emptyResult { state with History = newHistory }
+
+        | _, NoAnnotation, Redo when state.History.CanRedo ->
+            let newHistory, _ = state.History.Redo()
+            emptyResult { state with History = newHistory }
+
+        | _, (DrawingPreview _ | FreehandDrawing _), (Undo | Redo) ->
+            // Nếu đang vẽ, Undo/Redo không tác dụng; hủy preview để tránh xung đột.
+            emptyResult { state with AnnotationInteraction = NoAnnotation }
+
+        | _, EditingText _, (Undo | Redo) ->
+            // Nếu đang nhập text, Undo/Redo không tác dụng; hủy text input.
+            let newState = cancelAnnotation state
+            result [ HideTextInput ] newState
+
         // --- Tool selection (bắt kỳ trạng thái nào ngoài TextEditing đều chuyển được tool) ---
         | _, NoAnnotation, SelectTool tool ->
             emptyResult { state with CurrentTool = tool }

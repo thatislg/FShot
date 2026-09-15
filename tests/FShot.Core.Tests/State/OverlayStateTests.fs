@@ -841,6 +841,94 @@ let ``Undo và Redo hoạt động sau commit`` () =
     let afterRedo = afterUndo.State |> update Redo
     Assert.Equal(1, List.length afterRedo.State.History.Current.Annotations)
 
+/// Kiểm tra Undo nhiều lần trên nhiều annotation.
+[<Fact>]
+let ``Undo nhiều lần quay lại trạng thái rỗng`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool LineTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool ArrowTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 160.0 160.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 260.0 260.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    Assert.Equal(2, List.length state.History.Current.Annotations)
+    let afterUndo1 = state |> update Undo
+    Assert.Equal(1, List.length afterUndo1.State.History.Current.Annotations)
+    let afterUndo2 = afterUndo1.State |> update Undo
+    Assert.Equal(0, List.length afterUndo2.State.History.Current.Annotations)
+    let afterUndo3 = afterUndo2.State |> update Undo
+    Assert.Equal(0, List.length afterUndo3.State.History.Current.Annotations)
+    Assert.False(afterUndo3.State.History.CanUndo)
+
+/// Kiểm tra Undo khi đang DrawingPreview hủy preview.
+[<Fact>]
+let ``Undo khi đang DrawingPreview hủy preview`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool LineTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+
+    match state.AnnotationInteraction with
+    | DrawingPreview _ -> ()
+    | _ -> Assert.True(false, "Expected DrawingPreview")
+
+    let result = state |> update Undo
+    Assert.Equal(NoAnnotation, result.State.AnnotationInteraction)
+    Assert.Equal(0, List.length result.State.History.Current.Annotations)
+
+/// Kiểm tra Undo khi đang EditingText hủy text input.
+[<Fact>]
+let ``Undo khi đang EditingText hủy text input`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool TextTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+
+    match state.AnnotationInteraction with
+    | EditingText _ -> ()
+    | _ -> Assert.True(false, "Expected EditingText")
+
+    let result = state |> update Undo
+    Assert.Equal(NoAnnotation, result.State.AnnotationInteraction)
+    Assert.Equal(0, List.length result.State.History.Current.Annotations)
+    match result.Commands with
+    | [ HideTextInput ] -> ()
+    | _ -> Assert.True(false, "Expected HideTextInput command")
+
 /// Kiểm tra Selected + Save tạo command StartExport.
 [<Fact>]
 let ``Selected Save tạo StartExport command`` () =

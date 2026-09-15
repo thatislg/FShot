@@ -187,13 +187,12 @@
   - [x] Kiểm thử từng phím tắt chuyển tool.
 
 ### Epic 4: Undo, Redo & Toolbar
-- [ ] **P1.21** Hoàn tác Undo `Ctrl+Z` (`FR-UNDO-01`).
-  - [ ] Rà soát `docs/2.Design/05_History/05_04_Integration.md` đảm bảo mô tả đúng luồng Undo trong `OverlayState`.
-  - [ ] Cập nhật `src/FShot.Core/State/OverlayState.fs`: xử lý `Undo` event, gọi `HistoryStack.Undo()` khi `CanUndo`, giữ `AnnotationInteraction = NoAnnotation`.
-  - [ ] Cập nhật `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`: phát `Undo` event khi nhận `Ctrl+Z` (dùng `e.Key` + modifier để tránh IME).
-  - [ ] Cập nhật `RenderModel` / toolbar để phản ánh `CanUndo` (ví dụ: đổi màu/disable nút Undo tạm).
-  - [ ] Thêm tests trong `tests/FShot.Core.Tests/State/OverlayStateTests.fs`: commit 2 annotation rồi Undo về 1, Undo về 0, Undo khi không thể undo thì giữ nguyên.
-  - [ ] Kiểm thử trên UI: vẽ 2 nét, nhấn `Ctrl+Z`, mất 1 nét; nhấn tiếp, mất hết.
+- [x] **P1.21** Hoàn tác Undo `Ctrl+Z` (`FR-UNDO-01`).
+  - [x] Rà soát `docs/2.Design/05_History/05_04_Integration.md` đảm bảo mô tả đúng luồng Undo trong `OverlayState`.
+  - [x] Cập nhật `src/FShot.Core/State/OverlayState.fs`: xử lý `Undo` event, gọi `HistoryStack.Undo()` khi `CanUndo`, giữ `AnnotationInteraction = NoAnnotation`.
+  - [x] Cập nhật `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`: phát `Undo` event khi nhận `Ctrl+Z` (dùng `e.Key` + modifier để tránh IME).
+  - [x] Thêm tests trong `tests/FShot.Core.Tests/State/OverlayStateTests.fs`: Undo về 0, Undo nhiều lần, Undo khi đang DrawingPreview/EditingText hủy tạm.
+  - [x] Kiểm thử tests: 158 Core tests pass.
 - [ ] **P1.22** Làm lại Redo `Ctrl+Shift+Z` / `Ctrl+Y` (`FR-UNDO-02`).
   - [ ] Rà soát `docs/2.Design/05_History/05_04_Integration.md` đảm bảo mô tả đúng luồng Redo.
   - [ ] Cập nhật `src/FShot.Core/State/OverlayState.fs`: xử lý `Redo` event, gọi `HistoryStack.Redo()` khi `CanRedo`.

@@ -588,6 +588,12 @@ type CaptureCanvas() as this =
         | Key.B -> this.Dispatch(SelectTool PixelateTool)
         | Key.I -> this.Dispatch(SelectTool IconTool)
         | Key.S -> this.Dispatch(SelectTool SelectionTool)
+        | Key.Z when e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.KeyModifiers.HasFlag(KeyModifiers.Shift) ->
+            this.Dispatch(Redo)
+        | Key.Z when e.KeyModifiers.HasFlag(KeyModifiers.Control) ->
+            this.Dispatch(Undo)
+        | Key.Y when e.KeyModifiers.HasFlag(KeyModifiers.Control) ->
+            this.Dispatch(Redo)
         // Ctrl modifier được gửi riêng để state machine biết khi nào đang khóa tỉ lệ.
         // Sử dụng e.Key thay vì modifier string để tránh IME nuốt mất sự kiện Ctrl khi đang gõ tiếng Việt.
         | Key.LeftCtrl
