@@ -1036,6 +1036,103 @@ let ``Selected Copy tạo StartExport CopyToClipboard`` () =
     | [ StartExport CopyToClipboard ] -> ()
     | _ -> Assert.True(false, "Expected StartExport CopyToClipboard")
 
+/// Kiểm tra Selected + KeyDown Escape khi đã có annotations: xóa annotations và vùng chọn, quay về Idle.
+[<Fact>]
+let ``Selected KeyDown Escape có annotations xóa annotations và về Idle`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool LineTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    Assert.Equal(1, List.length state.History.Current.Annotations)
+    Assert.Equal(SelectionState.Selected, state.Selection.State)
+
+    let result = state |> update (KeyDown "Escape")
+    Assert.Equal(SelectionState.Idle, result.State.Selection.State)
+    Assert.Equal(0, List.length result.State.History.Current.Annotations)
+    Assert.False(result.Commands |> List.contains CloseOverlay, "Không được đóng overlay khi đang Selected")
+
+/// Kiểm tra Selected + KeyDown Escape khi chưa có annotations: hủy vùng chọn, quay về Idle.
+[<Fact>]
+let ``Selected KeyDown Escape chưa có annotations hủy vùng và về Idle`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    Assert.Equal(SelectionState.Selected, state.Selection.State)
+    let result = state |> update (KeyDown "Escape")
+    Assert.Equal(SelectionState.Idle, result.State.Selection.State)
+    Assert.False(result.Commands |> List.contains CloseOverlay, "Không được đóng overlay khi đang Selected")
+
+/// Kiểm tra Selected + Cancel xóa annotations và vùng chọn, quay về Idle.
+[<Fact>]
+let ``Selected Cancel xóa annotations và về Idle`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool LineTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    Assert.Equal(1, List.length state.History.Current.Annotations)
+    let result = state |> update Cancel
+    Assert.Equal(SelectionState.Idle, result.State.Selection.State)
+    Assert.Equal(0, List.length result.State.History.Current.Annotations)
+    Assert.False(result.Commands |> List.contains CloseOverlay, "Không được đóng overlay khi đang Selected")
+
+/// Kiểm tra Selected + ToolbarAction Cancel xóa annotations và vùng chọn, quay về Idle.
+[<Fact>]
+let ``Selected ToolbarAction Cancel xóa annotations và về Idle`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool LineTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    Assert.Equal(1, List.length state.History.Current.Annotations)
+    let result = state |> update (ToolbarAction CancelAction)
+    Assert.Equal(SelectionState.Idle, result.State.Selection.State)
+    Assert.Equal(0, List.length result.State.History.Current.Annotations)
+    Assert.False(result.Commands |> List.contains CloseOverlay, "Không được đóng overlay khi đang Selected")
+
 /// Kiểm tra Idle + KeyDown Escape đóng overlay.
 [<Fact>]
 let ``Idle KeyDown Escape đóng overlay`` () =
@@ -1067,25 +1164,6 @@ let ``Selecting KeyDown Escape hủy tạo vùng`` () =
     let result = state |> update (KeyDown "Escape")
     Assert.Equal(SelectionState.Idle, result.State.Selection.State)
     Assert.True(result.State.Selection.Bounds.Width = 0.0)
-
-/// Kiểm tra Selected + KeyDown Escape hủy vùng và đóng overlay.
-[<Fact>]
-let ``Selected KeyDown Escape hủy vùng và đóng overlay`` () =
-    let state =
-        initResult()
-        |> update (PointerPressed(point 100.0 100.0))
-        |> (fun r -> r.State)
-        |> update (PointerMoved(point 300.0 200.0))
-        |> (fun r -> r.State)
-        |> update PointerReleased
-        |> (fun r -> r.State)
-
-    Assert.Equal(SelectionState.Selected, state.Selection.State)
-    let result = state |> update (KeyDown "Escape")
-    Assert.Equal(SelectionState.Idle, result.State.Selection.State)
-    match result.Commands with
-    | [ CloseOverlay ] -> ()
-    | _ -> Assert.True(false, "Expected CloseOverlay command")
 
 /// Kiểm tra Moving + KeyDown Escape khôi phục vùng gốc.
 [<Fact>]

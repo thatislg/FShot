@@ -447,9 +447,19 @@ type CaptureCanvas() as this =
             match cmd with
             | CloseOverlay ->
                 FShotLog.write "[CaptureCanvas] CloseOverlay command"
+                // Xóa state ngay để frame cuối cùng không vẽ annotations hay dimming
+                // trước khi cửa sổ thực sự đóng.
+                overlayState <- None
+                captureResult <- None
+                cachedBitmap |> Option.iter (fun b -> try b.Dispose() with _ -> ())
+                cachedBitmap <- None
+                this.HideTextInput()
+                this.InvalidateVisual()
                 match this.VisualRoot with
                 | :? Window as w ->
-                    try w.Close() with ex -> FShotLog.writeEx "Failed to close overlay window" ex
+                    Dispatcher.UIThread.Post(fun () ->
+                        try w.Close() with ex -> FShotLog.writeEx "Failed to close overlay window" ex
+                    )
                 | _ -> ()
             | StartExport target ->
                 FShotLog.write (sprintf "[CaptureCanvas] StartExport command: %A" target)

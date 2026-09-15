@@ -134,6 +134,16 @@ module OverlayStateLogic =
         || normalized.Contains("ctrl+back")
         || normalized.Contains("control+back")
 
+    /// Xóa annotations và vùng chọn, quay về Idle (màn hình mờ toàn màn hình).
+    let private clearSelectionAndAnnotations (state: OverlayState) : OverlayState =
+        let clearedHistory =
+            if state.History.CanUndo then state.History.Push (Snapshot.Create [])
+            else state.History
+        { state with
+            Selection = Selection.Empty
+            AnnotationInteraction = NoAnnotation
+            History = clearedHistory }
+
     /// Tạo annotation style từ trạng thái hiện tại.
     let private currentAnnotationStyle (state: OverlayState) = {
         Color = state.CurrentStyle.Color
@@ -436,8 +446,7 @@ module OverlayStateLogic =
                     result commands newState
 
         | SelectionState.Selected, NoAnnotation, KeyDown key when isCancelKey key ->
-            let newState = { state with Selection = Selection.Empty }
-            result [ CloseOverlay ] newState
+            emptyResult (clearSelectionAndAnnotations state)
 
         | SelectionState.Selected, NoAnnotation, KeyDown key ->
             let isShift = key.IndexOf("Shift", StringComparison.OrdinalIgnoreCase) >= 0
@@ -493,8 +502,7 @@ module OverlayStateLogic =
             startExport ExportTarget.CopyToClipboard state
 
         | SelectionState.Selected, NoAnnotation, ToolbarAction CancelAction ->
-            let newState = { state with Selection = Selection.Empty }
-            result [ CloseOverlay ] newState
+            emptyResult (clearSelectionAndAnnotations state)
 
         | SelectionState.Selected, NoAnnotation, Undo ->
             emptyResult (performUndo state)
@@ -509,8 +517,7 @@ module OverlayStateLogic =
             startExport ExportTarget.CopyToClipboard state
 
         | SelectionState.Selected, NoAnnotation, Cancel ->
-            let newState = { state with Selection = Selection.Empty }
-            result [ CloseOverlay ] newState
+            emptyResult (clearSelectionAndAnnotations state)
 
         // --- MovingSelection ---
         | SelectionState.Moving, _, KeyDown key when isCancelKey key ->
