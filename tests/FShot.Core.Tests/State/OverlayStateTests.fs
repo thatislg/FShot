@@ -1249,3 +1249,132 @@ let ``IconTool click trong vùng commit placeholder annotation`` () =
             Assert.Equal("", iconId)
         | _ -> Assert.True(false, "Expected Icon annotation")
     | _ -> Assert.True(false, "Expected one annotation")
+
+// --- Regression tests cho P1.21 Undo ---
+
+/// Kiểm tra Undo khi chưa có annotation nào thì giữ nguyên state, không crash.
+[<Fact>]
+let ``Undo khi chưa có annotation giữ nguyên state`` () =
+    let state = initResult()
+    Assert.Equal(0, List.length state.History.Current.Annotations)
+    Assert.False(state.History.CanUndo)
+
+    let result = state |> update Undo
+    Assert.Equal(0, List.length result.State.History.Current.Annotations)
+    Assert.Equal(SelectionState.Idle, result.State.Selection.State)
+    Assert.Equal(NoAnnotation, result.State.AnnotationInteraction)
+
+/// Kiểm tra Undo rồi vẽ annotation mới xóa redo stack (không thể redo nữa).
+[<Fact>]
+let ``Undo rồi vẽ annotation mới xóa redo stack`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool LineTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    Assert.Equal(1, List.length state.History.Current.Annotations)
+    let afterUndo = state |> update Undo
+    Assert.Equal(0, List.length afterUndo.State.History.Current.Annotations)
+    Assert.True(afterUndo.State.History.CanRedo)
+
+    // Vẽ annotation mới sau khi undo → redo stack bị xóa.
+    let afterNewDraw =
+        afterUndo.State
+        |> update (SelectTool ArrowTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 160.0 160.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 260.0 260.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    Assert.Equal(1, List.length afterNewDraw.History.Current.Annotations)
+    Assert.False(afterNewDraw.History.CanRedo)
+
+/// Kiểm tra Undo không làm thay đổi vùng chọn hiện tại.
+[<Fact>]
+let ``Undo không ảnh hưởng vùng chọn`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool LineTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    let expectedBounds = state.Selection.Bounds
+    let afterUndo = state |> update Undo
+    Assert.Equal(expectedBounds, afterUndo.State.Selection.Bounds)
+    Assert.Equal(SelectionState.Selected, afterUndo.State.Selection.State)
+
+/// Kiểm tra Undo hoạt động với nhiều loại tool khác nhau.
+[<Fact>]
+let ``Undo hoạt động với Pencil Text và Icon`` () =
+    // Bước 1: vẽ Pencil.
+    let afterPencil =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool PencilTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    // Bước 2: thêm Text (điểm phải nằm trong vùng chọn 100,100 → 300,200).
+    let afterText =
+        afterPencil
+        |> update (SelectTool TextTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 180.0 140.0))
+        |> (fun r -> r.State)
+        |> update (TextCommitted "Test")
+        |> (fun r -> r.State)
+
+    // Bước 3: thêm Icon (điểm phải nằm trong vùng chọn).
+    let afterIcon =
+        afterText
+        |> update (SelectTool IconTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 220.0 160.0))
+        |> (fun r -> r.State)
+
+    Assert.Equal(3, List.length afterIcon.History.Current.Annotations)
+
+    let undo1 = afterIcon |> update Undo
+    Assert.Equal(2, List.length undo1.State.History.Current.Annotations)
+
+    let undo2 = undo1.State |> update Undo
+    Assert.Equal(1, List.length undo2.State.History.Current.Annotations)
+
+    let undo3 = undo2.State |> update Undo
+    Assert.Equal(0, List.length undo3.State.History.Current.Annotations)
