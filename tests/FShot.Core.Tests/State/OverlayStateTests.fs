@@ -1378,3 +1378,170 @@ let ``Undo hoạt động với Pencil Text và Icon`` () =
 
     let undo3 = undo2.State |> update Undo
     Assert.Equal(0, List.length undo3.State.History.Current.Annotations)
+
+// --- Regression tests cho P1.22 Redo ---
+
+/// Kiểm tra Redo khi chưa có gì để redo thì giữ nguyên state, không crash.
+[<Fact>]
+let ``Redo khi chưa có gì để redo giữ nguyên state`` () =
+    let state = initResult()
+    Assert.False(state.History.CanRedo)
+
+    let result = state |> update Redo
+    Assert.Equal(0, List.length result.State.History.Current.Annotations)
+    Assert.Equal(SelectionState.Idle, result.State.Selection.State)
+    Assert.Equal(NoAnnotation, result.State.AnnotationInteraction)
+
+/// Kiểm tra Undo rồi Redo khôi phục annotation đã xóa.
+[<Fact>]
+let ``Undo rồi Redo khôi phục annotation`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool LineTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    Assert.Equal(1, List.length state.History.Current.Annotations)
+    let afterUndo = state |> update Undo
+    Assert.Equal(0, List.length afterUndo.State.History.Current.Annotations)
+    Assert.True(afterUndo.State.History.CanRedo)
+
+    let afterRedo = afterUndo.State |> update Redo
+    Assert.Equal(1, List.length afterRedo.State.History.Current.Annotations)
+    Assert.False(afterRedo.State.History.CanRedo)
+
+/// Kiểm tra Undo nhiều lần rồi Redo nhiều lần khôi phục đúng thứ tự.
+[<Fact>]
+let ``Undo nhiều lần rồi Redo nhiều lần`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool LineTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool ArrowTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 160.0 160.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 260.0 260.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    Assert.Equal(2, List.length state.History.Current.Annotations)
+
+    let afterUndo1 = state |> update Undo
+    Assert.Equal(1, List.length afterUndo1.State.History.Current.Annotations)
+
+    let afterUndo2 = afterUndo1.State |> update Undo
+    Assert.Equal(0, List.length afterUndo2.State.History.Current.Annotations)
+    Assert.True(afterUndo2.State.History.CanRedo)
+
+    let afterRedo1 = afterUndo2.State |> update Redo
+    Assert.Equal(1, List.length afterRedo1.State.History.Current.Annotations)
+
+    let afterRedo2 = afterRedo1.State |> update Redo
+    Assert.Equal(2, List.length afterRedo2.State.History.Current.Annotations)
+    Assert.False(afterRedo2.State.History.CanRedo)
+
+/// Kiểm tra Redo không làm thay đổi vùng chọn hiện tại.
+[<Fact>]
+let ``Redo không ảnh hưởng vùng chọn`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool LineTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    let expectedBounds = state.Selection.Bounds
+    let afterUndo = state |> update Undo
+    let afterRedo = afterUndo.State |> update Redo
+    Assert.Equal(expectedBounds, afterRedo.State.Selection.Bounds)
+    Assert.Equal(SelectionState.Selected, afterRedo.State.Selection.State)
+
+/// Kiểm tra Redo hoạt động với nhiều loại tool khác nhau.
+[<Fact>]
+let ``Redo hoạt động với Pencil Text và Icon`` () =
+    // Tạo 3 annotation: Pencil, Text, Icon.
+    let afterIcon =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool PencilTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool TextTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 180.0 140.0))
+        |> (fun r -> r.State)
+        |> update (TextCommitted "Test")
+        |> (fun r -> r.State)
+        |> update (SelectTool IconTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 220.0 160.0))
+        |> (fun r -> r.State)
+
+    Assert.Equal(3, List.length afterIcon.History.Current.Annotations)
+
+    let undoAll =
+        afterIcon
+        |> update Undo
+        |> (fun r -> r.State)
+        |> update Undo
+        |> (fun r -> r.State)
+        |> update Undo
+        |> (fun r -> r.State)
+
+    Assert.Equal(0, List.length undoAll.History.Current.Annotations)
+    Assert.True(undoAll.History.CanRedo)
+
+    let redo1 = undoAll |> update Redo
+    Assert.Equal(1, List.length redo1.State.History.Current.Annotations)
+
+    let redo2 = redo1.State |> update Redo
+    Assert.Equal(2, List.length redo2.State.History.Current.Annotations)
+
+    let redo3 = redo2.State |> update Redo
+    Assert.Equal(3, List.length redo3.State.History.Current.Annotations)
+    Assert.False(redo3.State.History.CanRedo)

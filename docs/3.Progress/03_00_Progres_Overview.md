@@ -192,14 +192,14 @@
   - [x] Cập nhật `src/FShot.Core/State/OverlayState.fs`: xử lý `Undo` event, gọi `HistoryStack.Undo()` khi `CanUndo`, giữ `AnnotationInteraction = NoAnnotation`.
   - [x] Cập nhật `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`: phát `Undo` event khi nhận `Ctrl+Z` (dùng `e.Key` + modifier để tránh IME).
   - [x] Thêm tests trong `tests/FShot.Core.Tests/State/OverlayStateTests.fs`: Undo về 0, Undo nhiều lần, Undo khi đang DrawingPreview/EditingText hủy tạm.
-  - [x] Kiểm thử tests: 158 Core tests pass.
-- [ ] **P1.22** Làm lại Redo `Ctrl+Shift+Z` / `Ctrl+Y` (`FR-UNDO-02`).
-  - [ ] Rà soát `docs/2.Design/05_History/05_04_Integration.md` đảm bảo mô tả đúng luồng Redo.
-  - [ ] Cập nhật `src/FShot.Core/State/OverlayState.fs`: xử lý `Redo` event, gọi `HistoryStack.Redo()` khi `CanRedo`.
-  - [ ] Cập nhật `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`: phát `Redo` event khi nhận `Ctrl+Shift+Z` hoặc `Ctrl+Y`.
-  - [ ] Cập nhật `RenderModel` / toolbar để phản ánh `CanRedo`.
-  - [ ] Thêm tests: Undo rồi Redo, Redo khi không thể redo thì giữ nguyên, thao tác mới sau Undo xóa Redo stack.
-  - [ ] Kiểm thử trên UI: vẽ nét, Undo, Redo, nét xuất hiện lại.
+  - [x] Kiểm thử tests: 162 Core tests pass.
+- [x] **P1.22** Làm lại Redo `Ctrl+Shift+Z` / `Ctrl+Y` (`FR-UNDO-02`).
+  - [x] Rà soát `docs/2.Design/05_History/05_04_Integration.md` đảm bảo mô tả đúng luồng Redo.
+  - [x] Cập nhật `src/FShot.Core/State/OverlayState.fs`: xử lý `Redo` event, gọi `HistoryStack.Redo()` khi `CanRedo`.
+  - [x] Cập nhật `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`: phát `Redo` event khi nhận `Ctrl+Shift+Z` hoặc `Ctrl+Y`.
+  - [x] Cập nhật `RenderModel` để phản ánh `CanRedo` (nút Redo trên toolbar sẽ thực hiện trong P1.23 khi chuyển sang SVG icons).
+  - [x] Thêm tests: Undo rồi Redo, Redo khi không thể redo thì giữ nguyên, Undo nhiều lần rồi Redo nhiều lần, Redo không ảnh hưởng vùng chọn, Redo với nhiều loại tool.
+  - [x] Kiểm thử tests: 167 Core tests pass.
 - [ ] **P1.23** Toolbar tối giản nằm sát dưới vùng chọn (`FR-TB-01`).
   - [ ] Rà soát `docs/2.Design/12_UIUX_Mock_Penpot/12_04_ToolbarLayout.md` và `12_02_CommonComponents.md`.
   - [ ] Quyết định sử dụng SVG paths tự vẽ cho icon (theo yêu cầu) thay vì chữ tạm.
