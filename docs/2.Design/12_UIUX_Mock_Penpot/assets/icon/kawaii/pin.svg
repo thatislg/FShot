@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Đầu kim loại cùn -->
+  <path d="M15 22 L 15 28 L 17 28 L 17 22 Z" fill="#94A3B8" stroke="#3D2B1F" stroke-width="1.5"/>
+  <!-- Đầu nhựa ghim phồng béo -->
+  <path d="M10 9 C 10 7, 12 5, 16 5 C 20 5, 22 7, 22 9 C 22 11, 20 12, 19 14 C 21 16, 23 18, 23 20 C 23 22, 21 23, 16 23 C 11 23, 9 22, 9 20 C 9 18, 11 16, 13 14 C 12 12, 10 11, 10 9 Z" 
+        fill="#7BD5F5" stroke="#3D2B1F" stroke-width="2" stroke-linejoin="round"/>
+  <!-- Mặt cười -->
+  <circle cx="14" cy="17" r="0.9" fill="#3D2B1F"/>
+  <circle cx="18" cy="17" r="0.9" fill="#3D2B1F"/>
+  <path d="M15.2 18.8 Q 16 19.8 16.8 18.8" fill="none" stroke="#3D2B1F" stroke-width="0.8" stroke-linecap="round"/>
+</svg>

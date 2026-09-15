@@ -262,69 +262,184 @@ module Toolbar =
                     let translateMatrix = Matrix.CreateTranslation(iconOffsetX, iconOffsetY)
                     context.PushTransform(scaleMatrix * translateMatrix)
 
-                if label = "ArrowTool" then
-                    let bodyFillColor =
-                        if not enabled then
-                            Avalonia.Media.Color.FromArgb(0x66uy, 0xFDuy, 0xE0uy, 0x47uy)
-                        else
-                            Avalonia.Media.Color.FromArgb(0xFFuy, 0xFDuy, 0xE0uy, 0x47uy)
-                    let bodyStrokeColor =
-                        if not enabled then
-                            Avalonia.Media.Color.FromArgb(0x66uy, 0x3Duy, 0x2Buy, 0x1Fuy)
-                        else
-                            Avalonia.Media.Color.FromArgb(0xFFuy, 0x3Duy, 0x2Buy, 0x1Fuy)
-                    let bodyFill = new SolidColorBrush(bodyFillColor)
-                    let bodyPen = new Pen(new SolidColorBrush(bodyStrokeColor), 1.8, lineCap = PenLineCap.Round, lineJoin = PenLineJoin.Round)
-                    context.DrawGeometry(bodyFill, bodyPen, geometry)
+                let alpha = if not enabled then 0x66uy else 0xFFuy
+                let darkWalnut = Avalonia.Media.Color.FromArgb(alpha, 0x3Duy, 0x2Buy, 0x1Fuy)
+                let darkWalnutPen (w: float) = new Pen(new SolidColorBrush(darkWalnut), w, lineCap = PenLineCap.Round, lineJoin = PenLineJoin.Round)
+                let whiteHighlightPen (w: float) = new Pen(new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFFuy, 0xFFuy, 0xFFuy)), w, lineCap = PenLineCap.Round)
 
+                match label with
+                | "SelectionTool" ->
+                    // Khung nét đứt bo tròn 4 góc + 4 nút xoắn tròn xanh bạc hà (#86EFAC)
+                    let dashPen = new Pen(new SolidColorBrush(darkWalnut), 1.8, lineCap = PenLineCap.Round, dashStyle = DashStyle.Dash)
+                    context.DrawRectangle(null, dashPen, Avalonia.Rect(7.0, 7.0, 18.0, 18.0), 4.0, 4.0)
+                    let handleBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0x86uy, 0xEFuy, 0xACuy))
+                    let handlePen = darkWalnutPen 1.4
+                    let pts = [| (7.0, 7.0); (25.0, 7.0); (7.0, 25.0); (25.0, 25.0) |]
+                    for (hx, hy) in pts do
+                        context.DrawEllipse(handleBrush, handlePen, Avalonia.Point(hx, hy), 2.2, 2.2)
+
+                | "PencilTool" ->
+                    // Thân bút đỏ cam (#FF7A70), đầu ngòi gỗ (#FEF3C7), ngòi chì (#3D2B1F), mắt chibi & má hồng (#F472B6)
+                    let bodyBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFFuy, 0x7Auy, 0x70uy))
+                    let bodyGeom = StreamGeometry.Parse("M10 11 C 10 8, 12 6, 16 6 C 20 6, 22 8, 22 11 L 22 19 L 10 19 Z")
+                    context.DrawGeometry(bodyBrush, darkWalnutPen 1.8, bodyGeom)
+
+                    let woodBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFEuy, 0xF3uy, 0xC7uy))
+                    let woodGeom = StreamGeometry.Parse("M10 19 L 16 26 L 22 19 Z")
+                    context.DrawGeometry(woodBrush, darkWalnutPen 1.8, woodGeom)
+
+                    let leadBrush = new SolidColorBrush(darkWalnut)
+                    let leadGeom = StreamGeometry.Parse("M14 23.7 L 16 26 L 18 23.7 Z")
+                    context.DrawGeometry(leadBrush, null, leadGeom)
+
+                    // Mắt chibi
+                    context.DrawEllipse(leadBrush, null, Avalonia.Point(13.5, 12.5), 0.9, 0.9)
+                    context.DrawEllipse(leadBrush, null, Avalonia.Point(18.5, 12.5), 0.9, 0.9)
+                    // Miệng cười
+                    let mouthGeom = StreamGeometry.Parse("M15 14 Q 16 15.2 17 14")
+                    context.DrawGeometry(null, darkWalnutPen 0.8, mouthGeom)
+                    // Má hồng
+                    let blushBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xF4uy, 0x72uy, 0xB6uy))
+                    context.DrawEllipse(blushBrush, null, Avalonia.Point(11.5, 14.0), 0.8, 0.8)
+                    context.DrawEllipse(blushBrush, null, Avalonia.Point(20.5, 14.0), 0.8, 0.8)
+
+                | "LineTool" ->
+                    // Đường thẳng xanh bạc hà (#86EFAC), viền nâu đậm (#3D2B1F), highlight trắng
+                    let basePen = new Pen(new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0x86uy, 0xEFuy, 0xACuy)), 4.8, lineCap = PenLineCap.Round)
+                    context.DrawLine(basePen, Avalonia.Point(8.0, 24.0), Avalonia.Point(24.0, 8.0))
+                    context.DrawLine(darkWalnutPen 1.8, Avalonia.Point(8.0, 24.0), Avalonia.Point(24.0, 8.0))
+                    let whiteBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFFuy, 0xFFuy, 0xFFuy))
+                    context.DrawEllipse(whiteBrush, null, Avalonia.Point(21.0, 11.0), 1.2, 1.2)
+
+                | "ArrowTool" ->
+                    // Thân mũi tên uốn lượn vàng bơ (#FDE047), viền nâu hạt dẻ (#3D2B1F), highlight trắng
+                    let bodyBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFDuy, 0xE0uy, 0x47uy))
+                    context.DrawGeometry(bodyBrush, darkWalnutPen 1.8, geometry)
                     let highlightGeometry = StreamGeometry.Parse(ToolbarIcons.arrowHighlight)
-                    let highlightPen = new Pen(new SolidColorBrush(Avalonia.Media.Color.FromArgb(0xEEuy, 0xFFuy, 0xFFuy, 0xFFuy)), 1.4, lineCap = PenLineCap.Round)
-                    context.DrawGeometry(null, highlightPen, highlightGeometry)
-                elif label = "PixelateTool" then
-                    // Kawaii 3x3 jelly mosaic candies (từ docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/pixelate.svg)
-                    let alpha = if not enabled then 0x66uy else 0xFFuy
-                    let strokeColor =
-                        if not enabled then Avalonia.Media.Color.FromArgb(0x66uy, 0x3Duy, 0x2Buy, 0x1Fuy)
-                        else Avalonia.Media.Color.FromArgb(0xFFuy, 0x3Duy, 0x2Buy, 0x1Fuy)
-                    let blockPen = new Pen(new SolidColorBrush(strokeColor), 1.4, lineCap = PenLineCap.Round, lineJoin = PenLineJoin.Round)
+                    context.DrawGeometry(null, whiteHighlightPen 1.4, highlightGeometry)
 
+                | "RectangleTool" ->
+                    // Khung chữ nhật phồng xanh da trời (#7BD5F5), viền nâu (#3D2B1F), highlight cong trắng
+                    let puffyPen = new Pen(new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0x7Buy, 0xD5uy, 0xF5uy)), 4.2, lineCap = PenLineCap.Round, lineJoin = PenLineJoin.Round)
+                    context.DrawRectangle(null, puffyPen, Avalonia.Rect(5.0, 7.0, 22.0, 18.0), 6.0, 6.0)
+                    context.DrawRectangle(null, darkWalnutPen 1.8, Avalonia.Rect(5.0, 7.0, 22.0, 18.0), 6.0, 6.0)
+                    let hlGeom = StreamGeometry.Parse("M8 10 C 8 8, 10 8, 13 8")
+                    context.DrawGeometry(null, whiteHighlightPen 1.4, hlGeom)
+
+                | "CircleTool" ->
+                    // Bánh donut tròn phồng hồng đào (#F472B6), viền nâu (#3D2B1F), highlight cong trắng
+                    let donutPen = new Pen(new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xF4uy, 0x72uy, 0xB6uy)), 4.2, lineCap = PenLineCap.Round)
+                    context.DrawEllipse(null, donutPen, Avalonia.Point(16.0, 16.0), 10.0, 10.0)
+                    context.DrawEllipse(null, darkWalnutPen 1.8, Avalonia.Point(16.0, 16.0), 10.0, 10.0)
+                    let hlGeom = StreamGeometry.Parse("M12 9 C 14 7.5, 17 7.5, 19 8.5")
+                    context.DrawGeometry(null, whiteHighlightPen 1.4, hlGeom)
+
+                | "MarkerTool" ->
+                    // Thân bút dạ quang béo vàng bơ (#FDE047), cổ bút đen, ngòi vát neon (#FACC15), highlight trắng
+                    let bodyBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFDuy, 0xE0uy, 0x47uy))
+                    context.DrawGeometry(bodyBrush, darkWalnutPen 1.8, geometry)
+                    let neckGeom = StreamGeometry.Parse("M10.5 10.5 L 7.5 13.5 L 5 11 L 8 8 Z")
+                    context.DrawGeometry(new SolidColorBrush(darkWalnut), null, neckGeom)
+                    let tipBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFAuy, 0xCCuy, 0x15uy))
+                    let tipGeom = StreamGeometry.Parse("M6 10 L 4 12 L 3 10 L 4.5 8.5 Z")
+                    context.DrawGeometry(tipBrush, darkWalnutPen 1.2, tipGeom)
+                    let hlGeom = StreamGeometry.Parse("M14 11 L 19 16")
+                    context.DrawGeometry(null, whiteHighlightPen 1.4, hlGeom)
+
+                | "TextTool" ->
+                    // Chữ 'A' béo tròn màu cam đào (#FDBA74), 2 mắt chibi, 2 má hồng xinh (#F472B6)
+                    let bodyBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFDuy, 0xBAuy, 0x74uy))
+                    context.DrawGeometry(bodyBrush, darkWalnutPen 1.8, geometry)
+                    let darkBrush = new SolidColorBrush(darkWalnut)
+                    context.DrawEllipse(darkBrush, null, Avalonia.Point(13.0, 13.0), 0.8, 0.8)
+                    context.DrawEllipse(darkBrush, null, Avalonia.Point(19.0, 13.0), 0.8, 0.8)
+                    let blushBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xF4uy, 0x72uy, 0xB6uy))
+                    context.DrawEllipse(blushBrush, null, Avalonia.Point(11.5, 14.5), 0.7, 0.7)
+                    context.DrawEllipse(blushBrush, null, Avalonia.Point(20.5, 14.5), 0.7, 0.7)
+
+                | "PixelateTool" ->
+                    // 9 viên kẹo dẻo mosaic tròn góc trong bảng màu pastel kẹo ngọt
+                    let blockPen = darkWalnutPen 1.4
                     let colors = [|
                         [| Avalonia.Media.Color.FromArgb(alpha, 0xFFuy, 0x7Auy, 0x70uy); Avalonia.Media.Color.FromArgb(alpha, 0xFDuy, 0xE0uy, 0x47uy); Avalonia.Media.Color.FromArgb(alpha, 0x86uy, 0xEFuy, 0xACuy) |]
                         [| Avalonia.Media.Color.FromArgb(alpha, 0xFDuy, 0xE0uy, 0x47uy); Avalonia.Media.Color.FromArgb(alpha, 0x86uy, 0xEFuy, 0xACuy); Avalonia.Media.Color.FromArgb(alpha, 0x7Buy, 0xD5uy, 0xF5uy) |]
                         [| Avalonia.Media.Color.FromArgb(alpha, 0x86uy, 0xEFuy, 0xACuy); Avalonia.Media.Color.FromArgb(alpha, 0x7Buy, 0xD5uy, 0xF5uy); Avalonia.Media.Color.FromArgb(alpha, 0xFFuy, 0x7Auy, 0x70uy) |]
                     |]
-
                     let xs = [| 5.0; 13.0; 21.0 |]
                     let ys = [| 5.0; 13.0; 21.0 |]
                     for r in 0 .. 2 do
                         for c in 0 .. 2 do
                             let brush = new SolidColorBrush(colors.[r].[c])
                             context.DrawRectangle(brush, blockPen, Avalonia.Rect(xs.[c], ys.[r], 6.0, 6.0), 2.0, 2.0)
-                elif label = "SaveAction" then
-                    // Kawaii floppy disk (từ docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/save.svg)
-                    let alpha = if not enabled then 0x66uy else 0xFFuy
-                    let strokeColor =
-                        if not enabled then Avalonia.Media.Color.FromArgb(0x66uy, 0x15uy, 0x80uy, 0x3Duy)
-                        else Avalonia.Media.Color.FromArgb(0xFFuy, 0x15uy, 0x80uy, 0x3Duy)
-                    let outlinePen = new Pen(new SolidColorBrush(strokeColor), 1.8, lineCap = PenLineCap.Round, lineJoin = PenLineJoin.Round)
-                    let innerPen = new Pen(new SolidColorBrush(strokeColor), 1.4, lineCap = PenLineCap.Round, lineJoin = PenLineJoin.Round)
 
-                    // 1. Thân đĩa mềm (Mint Green #86EFAC)
+                | "IconTool" ->
+                    // Đinh ghim bảng đầu nhựa xanh dương (#7BD5F5) có mặt cười, kim cùn (#94A3B8)
+                    let needleBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0x94uy, 0xA3uy, 0xB8uy))
+                    let needleGeom = StreamGeometry.Parse("M15 22 L 15 28 L 17 28 L 17 22 Z")
+                    context.DrawGeometry(needleBrush, darkWalnutPen 1.4, needleGeom)
+                    let headBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0x7Buy, 0xD5uy, 0xF5uy))
+                    let headGeom = StreamGeometry.Parse("M10 9 C 10 7, 12 5, 16 5 C 20 5, 22 7, 22 9 C 22 11, 20 12, 19 14 C 21 16, 23 18, 23 20 C 23 22, 21 23, 16 23 C 11 23, 9 22, 9 20 C 9 18, 11 16, 13 14 C 12 12, 10 11, 10 9 Z")
+                    context.DrawGeometry(headBrush, darkWalnutPen 1.8, headGeom)
+                    let darkBrush = new SolidColorBrush(darkWalnut)
+                    context.DrawEllipse(darkBrush, null, Avalonia.Point(14.0, 17.0), 0.9, 0.9)
+                    context.DrawEllipse(darkBrush, null, Avalonia.Point(18.0, 17.0), 0.9, 0.9)
+                    let smileGeom = StreamGeometry.Parse("M15.2 18.8 Q 16 19.8 16.8 18.8")
+                    context.DrawGeometry(null, darkWalnutPen 0.8, smileGeom)
+
+                | "UndoAction" ->
+                    // Mũi tên cong móng ngựa tím pastel (#C4B5FD), viền nâu, highlight trắng
+                    let bodyBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xC4uy, 0xB5uy, 0xFDuy))
+                    context.DrawGeometry(bodyBrush, darkWalnutPen 1.8, geometry)
+                    let hlGeom = StreamGeometry.Parse("M8 14 L 11 11.5")
+                    context.DrawGeometry(null, whiteHighlightPen 1.2, hlGeom)
+
+                | "RedoAction" ->
+                    // Mũi tên cong hướng phải tím pastel (#C4B5FD), viền nâu, highlight trắng
+                    let bodyBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xC4uy, 0xB5uy, 0xFDuy))
+                    context.DrawGeometry(bodyBrush, darkWalnutPen 1.8, geometry)
+                    let hlGeom = StreamGeometry.Parse("M24 14 L 21 11.5")
+                    context.DrawGeometry(null, whiteHighlightPen 1.2, hlGeom)
+
+                | "CopyAction" ->
+                    // Hai tờ giấy bo góc kẹp nhau: giấy sau vàng bơ (#FEF9C3), giấy trước kem sáng (#FFFDF9), vạch text vàng
+                    let backBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFEuy, 0xF9uy, 0xC3uy))
+                    context.DrawRectangle(backBrush, darkWalnutPen 1.8, Avalonia.Rect(6.0, 6.0, 14.0, 16.0), 3.0, 3.0)
+                    let frontBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFFuy, 0xFDuy, 0xF9uy))
+                    context.DrawRectangle(frontBrush, darkWalnutPen 1.8, Avalonia.Rect(12.0, 10.0, 14.0, 16.0), 3.0, 3.0)
+                    let linePen = new Pen(new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFDuy, 0xE0uy, 0x47uy)), 1.8, lineCap = PenLineCap.Round)
+                    context.DrawLine(linePen, Avalonia.Point(16.0, 15.0), Avalonia.Point(22.0, 15.0))
+                    context.DrawLine(linePen, Avalonia.Point(16.0, 19.0), Avalonia.Point(22.0, 19.0))
+
+                | "SaveAction" ->
+                    // Đĩa mềm Kawaii xanh bạc hà (#86EFAC), cửa kim loại trắng, khe trượt xanh rừng (#15803D), nhãn dán kem
+                    let forestColor = Avalonia.Media.Color.FromArgb(alpha, 0x15uy, 0x80uy, 0x3Duy)
+                    let outlinePen = new Pen(new SolidColorBrush(forestColor), 1.8, lineCap = PenLineCap.Round, lineJoin = PenLineJoin.Round)
+                    let innerPen = new Pen(new SolidColorBrush(forestColor), 1.4, lineCap = PenLineCap.Round, lineJoin = PenLineJoin.Round)
+
                     let bodyBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0x86uy, 0xEFuy, 0xACuy))
                     context.DrawRectangle(bodyBrush, outlinePen, Avalonia.Rect(5.0, 5.0, 22.0, 22.0), 4.0, 4.0)
 
-                    // 2. Cửa trượt kim loại trên (Trắng #FFFFFF)
                     let sliderBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFFuy, 0xFFuy, 0xFFuy))
-                    context.DrawRectangle(sliderBrush, innerPen, Avalonia.Rect(10.0, 5.0, 12.0, 8.0), 1.0, 1.0)
+                    context.DrawRectangle(sliderBrush, innerPen, Avalonia.Rect(10.0, 5.0, 12.0, 8.0), 1.5, 1.5)
 
-                    // 3. Khe trượt (Xanh rừng #15803D)
-                    let notchBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0x15uy, 0x80uy, 0x3Duy))
+                    let notchBrush = new SolidColorBrush(forestColor)
                     context.FillRectangle(notchBrush, Avalonia.Rect(17.0, 6.5, 3.0, 5.0))
 
-                    // 4. Nhãn dán dưới (Kem trắng #FFFDF9)
                     let labelBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFFuy, 0xFDuy, 0xF9uy))
                     context.DrawRectangle(labelBrush, innerPen, Avalonia.Rect(9.0, 16.0, 14.0, 11.0), 1.5, 1.5)
-                else
+
+                    let decoPen = new Pen(new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0x86uy, 0xEFuy, 0xACuy)), 1.4, lineCap = PenLineCap.Round)
+                    context.DrawLine(decoPen, Avalonia.Point(12.0, 19.0), Avalonia.Point(20.0, 19.0))
+                    context.DrawLine(decoPen, Avalonia.Point(12.0, 22.0), Avalonia.Point(20.0, 22.0))
+
+                | "CancelAction" ->
+                    // Dấu X phồng béo đỏ dâu tây (#FB7185), viền nâu (#3D2B1F), highlight trắng
+                    let xBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFBuy, 0x71uy, 0x85uy))
+                    context.DrawGeometry(xBrush, darkWalnutPen 1.8, geometry)
+                    let whiteBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFFuy, 0xFFuy, 0xFFuy))
+                    context.DrawEllipse(whiteBrush, null, Avalonia.Point(16.0, 14.0), 1.2, 1.2)
+
+                | _ ->
                     let iconColor =
                         if not enabled then
                             Avalonia.Media.Color.FromArgb(0x66uy, 0x94uy, 0xA3uy, 0xB8uy)

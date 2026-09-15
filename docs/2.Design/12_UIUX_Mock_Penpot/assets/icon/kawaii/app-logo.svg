@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Thân máy ảnh / ống kính squircle phồng -->
+  <rect x="8" y="12" width="48" height="42" rx="14" fill="#FFFDF9" stroke="#3D2B1F" stroke-width="4"/>
+  <!-- Đỉnh gù ngắm máy ảnh -->
+  <path d="M22 12 L 25 7 C 25.5 6, 27 5, 28.5 5 L 35.5 5 C 37 5, 38.5 6, 39 7 L 42 12 Z" 
+        fill="#7BD5F5" stroke="#3D2B1F" stroke-width="3.5" stroke-linejoin="round"/>
+  <!-- Vòng tròn ống kính lớn ngoài -->
+  <circle cx="32" cy="34" r="15" fill="#7BD5F5" stroke="#3D2B1F" stroke-width="3.5"/>
+  <!-- Vòng ống kính trong -->
+  <circle cx="32" cy="34" r="9.5" fill="#3D2B1F"/>
+  <circle cx="32" cy="34" r="6" fill="#1E293B"/>
+  <!-- Tia chớp sáng (Flash / Shutter) vàng bơ góc phải -->
+  <path d="M46 8 L 41 17 L 45 17 L 40 25 L 49 14 L 44.5 14 Z" 
+        fill="#FDE047" stroke="#3D2B1F" stroke-width="2" stroke-linejoin="round"/>
+  <!-- Điểm bóng phản chiếu ống kính -->
+  <circle cx="35" cy="31" r="2.2" fill="#FFFFFF"/>
+  <circle cx="29" cy="37" r="1.2" fill="#FFFFFF"/>
+</svg>

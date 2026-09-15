@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Vòng tròn nền chia nửa -->
+  <circle cx="16" cy="16" r="10" fill="#FFFDF9" stroke="#3D2B1F" stroke-width="2"/>
+  <!-- Nửa bên phải đen/tối -->
+  <path d="M16 6 A 10 10 0 0 1 16 26 Z" fill="#3D2B1F"/>
+  <!-- Đốm sáng tượng trưng âm dương Kawaii -->
+  <circle cx="16" cy="11" r="1.5" fill="#3D2B1F"/>
+  <circle cx="16" cy="21" r="1.5" fill="#FFFDF9"/>
+</svg>

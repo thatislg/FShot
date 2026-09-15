@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Tờ giấy sau -->
+  <rect x="6" y="6" width="14" height="16" rx="3" fill="#FEF9C3" stroke="#3D2B1F" stroke-width="2"/>
+  <!-- Tờ giấy trước -->
+  <rect x="12" y="10" width="14" height="16" rx="3" fill="#FFFDF9" stroke="#3D2B1F" stroke-width="2"/>
+  <!-- Vạch văn bản tượng trưng -->
+  <line x1="16" y1="15" x2="22" y2="15" stroke="#FDE047" stroke-width="2" stroke-linecap="round"/>
+  <line x1="16" y1="19" x2="22" y2="19" stroke="#FDE047" stroke-width="2" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <!-- Thân bút dạ quang bầu bĩnh -->
+  <path d="M13 8 L 22 17 C 23.5 18.5, 23.5 21, 22 22.5 L 20 24.5 C 18.5 26, 16 26, 14.5 24.5 L 7.5 17.5 C 6 16, 6 13.5, 7.5 12 Z" 
+        fill="#FDE047" stroke="#3D2B1F" stroke-width="2" stroke-linejoin="round"/>
+  <!-- Cổ bút nhựa đen -->
+  <path d="M10.5 10.5 L 7.5 13.5 L 5 11 L 8 8 Z" fill="#3D2B1F"/>
+  <!-- Ngòi vát dạ quang -->
+  <path d="M6 10 L 4 12 L 3 10 L 4.5 8.5 Z" fill="#FACC15" stroke="#3D2B1F" stroke-width="1.2" stroke-linejoin="round"/>
+  <!-- Vệt sáng phản chiếu -->
+  <path d="M14 11 L 19 16" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"/>
+</svg>

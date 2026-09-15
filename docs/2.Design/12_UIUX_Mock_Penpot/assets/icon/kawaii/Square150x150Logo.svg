@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 150" width="150" height="150">
+  <!-- Nội dung nằm gọn trong Safe Zone 85x85 ở giữa tâm -->
+  <g transform="translate(30, 30)">
+    <!-- Đuôi chim -->
+    <path d="M12 55 C 5 55, 3 60, 5 64 C 9 64, 14 60, 16 57 Z" fill="#7BD5F5" stroke="#3D2B1F" stroke-width="3.5"/>
+    <!-- Thân chim Fshot -->
+    <ellipse cx="45" cy="45" rx="32" ry="33" fill="#7BD5F5" stroke="#3D2B1F" stroke-width="5"/>
+    <path d="M24 51 C 27 65, 39 72, 57 69 C 64 57, 61 48, 57 45 C 41 48, 30 45, 24 51 Z" fill="#FFFDF9"/>
+    <!-- Mắt & Mỏ -->
+    <circle cx="36" cy="32" r="4.2" fill="#3D2B1F"/>
+    <circle cx="34.5" cy="30.5" r="1.5" fill="#FFFFFF"/>
+    <circle cx="58" cy="32" r="4.2" fill="#3D2B1F"/>
+    <circle cx="56.5" cy="30.5" r="1.5" fill="#FFFFFF"/>
+    <ellipse cx="47" cy="38" rx="5.5" ry="3.5" fill="#FB923C" stroke="#3D2B1F" stroke-width="3"/>
+    <!-- Má hồng -->
+    <circle cx="27" cy="40" r="3.8" fill="#F472B6" opacity="0.8"/>
+    <circle cx="67" cy="40" r="3.8" fill="#F472B6" opacity="0.8"/>
+    <!-- Máy ảnh mini cầm tay -->
+    <rect x="37" y="49" width="26" height="19" rx="4.5" fill="#FFFDF9" stroke="#3D2B1F" stroke-width="4"/>
+    <circle cx="50" cy="58.5" r="5.5" fill="#3D2B1F"/>
+    <circle cx="50" cy="58.5" r="2.8" fill="#7BD5F5"/>
+    <rect x="40" y="45.5" width="6" height="4" rx="1" fill="#FF7A70" stroke="#3D2B1F" stroke-width="2"/>
+    <!-- Cánh chim ôm máy ảnh -->
+    <path d="M27 49 C 27 57, 33 61, 38 60" fill="none" stroke="#3D2B1F" stroke-width="4.5" stroke-linecap="round"/>
+    <!-- Tia sét Flash trên đầu -->
+    <path d="M60 14 L 54 23 L 58 23 L 52 31 L 63 19 L 58 19 Z" fill="#FDE047" stroke="#3D2B1F" stroke-width="2.5" stroke-linejoin="round"/>
+  </g>
+</svg>

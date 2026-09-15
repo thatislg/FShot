@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 620 300" width="620" height="300">
+  <!-- Nền tối chuẩn splash screen -->
+  <rect width="620" height="300" fill="#111827"/>
+  
+  <!-- Logo Fshot căn chính giữa (X: 310, Y: 115) -->
+  <g transform="translate(255, 60)">
+    <!-- Đuôi chim -->
+    <path d="M16 68 C 8 68, 5 74, 8 79 C 13 79, 19 74, 21 71 Z" fill="#7BD5F5" stroke="#3D2B1F" stroke-width="4"/>
+    <!-- Thân chim Fshot -->
+    <ellipse cx="55" cy="55" rx="38" ry="40" fill="#7BD5F5" stroke="#3D2B1F" stroke-width="5"/>
+    <path d="M30 63 C 34 80, 48 88, 70 85 C 78 70, 75 59, 70 55 C 50 59, 37 55, 30 63 Z" fill="#FFFDF9"/>
+    <!-- Mắt to long lanh -->
+    <circle cx="44" cy="40" r="5" fill="#3D2B1F"/>
+    <circle cx="42" cy="38" r="1.8" fill="#FFFFFF"/>
+    <circle cx="71" cy="40" r="5" fill="#3D2B1F"/>
+    <circle cx="69" cy="38" r="1.8" fill="#FFFFFF"/>
+    <!-- Mỏ cam -->
+    <ellipse cx="57" cy="47" rx="6.5" ry="4.2" fill="#FB923C" stroke="#3D2B1F" stroke-width="3"/>
+    <circle cx="33" cy="50" r="4.5" fill="#F472B6" opacity="0.8"/>
+    <circle cx="81" cy="50" r="4.5" fill="#F472B6" opacity="0.8"/>
+    <!-- Máy ảnh mini -->
+    <rect x="45" y="61" width="31" height="23" rx="5" fill="#FFFDF9" stroke="#3D2B1F" stroke-width="4.5"/>
+    <circle cx="60.5" cy="72.5" r="6.5" fill="#3D2B1F"/>
+    <circle cx="60.5" cy="72.5" r="3.2" fill="#7BD5F5"/>
+    <rect x="49" y="57" width="7" height="5" rx="1.5" fill="#FF7A70" stroke="#3D2B1F" stroke-width="2.5"/>
+    <!-- Tia chớp sáng rực rỡ -->
+    <path d="M72 18 L 65 30 L 70 30 L 62 42 L 77 26 L 70 26 Z" fill="#FDE047" stroke="#3D2B1F" stroke-width="3" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Typography chữ FSHOT bo tròn bên dưới -->
+  <text x="310" y="225" text-anchor="middle" font-family="'Segoe UI', 'Nunito', sans-serif" font-weight="900" font-size="34" fill="#FFFDF9" letter-spacing="3">FSHOT</text>
+  <text x="310" y="252" text-anchor="middle" font-family="'Segoe UI', sans-serif" font-weight="600" font-size="13" fill="#94A3B8" letter-spacing="1">SCREENSHOT TOOL</text>
+</svg>
