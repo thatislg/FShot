@@ -188,8 +188,28 @@
 
 ### Epic 4: Undo, Redo & Toolbar
 - [ ] **P1.21** Hoàn tác Undo `Ctrl+Z` (`FR-UNDO-01`).
+  - [ ] Rà soát `docs/2.Design/05_History/05_04_Integration.md` đảm bảo mô tả đúng luồng Undo trong `OverlayState`.
+  - [ ] Cập nhật `src/FShot.Core/State/OverlayState.fs`: xử lý `Undo` event, gọi `HistoryStack.Undo()` khi `CanUndo`, giữ `AnnotationInteraction = NoAnnotation`.
+  - [ ] Cập nhật `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`: phát `Undo` event khi nhận `Ctrl+Z` (dùng `e.Key` + modifier để tránh IME).
+  - [ ] Cập nhật `RenderModel` / toolbar để phản ánh `CanUndo` (ví dụ: đổi màu/disable nút Undo tạm).
+  - [ ] Thêm tests trong `tests/FShot.Core.Tests/State/OverlayStateTests.fs`: commit 2 annotation rồi Undo về 1, Undo về 0, Undo khi không thể undo thì giữ nguyên.
+  - [ ] Kiểm thử trên UI: vẽ 2 nét, nhấn `Ctrl+Z`, mất 1 nét; nhấn tiếp, mất hết.
 - [ ] **P1.22** Làm lại Redo `Ctrl+Shift+Z` / `Ctrl+Y` (`FR-UNDO-02`).
+  - [ ] Rà soát `docs/2.Design/05_History/05_04_Integration.md` đảm bảo mô tả đúng luồng Redo.
+  - [ ] Cập nhật `src/FShot.Core/State/OverlayState.fs`: xử lý `Redo` event, gọi `HistoryStack.Redo()` khi `CanRedo`.
+  - [ ] Cập nhật `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`: phát `Redo` event khi nhận `Ctrl+Shift+Z` hoặc `Ctrl+Y`.
+  - [ ] Cập nhật `RenderModel` / toolbar để phản ánh `CanRedo`.
+  - [ ] Thêm tests: Undo rồi Redo, Redo khi không thể redo thì giữ nguyên, thao tác mới sau Undo xóa Redo stack.
+  - [ ] Kiểm thử trên UI: vẽ nét, Undo, Redo, nét xuất hiện lại.
 - [ ] **P1.23** Toolbar tối giản nằm sát dưới vùng chọn (`FR-TB-01`).
+  - [ ] Rà soát `docs/2.Design/12_UIUX_Mock_Penpot/12_04_ToolbarLayout.md` và `12_02_CommonComponents.md`.
+  - [ ] Quyết định sử dụng SVG paths tự vẽ cho icon (theo yêu cầu) thay vì chữ tạm.
+  - [ ] Tạo module `ToolbarIcons` trong `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs` hoặc file riêng `src/FShot.UI/SkiaCanvas/ToolbarIcons.fs` chứa `StreamGeometry` cho 10 icon: Selection, Pencil, Line, Arrow, Rectangle, Circle, Marker, Text, Pixelate, Icon.
+  - [ ] Thay thế vẽ chữ trong `Toolbar.draw` bằng vẽ icon geometry, giữ layout và hit-test hiện tại.
+  - [ ] Thêm visual feedback: active tool có viền nổi bật, hover (nếu dễ dàng với Avalonia DrawingContext).
+  - [ ] Đảm bảo toolbar vẫn bám quanh capture region và tự động chuyển hướng (bottom/top/left/right) khi vùng chọn sát mép.
+  - [ ] Thêm / cập nhật tests UI smoke nếu cần.
+  - [ ] Kiểm thử trên desktop Windows: toolbar hiển thị icon rõ, click đúng tool, phím tắt vẫn hoạt động.
 
 ### Epic 5: Xuất dữ liệu & CLI
 - [ ] **P1.24** Lưu file ổ cứng `Ctrl+S` kèm cấu hình tên file ngày tháng (`FR-OUT-01/02/03`).
