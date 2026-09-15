@@ -47,7 +47,7 @@ Trước đây, thanh công cụ sử dụng cơ chế vẽ đơn sắc (tất c
 | **MarkerTool**    | `marker.svg`    | Xanh bạc hà`#34D399`                        | Bút dạ quang nắp cài vát chéo, thân hình trụ ngắn bo tròn đáng yêu.                  |
 | **TextTool**      | `text.svg`      | Tím oải hương`#C084FC`                    | Khối chữ "T" mập mạp, các góc bo tròn lớn không góc cạnh sắc nhọn.                    |
 | **PixelateTool**  | `pixelate.svg`  | Tím pastel`#C084FC` & Tím đậm `#7C3AED` | Ma trận các ô vuông mosaic so le 2 tone tím phong cách pixel art dễ thương.               |
-| **IconTool**      | `pin.svg`       | Đỏ dâu`#F87171` & Xám bạc `#9CA3AF`    | Chiếc đinh ghim bảng đầu tròn phồng, kim ghim kim loại vát nhọn sáng bóng.             |
+| **IconTool**      | `peeling-sticker.svg` | Vàng bơ `#FDE047` & Hồng pastel `#F472B6` | Nhãn dán ngôi sao bo phồng có khuôn mặt cười Kawaii, góc dưới phải hé bóc lớp dán. |
 
 #### 5 Toolbar Actions (Thao tác thanh công cụ):
 
@@ -87,7 +87,8 @@ docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/
 │   ├── copy.svg            (Sao chép clipboard)
 │   ├── save.svg            (Lưu file đĩa)
 │   ├── cancel.svg          (Đóng / Hủy chụp)
-│   ├── pin.svg             (Ghim ảnh nổi màn hình / IconTool)
+│   ├── peeling-sticker.svg (Dán sticker/nhãn dán Kawaii / IconTool)
+│   ├── pin.svg             (Ghim ảnh nổi màn hình)
 │   ├── open-app.svg        (Mở ảnh trong ứng dụng ngoài)
 │   └── upload-img.svg      (Tải ảnh lên Imgur / Cloud)
 │

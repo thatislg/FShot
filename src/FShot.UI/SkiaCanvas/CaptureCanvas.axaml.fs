@@ -373,18 +373,25 @@ module Toolbar =
                             context.DrawRectangle(brush, blockPen, Avalonia.Rect(xs.[c], ys.[r], 6.0, 6.0), 2.0, 2.0)
 
                 | "IconTool" ->
-                    // Đinh ghim bảng đầu nhựa xanh dương (#7BD5F5) có mặt cười, kim cùn (#94A3B8)
-                    let needleBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0x94uy, 0xA3uy, 0xB8uy))
-                    let needleGeom = StreamGeometry.Parse("M15 22 L 15 28 L 17 28 L 17 22 Z")
-                    context.DrawGeometry(needleBrush, darkWalnutPen 1.4, needleGeom)
-                    let headBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0x7Buy, 0xD5uy, 0xF5uy))
-                    let headGeom = StreamGeometry.Parse("M10 9 C 10 7, 12 5, 16 5 C 20 5, 22 7, 22 9 C 22 11, 20 12, 19 14 C 21 16, 23 18, 23 20 C 23 22, 21 23, 16 23 C 11 23, 9 22, 9 20 C 9 18, 11 16, 13 14 C 12 12, 10 11, 10 9 Z")
-                    context.DrawGeometry(headBrush, darkWalnutPen 1.8, headGeom)
+                    // Thân nhãn dán ngôi sao bo phồng màu vàng bơ (#FDE047), viền nâu (#3D2B1F)
+                    let starBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFDuy, 0xE0uy, 0x47uy))
+                    context.DrawGeometry(starBrush, darkWalnutPen 1.8, geometry)
+
+                    // Góc bóc nhãn dán hé ra (Peel Corner) màu hồng pastel (#F472B6)
+                    let peelBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xF4uy, 0x72uy, 0xB6uy))
+                    let peelGeom = StreamGeometry.Parse(ToolbarIcons.stickerPeelCorner)
+                    context.DrawGeometry(peelBrush, darkWalnutPen 1.6, peelGeom)
+
+                    // Khuôn mặt Kawaii (2 mắt chấm + miệng cười)
                     let darkBrush = new SolidColorBrush(darkWalnut)
-                    context.DrawEllipse(darkBrush, null, Avalonia.Point(14.0, 17.0), 0.9, 0.9)
-                    context.DrawEllipse(darkBrush, null, Avalonia.Point(18.0, 17.0), 0.9, 0.9)
-                    let smileGeom = StreamGeometry.Parse("M15.2 18.8 Q 16 19.8 16.8 18.8")
+                    context.DrawEllipse(darkBrush, null, Avalonia.Point(13.0, 14.0), 0.9, 0.9)
+                    context.DrawEllipse(darkBrush, null, Avalonia.Point(18.0, 14.0), 0.9, 0.9)
+                    let smileGeom = StreamGeometry.Parse("M 14.2 16 Q 15.5 17.2 16.8 16")
                     context.DrawGeometry(null, darkWalnutPen 0.8, smileGeom)
+
+                    // Vệt sáng phản chiếu góc trên bên trái
+                    let whiteBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFFuy, 0xFFuy, 0xFFuy))
+                    context.DrawEllipse(whiteBrush, null, Avalonia.Point(15.0, 8.5), 1.1, 1.1)
 
                 | "UndoAction" ->
                     // Mũi tên cong móng ngựa tím pastel (#C4B5FD), viền nâu, highlight trắng

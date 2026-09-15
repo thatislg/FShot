@@ -53,9 +53,13 @@ module ToolbarIcons =
         "M15 21 h2 a2 2 0 0 1 2 2 v2 a2 2 0 0 1 -2 2 h-2 a2 2 0 0 1 -2 -2 v-2 a2 2 0 0 1 2 -2 z " +
         "M23 21 h2 a2 2 0 0 1 2 2 v2 a2 2 0 0 1 -2 2 h-2 a2 2 0 0 1 -2 -2 v-2 a2 2 0 0 1 2 -2 z"
 
-    /// Pin / Icon placeholder (viewBox 32x32, converted from docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/pin.svg).
+    /// Peeling sticker / Sticker-Stamp tool (viewBox 32x32, converted from docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/peeling-sticker.svg).
     let iconTool =
-        "M10 9 C 10 7, 12 5, 16 5 C 20 5, 22 7, 22 9 C 22 11, 20 12, 19 14 C 21 16, 23 18, 23 20 C 23 22, 21 23, 16 23 C 11 23, 9 22, 9 20 C 9 18, 11 16, 13 14 C 12 12, 10 11, 10 9 Z M15 22 L 15 28 L 17 28 L 17 22 Z"
+        "M 16 5 C 17.5 5, 18.5 9, 20.5 10 C 22.5 11, 26.5 11, 27 13 C 27.5 15, 25 18, 25 20.5 C 25 22, 23.5 24, 21 25.5 L 18 21 C 16 21, 14 25, 11 26.5 C 9 27.5, 6 25, 6.5 22.5 C 7 20, 5 17, 5.5 14.5 C 6 12, 10 11.5, 11.5 10 C 13 8.5, 14.5 5, 16 5 Z"
+
+    /// Peel corner overlay for peeling-sticker.svg
+    let stickerPeelCorner =
+        "M 21 25.5 L 18 21 L 25 20.5 C 24 23, 22.5 24.5, 21 25.5 Z"
 
     /// Undo (viewBox 32x32, converted from docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/undo.svg).
     let undo =
