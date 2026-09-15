@@ -109,7 +109,7 @@ Mỗi icon toolbar nằm trong một Button Slot với các trạng thái:
   * Bubble Ice Blue: #BAE6FD | Outline: #0284C7
   * Base Container: #FFFDF9 | Border: #E2E8F0 | Active Accent: #38BDF8
   * Cheek Blush: #F472B6 | Highlight Specular: #FFFFFF (85% opacity)
-- Export Requirements: Output as a single isolated icon asset on a pure white background (#FFFFFF), aspect ratio 1:1, minimum 512x512 px, flat vector colors with clean separations, zero realistic textures, ready for automated SVG vectorization.
+- Export Requirements: Output as a single isolated icon asset on a pure white background (#FFFFFF), aspect ratio 1:1, minimum 512x512 px, flat vector colors with clean separations, zero realistic textures, ready for automated SVG vectorization. If the AI tool only outputs raster, require PNG with transparency-compatible white background; reject JPEG because it has no clean background separation.
 - Target Output: Isolated asset centered on pure white background (#FFFFFF), high contrast, flat color separation, zero realistic textures, ready for automated SVG vectorization.
 ```
 
@@ -343,8 +343,10 @@ A single [Tên công cụ] icon for screenshot app UI.
 - Dùng Midjourney v6 / FLUX.1 / DALL-E với prompt đơn lẻ ở trên.
 - Luôn thêm vào cuối prompt:
   ```
-  isolated on pure white background, flat vector colors, no complex gradients, no photographic noise
+  isolated on pure white background, flat vector colors, no complex gradients, no photographic noise, output as PNG 512x512px 1:1
   ```
+- **Nếu AI chỉ trả về JPEG:** xóa nền bằng Remove.bg / Photoshop / GIMP, hoặc dùng lại prompt và thêm `PNG format only, transparent or pure white background, no JPEG compression artifacts`. Nhiều công cụ AI hiểu rõ hơn khi bạn viết `do not output JPEG; output PNG`.
+- **Kiểm tra ngay sau khi gen:** nền phải là trắng tinh `#FFFFFF`, không vân nén, không watermark.
 
 ### 5.2 Vector hóa bằng AI
 
