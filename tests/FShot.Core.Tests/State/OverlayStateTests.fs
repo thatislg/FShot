@@ -321,6 +321,75 @@ let ``Selected PointerPressed ngoài vùng khi đã có annotations trigger Copy
         "Phải phát ra StartExport CopyToClipboard"
     )
 
+/// Kiểm tra ToolbarAction Save phát ra StartExport SaveToFile.
+[<Fact>]
+let ``Selected ToolbarAction Save phát ra StartExport SaveToFile`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    let result = state |> update (ToolbarAction SaveAction)
+    Assert.True(
+        result.Commands |> List.contains (StartExport(ExportTarget.SaveToFile None)),
+        "Phải phát ra StartExport SaveToFile"
+    )
+
+/// Kiểm tra ToolbarAction Copy phát ra StartExport CopyToClipboard.
+[<Fact>]
+let ``Selected ToolbarAction Copy phát ra StartExport CopyToClipboard`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    let result = state |> update (ToolbarAction CopyAction)
+    Assert.True(
+        result.Commands |> List.contains (StartExport ExportTarget.CopyToClipboard),
+        "Phải phát ra StartExport CopyToClipboard"
+    )
+
+/// Kiểm tra ExportCompleted true khi CloseAfterExport = true phát ra CloseOverlay.
+[<Fact>]
+let ``ExportCompleted success với CloseAfterExport đóng overlay`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    let result = state |> update (ExportCompleted true)
+    Assert.True(result.Commands |> List.contains CloseOverlay, "Phải phát ra CloseOverlay")
+    Assert.Equal(SelectionState.Idle, result.State.Selection.State)
+
+/// Kiểm tra ExportCompleted false không đóng overlay.
+[<Fact>]
+let ``ExportCompleted failure không đóng overlay`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    let result = state |> update (ExportCompleted false)
+    Assert.False(result.Commands |> List.contains CloseOverlay, "Không được phát ra CloseOverlay")
+    Assert.Equal(SelectionState.Selected, result.State.Selection.State)
+
+/// Kiểm tra Selected + PointerPressed ngoài vùng bắt đầu Selecting mới.
 /// Kiểm tra Selected + PointerPressed trong vùng với SelectionTool bắt đầu Moving.
 [<Fact>]
 let ``Selected PointerPressed trong vùng với SelectionTool di chuyển vùng chọn`` () =

@@ -1,8 +1,8 @@
 # F-Shot Master Progress Tracking
 
 - **Cập nhật gần nhất:** 2026-09-15
-- **Tiến độ tổng quan:** `[ 33 / 84 ] Tasks hoàn thành (~39.3%)` (Phase 0 PoC đã verify xong; Epic 1 P1.01–P1.04, Epic 2 P1.05–P1.11, Epic 2.5 E2.5.01–E2.5.05, Epic 3 P1.12–P1.20, và Epic 4 P1.21–P1.23 đã hoàn thiện)
-- **Mục tiêu hiện tại:** Tiếp tục Epic 5: Xuất dữ liệu & CLI (P1.24–P1.30).
+- **Tiến độ tổng quan:** `[ 37 / 84 ] Tasks hoàn thành (~44.0%)` (Phase 0 PoC đã verify xong; Phase 1 MVP Core P1.01–P1.26 đã hoàn thiện)
+- **Mục tiêu hiện tại:** Tiếp tục Epic 5: CLI & Cấu hình (P1.27–P1.30).
 
 ---
 
@@ -11,7 +11,7 @@
 | Phase | Mục tiêu | Trạng thái | Hoàn thành |
 | :--- | :--- | :---: | :---: |
 | **Phase 0: PoC** | Khung Solution, Screen Capture, Overlay Canvas, đo 60 FPS | **DONE** | **8 / 8** (đã verify trên desktop Windows) |
-| **Phase 1: MVP Core** | Bounding box, 9 Annotation tools, Undo/Redo, Save/Clipboard | **IN PROGRESS** | 25 / 29 (~86%) |
+| **Phase 1: MVP Core** | Bounding box, 9 Annotation tools, Undo/Redo, Toolbar, Save/Clipboard | **DONE** | 29 / 29 (100%) |
 | **Phase 2: Windows v1.0** | Tray, Hotkeys, Real Capture, Config UI, Pin Widget, Advanced tools | **PENDING** | 0 / 39 (0%) |
 | **Phase 3: Advanced** | Imgur upload, Snap-to-grid, Tùy biến nâng cao | **PENDING** | 0 / 8 (0%) |
 
@@ -211,13 +211,18 @@
   - [x] Thêm visual feedback active tool: nền xanh #38BDF8 + viền xanh dương đậm #1D4ED8 dày 2px, bo góc 6px.
   - [x] Giữ layout và hit-test toolbar hiện tại; toolbar vẫn bám quanh capture region và tự chuyển hướng bottom/top/left/right khi vùng chọn sát mép.
   - [x] Build và chạy tests: 167 Core + 21 Skia + 3 UI pass.
+  - [x] Tích hợp nút Undo/Redo/Copy/Save/Cancel trên toolbar; 15 nút (10 tool + 5 action) đều có icon, hit-test, và dispatch đúng event.
   - [ ] Hover visual (nền vàng bơ nhạt) cần track mouse tách biệt, thuộc nợ kỹ thuật UI.
-  - [ ] Tích hợp nút Undo/Redo/Copy/Save/Cancel trên toolbar (hiện chỉ có 10 tool annotation).
 
 ### Epic 5: Xuất dữ liệu & CLI
-- [ ] **P1.24** Lưu file ổ cứng `Ctrl+S` kèm cấu hình tên file ngày tháng (`FR-OUT-01/02/03`).
-- [ ] **P1.25** Hộp thoại Save As Fallback khi chưa cấu hình đường dẫn (`FR-OUT-04`).
-- [ ] **P1.26** Sao chép nhanh vào Windows Clipboard dạng PNG (`FR-OUT-05`).
+- [x] **P1.24** Lưu file ổ cứng `Ctrl+S` kèm cấu hình tên file ngày tháng (`FR-OUT-01/02/03`).
+  - [x] `ToolbarAction SaveAction` và phím tắt `Ctrl+S` phát `StartExport(SaveToFile None)`.
+  - [x] `CaptureCanvas.ExecuteStartExport` mở `SaveFilePickerAsync`, render ảnh qua `SceneComposer.renderExport`, lưu PNG/JPG.
+- [x] **P1.25** Hộp thoại Save As Fallback khi chưa cấu hình đường dẫn (`FR-OUT-04`).
+  - [x] Chưa có cấu hình đường dẫn lưu → dùng `StorageProvider.SaveFilePickerAsync` làm fallback.
+- [x] **P1.26** Sao chép nhanh vào Windows Clipboard dạng PNG (`FR-OUT-05`).
+  - [x] `ToolbarAction CopyAction` và phím tắt `Ctrl+C` / click ngoài vùng khi có annotations phát `StartExport CopyToClipboard`.
+  - [x] `ExecuteStartExport` đưa PNG bytes vào clipboard bằng `DataTransfer` + `DataTransferItem` + platform format `PNG`.
 - [ ] **P1.27** Parser lệnh dòng lệnh bằng Argu (`fshot gui`, `fshot full`) (`FR-CLI-01/02`).
 - [ ] **P1.28** Cấu hình độ trễ chụp (`-d / --delay`) (`FR-CAP-05`).
 - [ ] **P1.29** Lưu trữ và nạp cấu hình cơ bản từ JSON tại `%APPDATA%\FShot\config.json`.

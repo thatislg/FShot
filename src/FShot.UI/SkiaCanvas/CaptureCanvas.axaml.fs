@@ -6,16 +6,23 @@ open Avalonia.Input
 open Avalonia.Media
 open Avalonia.Media.Imaging
 open Avalonia.VisualTree
+open Avalonia.Platform.Storage
 open FShot.Core.Domain
 open FShot.Core.Geometry
 open FShot.Core.State
 open FShot.Core.State.OverlayStateLogic
 
 open System
+open System.IO
+open System.Runtime.InteropServices
 open System.Diagnostics
 
+open Avalonia.Threading
 open FShot.UI.Logging
 open FShot.UI.SkiaCanvas
+
+open FShot.Rendering.Skia.Renderers
+open SkiaSharp
 
 /// Vị trí đặt toolbar quanh vùng chọn.
 type ToolbarPlacement =
@@ -152,11 +159,6 @@ module Toolbar =
         | ToolHit of ToolKind
         | ActionHit of ToolbarAction
 
-    let (|ToolHit|ActionHit|) (hit: ToolbarHit) =
-        match hit with
-        | ToolHit tool -> ToolHit tool
-        | ActionHit action -> ActionHit action
-
     let hitTool (tb: Avalonia.Rect) (point: Avalonia.Point) : ToolbarHit option =
         if not (tb.Contains point) then
             None
@@ -183,9 +185,9 @@ module Toolbar =
                     int ((along - actionStart) / (toolbarButtonSize + toolbarGap)) + toolCount
 
             if index >= 0 && index < toolCount then
-                Some (ToolHit (List.item index tools))
+                Some (ToolbarHit.ToolHit (List.item index tools))
             elif index >= toolCount && index < totalItemCount then
-                Some (ActionHit (List.item (index - toolCount) actions))
+                Some (ToolbarHit.ActionHit (List.item (index - toolCount) actions))
             else
                 None
 
@@ -451,12 +453,79 @@ type CaptureCanvas() as this =
                 | _ -> ()
             | StartExport target ->
                 FShotLog.write (sprintf "[CaptureCanvas] StartExport command: %A" target)
+                this.ExecuteStartExport(target)
             | ShowTextInput position ->
                 FShotLog.write (sprintf "[CaptureCanvas] ShowTextInput command at %A" position)
                 this.ShowTextInput(position)
             | HideTextInput ->
                 FShotLog.write "[CaptureCanvas] HideTextInput command"
                 this.HideTextInput()
+
+    /// Thực hiện xuất ảnh: Save mở SaveFileDialog, Copy đưa bitmap vào Clipboard.
+    /// Chạy async để không block UI thread; sau khi xong dispatch ExportCompleted.
+    member private this.ExecuteStartExport(target: ExportTarget) =
+        let window =
+            match this.VisualRoot with
+            | :? Window as w -> Some w
+            | _ -> None
+
+        match captureResult, overlayState, window with
+        | Some result, Some state, Some w ->
+            let runExport = async {
+                try
+                    let exportBitmap = SceneComposer.renderExport result state.Selection (committedAnnotations state)
+                    match target with
+                    | SaveToFile _ ->
+                        let options = FilePickerSaveOptions()
+                        options.SuggestedFileName <- "fshot_capture.png"
+                        let pngType = FilePickerFileType("PNG")
+                        pngType.Patterns <- ResizeArray["*.png"]
+                        let jpgType = FilePickerFileType("JPEG")
+                        jpgType.Patterns <- ResizeArray["*.jpg"; "*.jpeg"]
+                        options.FileTypeChoices <- ResizeArray[ pngType; jpgType ]
+                        let! file = w.StorageProvider.SaveFilePickerAsync(options) |> Async.AwaitTask
+                        match file with
+                        | null ->
+                            FShotLog.write "[CaptureCanvas] Save cancelled by user"
+                            Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted false) |> ignore)
+                        | f ->
+                            let path = f.Path.AbsolutePath
+                            let format =
+                                if path.ToLowerInvariant().EndsWith(".jpg") || path.ToLowerInvariant().EndsWith(".jpeg") then
+                                    SKEncodedImageFormat.Jpeg
+                                else
+                                    SKEncodedImageFormat.Png
+                            use data = exportBitmap.Encode(format, 100)
+                            use stream = File.OpenWrite(path)
+                            data.SaveTo(stream)
+                            FShotLog.write (sprintf "[CaptureCanvas] Saved to %s" path)
+                            Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted true) |> ignore)
+                    | CopyToClipboard ->
+                        let clipboard = w.Clipboard
+                        if clipboard <> null then
+                            use data = exportBitmap.Encode(SKEncodedImageFormat.Png, 100)
+                            let bytes = data.ToArray()
+                            let pngFormat = Avalonia.Input.DataFormat.CreateBytesPlatformFormat("PNG")
+                            let item = new Avalonia.Input.DataTransferItem()
+                            item.Set(pngFormat, bytes)
+                            let transfer = new Avalonia.Input.DataTransfer()
+                            transfer.Add(item)
+                            do! clipboard.SetDataAsync(transfer) |> Async.AwaitTask
+                            FShotLog.write "[CaptureCanvas] Copied PNG bytes to clipboard"
+                            Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted true) |> ignore)
+                        else
+                            FShotLog.write "[CaptureCanvas] Clipboard not available"
+                            Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted false) |> ignore)
+                    | _ ->
+                        FShotLog.write (sprintf "[CaptureCanvas] Unsupported export target: %A" target)
+                        Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted false) |> ignore)
+                with ex ->
+                    FShotLog.writeEx "[CaptureCanvas] Export failed" ex
+                    Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted false) |> ignore)
+            }
+            Async.Start(runExport) |> ignore
+        | _ ->
+            FShotLog.write "[CaptureCanvas] Cannot export: missing capture result, overlay state, or window"
 
     /// Gửi event đến OverlayState, cập nhật state và vẽ lại.
     member private this.Dispatch(event: OverlayEvent) =
@@ -543,7 +612,7 @@ type CaptureCanvas() as this =
         // tìm Window và fallback bọc Content trong Canvas tạm thời.
         match this.Parent with
         | :? Canvas as canvas ->
-            canvas.Children.Add(tb)
+            canvas.Children.Add(tb) |> ignore
             textBox <- Some tb
             tb.Focus() |> ignore
             FShotLog.write "[CaptureCanvas] TextBox added to Canvas (Parent)"
@@ -562,7 +631,7 @@ type CaptureCanvas() as this =
 
                 match window.Content with
                 | :? Canvas as canvas when canvas.Children.Contains(this) ->
-                    canvas.Children.Add(tb)
+                    canvas.Children.Add(tb) |> ignore
                     textBox <- Some tb
                     tb.Focus() |> ignore
                     FShotLog.write "[CaptureCanvas] TextBox added to existing Canvas wrapper"
@@ -575,10 +644,10 @@ type CaptureCanvas() as this =
                     canvas.Height <- window.Bounds.Height
 
                     window.Content <- null
-                    canvas.Children.Add(this)
+                    canvas.Children.Add(this) |> ignore
                     this.Width <- canvas.Width
                     this.Height <- canvas.Height
-                    canvas.Children.Add(tb)
+                    canvas.Children.Add(tb) |> ignore
                     textBox <- Some tb
                     window.Content <- canvas
                     tb.Focus() |> ignore
