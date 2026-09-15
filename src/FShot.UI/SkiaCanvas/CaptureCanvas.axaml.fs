@@ -186,7 +186,12 @@ module Toolbar =
                 let activeBg = new SolidColorBrush(activeAccent)
                 let cornerRadius = 6.0f
                 context.FillRectangle(activeBg, buttonRect, cornerRadius)
-                context.DrawRectangle(null, activeBorderPen, buttonRect, float cornerRadius, float cornerRadius)
+
+                // Vẽ viền active ra ngoài button 1px để cả 2px viền nằm trên nền toolbar,
+                // tránh bị nền xanh active làm nhạt màu viền.
+                let borderRect = Avalonia.Rect(buttonRect.X - 1.0, buttonRect.Y - 1.0, buttonRect.Width + 2.0, buttonRect.Height + 2.0)
+                let roundedActiveBorderPen = new Pen(new SolidColorBrush(activeBorderColor), 2.0, lineJoin = PenLineJoin.Round)
+                context.DrawRectangle(null, roundedActiveBorderPen, borderRect, float cornerRadius, float cornerRadius)
 
             match ToolbarIcons.pathFor tool with
             | Some pathData ->
