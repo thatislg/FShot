@@ -201,7 +201,9 @@
   - [x] Thêm tests: Undo rồi Redo, Redo khi không thể redo thì giữ nguyên, Undo nhiều lần rồi Redo nhiều lần, Redo không ảnh hưởng vùng chọn, Redo với nhiều loại tool.
   - [x] Kiểm thử tests: 167 Core tests pass.
 - [ ] **P1.23** Toolbar tối giản nằm sát dưới vùng chọn (`FR-TB-01`).
-  - [ ] Rà soát `docs/2.Design/12_UIUX_Mock_Penpot/12_04_ToolbarLayout.md` và `12_02_CommonComponents.md`.
+  - [x] Rà soát `docs/2.Design/12_UIUX_Mock_Penpot/12_04_ToolbarLayout.md` và `12_02_CommonComponents.md`.
+  - [x] Rà soát `docs/2.Design/12_UIUX_Mock_Penpot/12_06_Icon_Asset_Production_Guide.md`, chuẩn hóa bảng màu toàn app.
+  - [x] Cập nhật `docs/2.Design/12_UIUX_Mock_Penpot/12_01_DesignTokens.md`: định nghĩa Core Palette, Semantic Groups (4 nhóm công cụ), Functional Colors, cập nhật Accent/Overlay/Handle/Toolbar/ToolButton/Annotation/Badge theo chuẩn Kawaii Claymorphism.
   - [ ] Quyết định sử dụng SVG paths tự vẽ cho icon (theo yêu cầu) thay vì chữ tạm.
   - [ ] Tạo module `ToolbarIcons` trong `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs` hoặc file riêng `src/FShot.UI/SkiaCanvas/ToolbarIcons.fs` chứa `StreamGeometry` cho 10 icon: Selection, Pencil, Line, Arrow, Rectangle, Circle, Marker, Text, Pixelate, Icon.
   - [ ] Thay thế vẽ chữ trong `Toolbar.draw` bằng vẽ icon geometry, giữ layout và hit-test hiện tại.
