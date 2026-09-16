@@ -51,74 +51,69 @@ type CaptureOverlayWindow() as this =
         this.Opacity <- 1.0
         this.Cursor <- new Avalonia.Input.Cursor(StandardCursorType.Cross)
 
-    /// Mở cửa sổ phủ toàn Virtual Screen và chụp ảnh nền.
+    /// Mở cửa sổ phủ toàn Virtual Screen và chụp ảnh nền thực tế.
     member this.ShowOverlayAsync() =
         async {
-            FShotLog.write "ShowOverlayAsync starting"
+            FShotLog.write "ShowOverlayAsync starting: capturing screen before showing window..."
 
-            // Mọi thao tác UI phải chạy trên UI thread.
-            // Dispatcher.InvokeAsync trả về Task; await để đảm bảo chạy xong.
-            let uiTask =
-                Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(fun () ->
-                    FShotLog.write "ShowOverlayAsync: getting Virtual Screen bounds"
-                    let bounds = ScreenEnumeration.getVirtualScreenBounds ()
-                    let width = int bounds.Width
-                    let height = int bounds.Height
+            // 1. Chụp màn hình thật TRƯỚC KHI hiển thị cửa sổ overlay để có ảnh sạch
+            let! captureResultOpt =
+                async {
+                    let realService = WindowsCaptureService() :> ICaptureService
+                    let! res = realService.CaptureVirtualScreenAsync()
+                    match res with
+                    | Ok r -> return Ok r
+                    | Error err ->
+                        FShotLog.write (sprintf "WindowsCaptureService failed (%A), falling back to StubCaptureService" err)
+                        let stubService = StubCaptureService() :> ICaptureService
+                        return! stubService.CaptureVirtualScreenAsync()
+                }
 
-                    FShotLog.write(
-                        sprintf "Virtual Screen bounds: X=%.0f Y=%.0f W=%.0f H=%.0f" bounds.X bounds.Y bounds.Width bounds.Height
-                    )
-
-                    this.Position <- PixelPoint(int bounds.X, int bounds.Y)
-                    this.Width <- float width
-                    this.Height <- float height
-
-                    // Đảm bảo Canvas wrapper và CaptureCanvas phủ toàn cửa sổ
-                    // để hit-test và render không bị gián đoạn.
-                    rootCanvas |> Option.iter (fun rc ->
-                        rc.Width <- this.Width
-                        rc.Height <- this.Height
-                    )
-                    canvas |> Option.iter (fun c ->
-                        c.Width <- this.Width
-                        c.Height <- this.Height
-                    )
-
-                    this.IsVisible <- true
-
-                    FShotLog.write "ShowOverlayAsync: showing window"
-                    this.Show()
-                    this.Focus() |> ignore
-                    this.Activate() |> ignore
-                    this.Topmost <- true
-                )
-
-            let! _ = uiTask.GetTask() |> Async.AwaitTask
-
-            // Đợi một chút để cửa sổ hiển thị hoàn toàn.
-            do! Async.Sleep(150)
-
-            FShotLog.write "ShowOverlayAsync: starting stub capture"
-            let service = StubCaptureService() :> ICaptureService
-            let! result = service.CaptureVirtualScreenAsync()
-
-            match result with
+            match captureResultOpt with
             | Ok captureResult ->
-                FShotLog.write(
-                    sprintf "Stub capture succeeded: %dx%d pixels" captureResult.Width captureResult.Height
-                )
-                canvas |> Option.iter (fun c -> c.SetCaptureResult captureResult)
+                FShotLog.write (sprintf "Screen capture ready: %dx%d pixels" captureResult.Width captureResult.Height)
 
-                // Khởi tạo OverlayState từ capture result và config mặc định.
-                let config = ConfigSnapshot.Default
-                let state = FShot.Core.State.OverlayStateLogic.init captureResult config
-                overlayState <- Some state
+                // 2. Cấu hình canvas, khởi tạo state và hiển thị cửa sổ trên UI thread
+                let uiTask =
+                    Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(fun () ->
+                        let bounds = ScreenEnumeration.getVirtualScreenBounds ()
+                        let width = int bounds.Width
+                        let height = int bounds.Height
 
-                canvas |> Option.iter (fun c ->
-                    Avalonia.Threading.Dispatcher.UIThread.Post(fun () -> c.SetOverlayState state)
-                )
+                        FShotLog.write (sprintf "Virtual Screen bounds: X=%.0f Y=%.0f W=%.0f H=%.0f" bounds.X bounds.Y bounds.Width bounds.Height)
+
+                        this.Position <- PixelPoint(int bounds.X, int bounds.Y)
+                        this.Width <- float width
+                        this.Height <- float height
+
+                        rootCanvas |> Option.iter (fun rc ->
+                            rc.Width <- this.Width
+                            rc.Height <- this.Height
+                        )
+                        canvas |> Option.iter (fun c ->
+                            c.Width <- this.Width
+                            c.Height <- this.Height
+                            c.SetCaptureResult captureResult
+                        )
+
+                        let config = ConfigSnapshot.Default
+                        let state = FShot.Core.State.OverlayStateLogic.init captureResult config
+                        overlayState <- Some state
+
+                        canvas |> Option.iter (fun c -> c.SetOverlayState state)
+
+                        this.IsVisible <- true
+                        FShotLog.write "ShowOverlayAsync: showing window"
+                        this.Show()
+                        this.Focus() |> ignore
+                        this.Activate() |> ignore
+                        this.Topmost <- true
+                    )
+
+                let! _ = uiTask.GetTask() |> Async.AwaitTask
+                ()
             | Error err ->
-                FShotLog.write (sprintf "Stub capture failed: %A" err)
+                FShotLog.write (sprintf "Screen capture failed completely: %A" err)
         }
 
     /// Lấy FPS hiện tại từ canvas.

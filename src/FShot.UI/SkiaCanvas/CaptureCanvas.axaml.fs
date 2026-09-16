@@ -159,36 +159,36 @@ module Toolbar =
         | ToolHit of ToolKind
         | ActionHit of ToolbarAction
 
+    let itemRect (tb: Avalonia.Rect) (i: int) : Avalonia.Rect =
+        let isHorizontal = tb.Width >= tb.Height
+        let isAction = i >= toolCount
+        let localIndex = if isAction then i - toolCount else i
+        let separatorThickness = 1.0
+        let toolSpan = float toolCount * toolbarButtonSize + float (toolCount - 1) * toolbarGap
+        let offset =
+            if isAction then
+                toolSpan + groupGap * 2.0 + separatorThickness + float localIndex * (toolbarButtonSize + toolbarGap)
+            else
+                float localIndex * (toolbarButtonSize + toolbarGap)
+
+        if isHorizontal then
+            Avalonia.Rect(tb.X + toolbarPadding + offset, tb.Y + toolbarPadding, toolbarButtonSize, toolbarButtonSize)
+        else
+            Avalonia.Rect(tb.X + toolbarPadding, tb.Y + toolbarPadding + offset, toolbarButtonSize, toolbarButtonSize)
+
     let hitTool (tb: Avalonia.Rect) (point: Avalonia.Point) : ToolbarHit option =
         if not (tb.Contains point) then
             None
         else
-            let isHorizontal = tb.Width >= tb.Height
-            let separatorThickness = 1.0
-            let along =
-                if isHorizontal then point.X - tb.X - toolbarPadding
-                else point.Y - tb.Y - toolbarPadding
-
-            let toolSpan = float toolCount * toolbarButtonSize + float (toolCount - 1) * toolbarGap
-
-            let index =
-                if along < toolSpan then
-                    int (along / (toolbarButtonSize + toolbarGap))
-                elif along < toolSpan + groupGap then
-                    -1
-                elif along < toolSpan + groupGap + separatorThickness then
-                    -1
-                elif along < toolSpan + groupGap * 2.0 + separatorThickness then
-                    -1
-                else
-                    let actionStart = toolSpan + groupGap * 2.0 + separatorThickness
-                    int ((along - actionStart) / (toolbarButtonSize + toolbarGap)) + toolCount
-
-            if index >= 0 && index < toolCount then
-                Some (ToolbarHit.ToolHit (List.item index tools))
-            elif index >= toolCount && index < totalItemCount then
-                Some (ToolbarHit.ActionHit (List.item (index - toolCount) actions))
-            else
+            let hitIndex =
+                [ 0 .. totalItemCount - 1 ]
+                |> List.tryFind (fun i -> (itemRect tb i).Contains(point))
+            match hitIndex with
+            | Some i when i < toolCount ->
+                Some (ToolbarHit.ToolHit (List.item i tools))
+            | Some i when i >= toolCount && i < totalItemCount ->
+                Some (ToolbarHit.ActionHit (List.item (i - toolCount) actions))
+            | _ ->
                 None
 
     let draw
@@ -218,26 +218,8 @@ module Toolbar =
 
         let isHorizontal = tb.Width >= tb.Height
 
-        // Helper tính tọa độ item thứ i, có tách nhóm.
-        let itemXy i =
-            let isAction = i >= toolCount
-            let localIndex = if isAction then i - toolCount else i
-            let separatorThickness = 1.0
-            let offset =
-                if isAction then
-                    float toolCount * (toolbarButtonSize + toolbarGap) + groupGap * 2.0 + separatorThickness
-                    + float localIndex * (toolbarButtonSize + toolbarGap)
-                else
-                    float localIndex * (toolbarButtonSize + toolbarGap)
-
-            if isHorizontal then
-                (tb.X + toolbarPadding + offset, tb.Y + toolbarPadding)
-            else
-                (tb.X + toolbarPadding, tb.Y + toolbarPadding + offset)
-
         let drawItem (i: int) (pathOpt: string option) (isActive: bool) (enabled: bool) (label: string) =
-            let (x, y) = itemXy i
-            let buttonRect = Avalonia.Rect(x, y, toolbarButtonSize, toolbarButtonSize)
+            let buttonRect = itemRect tb i
 
             if isActive && enabled then
                 let activeBg = new SolidColorBrush(activeAccent)
@@ -463,7 +445,8 @@ module Toolbar =
 
         // Vẽ separator giữa 2 nhóm.
         let separatorThickness = 1.0
-        let sepOffset = float toolCount * (toolbarButtonSize + toolbarGap) + groupGap
+        let toolSpan = float toolCount * toolbarButtonSize + float (toolCount - 1) * toolbarGap
+        let sepOffset = toolSpan + groupGap
         let sepColor = Avalonia.Media.Color.FromRgb(0xE2uy, 0xE8uy, 0xF0uy)
         let sepBrush = new SolidColorBrush(sepColor)
         let sepLength = toolbarButtonSize + toolbarPadding * 2.0 - 8.0
@@ -657,19 +640,24 @@ type CaptureCanvas() as this =
                 FShotLog.write "[CaptureCanvas] HideTextInput command"
                 this.HideTextInput()
 
-    /// Thực hiện xuất ảnh: Save mở SaveFileDialog, Copy đưa bitmap vào Clipboard.
+    /// Thực hiện xuất ảnh: Save mở SaveFileDialog hoặc lưu tức thì, Copy đưa bitmap vào Clipboard.
     /// Chạy async để không block UI thread; sau khi xong dispatch ExportCompleted.
     member private this.ExecuteStartExport(target: ExportTarget) =
-        let window =
+        let topLevel =
             match this.VisualRoot with
-            | :? Window as w -> Some w
-            | _ -> None
+            | :? TopLevel as tl -> Some tl
+            | _ ->
+                match TopLevel.GetTopLevel(this) with
+                | null -> None
+                | tl -> Some tl
 
-        match captureResult, overlayState, window with
-        | Some result, Some state, Some w ->
+        match captureResult, overlayState, topLevel with
+        | Some result, Some state, Some tl ->
             let runExport = async {
                 try
-                    let exportBitmap = SceneComposer.renderExport result state.Selection (committedAnnotations state)
+                    FShotLog.write (sprintf "[CaptureCanvas] Starting export: target=%A, selection=%A" target state.Selection.Bounds)
+                    use exportBitmap = SceneComposer.renderExport result state.Selection (committedAnnotations state)
+                    FShotLog.write (sprintf "[CaptureCanvas] exportBitmap rendered: %dx%d" exportBitmap.Width exportBitmap.Height)
                     match target with
                     | SaveToFile (Some specifiedPath) ->
                         // Lưu tức thì không hiện dialog khi đường dẫn đã được chỉ định (FR-OUT-02)
@@ -698,7 +686,7 @@ type CaptureCanvas() as this =
                         data.SaveTo(stream)
                         stream.Flush()
                         FShotLog.write (sprintf "[CaptureCanvas] Instant save succeeded: %s" resolvedPath)
-                        Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted true) |> ignore)
+                        this.Dispatch(ExportCompleted true)
 
                     | SaveToFile None ->
                         // Nếu config đã có sẵn Path cố định thì lưu tức thì (FR-OUT-02)
@@ -729,7 +717,7 @@ type CaptureCanvas() as this =
                             data.SaveTo(stream)
                             stream.Flush()
                             FShotLog.write (sprintf "[CaptureCanvas] Instant save (from config) succeeded: %s" resolvedPath)
-                            Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted true) |> ignore)
+                            this.Dispatch(ExportCompleted true)
 
                         | _ ->
                             // Fallback Save As Dialog (FR-OUT-04)
@@ -739,7 +727,7 @@ type CaptureCanvas() as this =
 
                             let defaultPictures = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)
                             if not (String.IsNullOrWhiteSpace defaultPictures) && Directory.Exists defaultPictures then
-                                let! folder = w.StorageProvider.TryGetFolderFromPathAsync(defaultPictures) |> Async.AwaitTask
+                                let! folder = tl.StorageProvider.TryGetFolderFromPathAsync(defaultPictures) |> Async.AwaitTask
                                 if not (isNull folder) then
                                     options.SuggestedStartLocation <- folder
 
@@ -749,11 +737,11 @@ type CaptureCanvas() as this =
                             jpgType.Patterns <- ResizeArray[ "*.jpg"; "*.jpeg" ]
                             options.FileTypeChoices <- ResizeArray[ pngType; jpgType ]
 
-                            let! file = w.StorageProvider.SaveFilePickerAsync(options) |> Async.AwaitTask
+                            let! file = tl.StorageProvider.SaveFilePickerAsync(options) |> Async.AwaitTask
                             match file with
                             | null ->
                                 FShotLog.write "[CaptureCanvas] Save cancelled by user"
-                                Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted false) |> ignore)
+                                this.Dispatch(ExportCompleted false)
                             | f ->
                                 let localPath =
                                     match f.TryGetLocalPath() with
@@ -774,9 +762,10 @@ type CaptureCanvas() as this =
                                 data.SaveTo(stream)
                                 stream.Flush()
                                 FShotLog.write (sprintf "[CaptureCanvas] Saved to %s" localPath)
-                                Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted true) |> ignore)
+                                this.Dispatch(ExportCompleted true)
+
                     | CopyToClipboard ->
-                        let clipboard = w.Clipboard
+                        let clipboard = tl.Clipboard
                         if clipboard <> null then
                             use data = exportBitmap.Encode(SKEncodedImageFormat.Png, 100)
                             let bytes = data.ToArray()
@@ -787,20 +776,20 @@ type CaptureCanvas() as this =
                             transfer.Add(item)
                             do! clipboard.SetDataAsync(transfer) |> Async.AwaitTask
                             FShotLog.write "[CaptureCanvas] Copied PNG bytes to clipboard"
-                            Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted true) |> ignore)
+                            this.Dispatch(ExportCompleted true)
                         else
                             FShotLog.write "[CaptureCanvas] Clipboard not available"
-                            Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted false) |> ignore)
+                            this.Dispatch(ExportCompleted false)
                     | _ ->
                         FShotLog.write (sprintf "[CaptureCanvas] Unsupported export target: %A" target)
-                        Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted false) |> ignore)
+                        this.Dispatch(ExportCompleted false)
                 with ex ->
                     FShotLog.writeEx "[CaptureCanvas] Export failed" ex
-                    Dispatcher.UIThread.Post(fun () -> this.Dispatch(ExportCompleted false) |> ignore)
+                    this.Dispatch(ExportCompleted false)
             }
-            Async.Start(runExport) |> ignore
+            Async.StartImmediate(runExport)
         | _ ->
-            FShotLog.write "[CaptureCanvas] Cannot export: missing capture result, overlay state, or window"
+            FShotLog.write "[CaptureCanvas] Cannot export: missing capture result, overlay state, or toplevel"
 
     /// Gửi event đến OverlayState, cập nhật state và vẽ lại.
     member private this.Dispatch(event: OverlayEvent) =
@@ -984,13 +973,14 @@ type CaptureCanvas() as this =
             | Some hit ->
                 match hit with
                 | Toolbar.ToolHit tool ->
-                    FShotLog.write (sprintf "[CaptureCanvas] Toolbar click -> SelectTool %A" tool)
+                    FShotLog.write (sprintf "[CaptureCanvas] Toolbar click at %A -> SelectTool %A" avPoint tool)
                     this.Dispatch(SelectTool tool)
                 | Toolbar.ActionHit action ->
-                    FShotLog.write (sprintf "[CaptureCanvas] Toolbar click -> ToolbarAction %A" action)
+                    FShotLog.write (sprintf "[CaptureCanvas] Toolbar click at %A -> ToolbarAction %A" avPoint action)
                     this.Dispatch(ToolbarAction action)
             | None ->
-                // Click vào toolbar nhưng không trúng nút; bỏ qua.
+                // Click vào toolbar nhưng không trúng nút; log để debug.
+                FShotLog.write (sprintf "[CaptureCanvas] Toolbar click at %A inside tb=%A but hit no button" avPoint tb)
                 ()
         | _ ->
             // Đảm bảo control có focus để nhận phím tắt.
@@ -1095,9 +1085,13 @@ type CaptureCanvas() as this =
         let isFocused = this.IsFocused
         FShotLog.write (sprintf "[CaptureCanvas] KeyDown: %s | Key: %A | Focused: %b" keyString e.Key isFocused)
 
-        // Phím tắt chuyển nhanh công cụ annotation.
+        // Phím tắt chuyển nhanh công cụ annotation và thao tác xuất ảnh.
         // Dùng e.Key (phím vật lý) thay vì chuỗi IME để tránh bị bộ gõ tiếng Việt bắt mất.
         match e.Key with
+        | Key.C when e.KeyModifiers.HasFlag(KeyModifiers.Control) ->
+            this.Dispatch(Copy)
+        | Key.S when e.KeyModifiers.HasFlag(KeyModifiers.Control) ->
+            this.Dispatch(Save)
         | Key.P -> this.Dispatch(SelectTool PencilTool)
         | Key.L -> this.Dispatch(SelectTool LineTool)
         | Key.A -> this.Dispatch(SelectTool ArrowTool)

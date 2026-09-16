@@ -80,16 +80,16 @@ module DomainToSkia =
             )
 
         let bitmap = new SKBitmap(info)
-        bitmap.SetPixels(System.IntPtr.Zero) |> ignore
 
         // Copy pixels từ mảng byte sang bitmap.
         let pixelPtr = bitmap.GetPixels()
-        if pixelPtr <> System.IntPtr.Zero then
+        if pixelPtr <> System.IntPtr.Zero && captureResult.Pixels <> null && captureResult.Pixels.Length > 0 then
+            let bytesToCopy = min captureResult.Pixels.Length captureResult.TotalBytes
             System.Runtime.InteropServices.Marshal.Copy(
                 captureResult.Pixels,
                 0,
                 pixelPtr,
-                captureResult.TotalBytes
+                bytesToCopy
             )
 
         bitmap

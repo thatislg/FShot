@@ -489,19 +489,19 @@ module OverlayStateLogic =
             let newStyle = { state.CurrentStyle with StrokeWidth = width }
             emptyResult { state with CurrentStyle = newStyle }
 
-        | SelectionState.Selected, NoAnnotation, ToolbarAction UndoAction ->
+        | SelectionState.Selected, _, ToolbarAction UndoAction ->
             emptyResult (performUndo state)
 
-        | SelectionState.Selected, NoAnnotation, ToolbarAction RedoAction ->
+        | SelectionState.Selected, _, ToolbarAction RedoAction ->
             emptyResult (performRedo state)
 
-        | SelectionState.Selected, NoAnnotation, ToolbarAction SaveAction ->
+        | SelectionState.Selected, _, ToolbarAction SaveAction ->
             startExport (ExportTarget.SaveToFile state.Config.SaveOptions.Path) state
 
-        | SelectionState.Selected, NoAnnotation, ToolbarAction CopyAction ->
+        | SelectionState.Selected, _, ToolbarAction CopyAction ->
             startExport ExportTarget.CopyToClipboard state
 
-        | SelectionState.Selected, NoAnnotation, ToolbarAction CancelAction ->
+        | SelectionState.Selected, _, ToolbarAction CancelAction ->
             emptyResult (clearSelectionAndAnnotations state)
 
         | SelectionState.Selected, NoAnnotation, Undo ->
@@ -510,10 +510,10 @@ module OverlayStateLogic =
         | SelectionState.Selected, NoAnnotation, Redo ->
             emptyResult (performRedo state)
 
-        | SelectionState.Selected, NoAnnotation, Save ->
+        | SelectionState.Selected, _, Save ->
             startExport (ExportTarget.SaveToFile state.Config.SaveOptions.Path) state
 
-        | SelectionState.Selected, NoAnnotation, Copy ->
+        | SelectionState.Selected, _, Copy ->
             startExport ExportTarget.CopyToClipboard state
 
         | SelectionState.Selected, NoAnnotation, Cancel ->

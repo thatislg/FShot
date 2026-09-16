@@ -89,8 +89,8 @@ module SceneComposer =
         : SKBitmap =
 
         let physicalSelection = captureResult.LogicalSelectionToPhysical selection.Bounds
-        let width = int physicalSelection.Width
-        let height = int physicalSelection.Height
+        let width = max 1 (int physicalSelection.Width)
+        let height = max 1 (int physicalSelection.Height)
 
         let info =
             new SKImageInfo(width, height, SKColorType.Bgra8888, SKAlphaType.Premul)
