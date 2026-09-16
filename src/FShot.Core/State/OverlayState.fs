@@ -597,7 +597,7 @@ module OverlayStateLogic =
             result [ HideTextInput ] newState
 
         // --- Exporting ---
-        | SelectionState.Selected, NoAnnotation, ExportCompleted success ->
+        | _, _, ExportCompleted success ->
             if success && state.Config.CloseAfterExport then
                 let newState = { state with Selection = Selection.Empty }
                 result [ CloseOverlay ] newState

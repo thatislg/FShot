@@ -1,8 +1,8 @@
 # F-Shot Master Progress Tracking
 
-- **Cập nhật gần nhất:** 2026-09-15
-- **Tiến độ tổng quan:** `[ 35 / 84 ] Tasks hoàn thành (~41.7%)` (Phase 0 PoC đã verify xong; Phase 1 MVP Core P1.01–P1.26 đang triển khai)
-- **Mục tiêu hiện tại:** Tiếp tục Epic 5: Xuất dữ liệu & CLI (P1.24–P1.29).
+- **Cập nhật gần nhất:** 2026-09-16
+- **Tiến độ tổng quan:** `[ 37 / 84 ] Tasks hoàn thành (~44.0%)` (Phase 0 PoC đã verify xong; P1.01–P1.26 của Phase 1 đã hoàn thành & verify runtime)
+- **Mục tiêu hiện tại:** Tiếp tục Epic 5: CLI & Cấu hình (P1.27–P1.29).
 
 ---
 
@@ -11,7 +11,7 @@
 | Phase | Mục tiêu | Trạng thái | Hoàn thành |
 | :--- | :--- | :---: | :---: |
 | **Phase 0: PoC** | Khung Solution, Screen Capture, Overlay Canvas, đo 60 FPS | **DONE** | **8 / 8** (đã verify trên desktop Windows) |
-| **Phase 1: MVP Core** | Bounding box, 9 Annotation tools, Undo/Redo, Toolbar, Save/Clipboard | **IN PROGRESS** | 27 / 29 (~93%) |
+| **Phase 1: MVP Core** | Bounding box, 9 Annotation tools, Undo/Redo, Toolbar, Save/Clipboard | **IN PROGRESS** | 26 / 29 (~89.7%) |
 | **Phase 2: Windows v1.0** | Tray, Hotkeys, Real Capture, Config UI, Pin Widget, Advanced tools | **PENDING** | 0 / 39 (0%) |
 | **Phase 3: Advanced** | Imgur upload, Snap-to-grid, Tùy biến nâng cao | **PENDING** | 0 / 8 (0%) |
 
@@ -213,7 +213,7 @@
   - [x] Build và chạy tests: 167 Core + 21 Skia + 3 UI pass.
   - [x] Tích hợp nút Undo/Redo/Copy/Save/Cancel trên toolbar; 15 nút (10 tool + 5 action) đều có icon, hit-test, và dispatch đúng event.
   - [ ] Hover visual (nền vàng bơ nhạt) cần track mouse tách biệt, thuộc nợ kỹ thuật UI.
-  - [ ] Save/Copy trên toolbar chưa verify runtime thực tế (chỉ pass unit tests).
+  - [x] Save/Copy trên toolbar đã verify runtime thực tế trên Windows (chụp thật, lưu file ra đĩa và dán clipboard thành công).
 
 ### Epic 5: Xuất dữ liệu & CLI
 - [x] **P1.24** Lưu file ổ cứng `Ctrl+S` kèm cấu hình tên file ngày tháng (`FR-OUT-01/02/03`).
@@ -225,23 +225,24 @@
   - [x] Hỗ trợ mã hóa định dạng file ảnh xuất PNG và JPG theo phần mở rộng hoặc cấu hình chất lượng `JpegQuality` (`FR-OUT-13`).
   - [x] Bổ sung unit tests cho pattern formatting và export resolution trong `tests/FShot.Core.Tests/Domain/ExportTests.fs`.
   - [x] Sửa triệt để lỗi ghi file IO trên Windows: chuyển sang `IStorageFile.OpenWriteAsync()` tránh lỗi path URI có gạch chéo đầu, tự động đóng overlay theo `CloseAfterExport`.
-- [ ] **P1.25** Hộp thoại Save As Fallback khi chưa cấu hình đường dẫn (`FR-OUT-04`).
+- [x] **P1.25** Hộp thoại Save As Fallback khi chưa cấu hình đường dẫn (`FR-OUT-04`).
   - [x] Tích hợp cơ bản `StorageProvider.SaveFilePickerAsync` trong `CaptureCanvas.axaml.fs`.
-  - [ ] Rà soát đặc tả Save As fallback trong `docs/2.Design/06_Export/06_02_ExportTarget.md`.
+  - [x] Rà soát đặc tả Save As fallback trong `docs/2.Design/06_Export/06_02_ExportTarget.md`.
   - [x] Tích hợp tên file gợi ý mặc định sinh từ `FileNamePattern` (ví dụ: `fshot_2026-09-15-163000.png`) vào `FilePickerSaveOptions.SuggestedFileName` thay vì chuỗi cứng.
   - [x] Cấu hình đầy đủ bộ lọc định dạng file hợp lệ trong hộp thoại (`*.png`, `*.jpg`, `*.jpeg`).
   - [x] Xử lý an toàn khi người dùng nhấn Hủy/Cancel trên Save Dialog: dispatch `ExportCompleted false`, không crash, giữ trạng thái canvas hoặc đóng theo cấu hình.
   - [x] Xử lý lỗi IO khi ghi file (ổ đĩa đầy, bị khóa quyền write) và ghi log qua `FShotLog`.
-  - [ ] Verify runtime mở Save As dialog, lưu file vào thư mục tùy chọn và xác nhận ảnh xuất hoàn tất trên Windows.
-- [ ] **P1.26** Sao chép nhanh vào Windows Clipboard dạng PNG (`FR-OUT-05`).
+  - [x] Verify runtime mở Save As dialog, lưu file vào thư mục tùy chọn và xác nhận ảnh xuất hoàn tất trên Windows.
+- [x] **P1.26** Sao chép nhanh vào Windows Clipboard dạng PNG (`FR-OUT-05`).
   - [x] Phím tắt `Ctrl+C`, nút Copy trên toolbar và click ngoài vùng chọn khi có annotations phát `StartExport CopyToClipboard`.
   - [x] Mã hóa bitmap vùng chọn + annotations sang mảng byte PNG qua `SKImage.Encode`.
-  - [x] Đưa byte PNG vào clipboard Avalonia bằng `DataTransfer` + `DataTransferItem` với platform format `PNG`.
-  - [ ] Hoàn thiện tài liệu thiết kế `docs/2.Design/06_Export/06_05_FileAndClipboard.md`.
-  - [ ] Thêm fallback hỗ trợ bitmap/DIB format cho clipboard Windows để tương thích tối đa với các ứng dụng Office / Paint / chat app không đọc raw platform PNG.
-  - [ ] Đảm bảo overlay tự động đóng sau khi copy thành công khi `ConfigSnapshot.CloseAfterExport = true`.
-  - [ ] Bổ sung / cập nhật unit tests cho luồng copy trong `tests/FShot.Core.Tests/State/OverlayStateTests.fs`.
-  - [ ] Verify runtime thực tế trên Windows: dán (`Ctrl+V`) ảnh đã copy vào Paint, Word, Telegram/Discord hoặc trình duyệt web.
+  - [x] Đưa byte PNG và DIB vào clipboard Win32 native (`CF_DIB` + `PNG` registered format) với bộ nhớ toàn cục OS-owned, giải quyết triệt để mất clipboard khi app đóng.
+  - [x] Hoàn thiện tài liệu thiết kế `docs/2.Design/06_Export/06_05_FileAndClipboard.md`.
+  - [x] Thêm fallback hỗ trợ bitmap/DIB format cho clipboard Windows để tương thích tối đa với các ứng dụng Office / Paint / chat app không đọc raw platform PNG.
+  - [x] Đảm bảo overlay tự động đóng sau khi copy thành công khi `ConfigSnapshot.CloseAfterExport = true`.
+  - [x] Bổ sung âm thanh phản hồi xác nhận copy thành công (`MessageBeep`).
+  - [x] Bổ sung / cập nhật unit tests cho luồng copy trong `tests/FShot.Core.Tests/State/OverlayStateTests.fs`.
+  - [x] Verify runtime thực tế trên Windows: dán (`Ctrl+V`) ảnh đã copy vào Paint, Word, Telegram/Discord, Zalo hoặc trình duyệt web.
 - [ ] **P1.27** Parser lệnh dòng lệnh bằng Argu (`fshot gui`, `fshot full`) (`FR-CLI-01/02`).
   - [ ] Thêm package `Argu` (v6.2.4) vào `src/FShot.UI/FShot.UI.fsproj`.
   - [ ] Hoàn thiện tài liệu thiết kế CLI trong `docs/2.Design/10_CLI/10_01_CliParser.md` (hoặc `docs/2.Design/06_Export/06_06_CliOutput.md`).
@@ -357,7 +358,7 @@
 
 ---
 
-*Cập nhật gần nhất: 2026-09-14*
+*Cập nhật gần nhất: 2026-09-16*
 
 ---
 
@@ -370,6 +371,8 @@
 - **P1.23:** `docs/3.Progress/03_02_P1.23_Report.md` (triển khai toolbar với SVG icons, transform fix, màu sắc design tokens)
 - **P1.24–P1.26:** `docs/3.Progress/03_10_P1.24_P1.26_Toolbar_Actions_Report.md` (kết nối 5 action buttons trên toolbar)
 - **Epic 5 & Toàn bộ Icon Kawaii:** `docs/3.Progress/03_11_Epic5_Subtasks_And_Kawaii_Icons_Report.md` (chi tiết subtask Epic 5 + tích hợp toàn diện bộ icon Kawaii Claymorphism)
+- **P1.24 (Save/Export & Real Capture):** `docs/099.Report/20260916_0915_Platform_Capture_Export_Save_Feature.md` (chụp màn hình thật Win32 BitBlt và lưu file)
+- **P1.25 & P1.26 (Clipboard & Close Overlay):** `docs/099.Report/20260916_0945_Clipboard_Lifecycle_And_Overlay_Close_Feature.md` (Win32 Native Clipboard CF_DIB + PNG, tự động đóng overlay và âm thanh thông báo)
 
 ---
 

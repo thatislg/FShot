@@ -18,8 +18,10 @@ open System.Runtime.InteropServices
 open System.Diagnostics
 
 open Avalonia.Threading
+open Avalonia.Controls.ApplicationLifetimes
 open FShot.UI.Logging
 open FShot.UI.SkiaCanvas
+open FShot.Platform.Win32.Clipboard
 
 open FShot.Rendering.Skia.Renderers
 open SkiaSharp
@@ -615,21 +617,36 @@ type CaptureCanvas() as this =
         for cmd in commands do
             match cmd with
             | CloseOverlay ->
-                FShotLog.write "[CaptureCanvas] CloseOverlay command"
-                // Xóa state ngay để frame cuối cùng không vẽ annotations hay dimming
-                // trước khi cửa sổ thực sự đóng.
-                overlayState <- None
-                captureResult <- None
-                cachedBitmap |> Option.iter (fun b -> try b.Dispose() with _ -> ())
-                cachedBitmap <- None
+                FShotLog.write "[CaptureCanvas] CloseOverlay command: closing overlay window"
                 this.HideTextInput()
-                this.InvalidateVisual()
-                match this.VisualRoot with
-                | :? Window as w ->
+
+                let winOpt =
+                    match TopLevel.GetTopLevel(this) with
+                    | :? Window as w -> Some w
+                    | _ ->
+                        match this.VisualRoot with
+                        | :? Window as w -> Some w
+                        | _ ->
+                            match Application.Current.ApplicationLifetime with
+                            | :? IClassicDesktopStyleApplicationLifetime as desktop ->
+                                Option.ofObj desktop.MainWindow
+                            | _ -> None
+
+                match winOpt with
+                | Some w ->
+                    FShotLog.write (sprintf "[CaptureCanvas] Found window (%s), invoking Close()..." (w.GetType().Name))
                     Dispatcher.UIThread.Post(fun () ->
-                        try w.Close() with ex -> FShotLog.writeEx "Failed to close overlay window" ex
+                        try
+                            w.Close()
+                        with ex ->
+                            FShotLog.writeEx "Failed to close overlay window" ex
                     )
-                | _ -> ()
+                | None ->
+                    FShotLog.write "[CaptureCanvas] Could not find Window to close! Invoking desktop shutdown."
+                    match Application.Current.ApplicationLifetime with
+                    | :? IClassicDesktopStyleApplicationLifetime as desktop ->
+                        Dispatcher.UIThread.Post(fun () -> desktop.Shutdown())
+                    | _ -> ()
             | StartExport target ->
                 FShotLog.write (sprintf "[CaptureCanvas] StartExport command: %A" target)
                 this.ExecuteStartExport(target)
@@ -765,21 +782,24 @@ type CaptureCanvas() as this =
                                 this.Dispatch(ExportCompleted true)
 
                     | CopyToClipboard ->
-                        let clipboard = tl.Clipboard
-                        if clipboard <> null then
-                            use data = exportBitmap.Encode(SKEncodedImageFormat.Png, 100)
-                            let bytes = data.ToArray()
-                            let pngFormat = Avalonia.Input.DataFormat.CreateBytesPlatformFormat("PNG")
-                            let item = new Avalonia.Input.DataTransferItem()
-                            item.Set(pngFormat, bytes)
-                            let transfer = new Avalonia.Input.DataTransfer()
-                            transfer.Add(item)
-                            do! clipboard.SetDataAsync(transfer) |> Async.AwaitTask
-                            FShotLog.write "[CaptureCanvas] Copied PNG bytes to clipboard"
-                            this.Dispatch(ExportCompleted true)
-                        else
-                            FShotLog.write "[CaptureCanvas] Clipboard not available"
-                            this.Dispatch(ExportCompleted false)
+                        use data = exportBitmap.Encode(SKEncodedImageFormat.Png, 100)
+                        let pngBytes = data.ToArray()
+
+                        // Lấy mảng byte pixel BGRA32 từ exportBitmap
+                        let pixelBytes = Array.zeroCreate<byte> (exportBitmap.Width * exportBitmap.Height * 4)
+                        let ptr = exportBitmap.GetPixels()
+                        if ptr <> IntPtr.Zero then
+                            Marshal.Copy(ptr, pixelBytes, 0, pixelBytes.Length)
+
+                        // Ghi vào Win32 Clipboard (CF_DIB + PNG) để OS lưu giữ dữ liệu vĩnh viễn trên hệ thống
+                        let win32Ok = ClipboardService.copyImageToClipboard exportBitmap.Width exportBitmap.Height pngBytes pixelBytes
+                        FShotLog.write (sprintf "[CaptureCanvas] Win32 Clipboard copy result: %b" win32Ok)
+
+                        // Phát âm thanh thông báo ngắn gọn xác nhận đã copy thành công
+                        ClipboardService.playNotificationSound ()
+
+                        FShotLog.write "[CaptureCanvas] Copy completed successfully, dispatching ExportCompleted true"
+                        this.Dispatch(ExportCompleted true)
                     | _ ->
                         FShotLog.write (sprintf "[CaptureCanvas] Unsupported export target: %A" target)
                         this.Dispatch(ExportCompleted false)
