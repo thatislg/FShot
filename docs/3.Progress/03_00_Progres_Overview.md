@@ -253,14 +253,14 @@
     - [x] `full`: chụp trực tiếp toàn bộ màn hình (headless/direct), render xuất thẳng ra file hoặc clipboard theo tham số `-p` / `-c`, thoát app mà không hiện GUI.
   - [x] Viết unit tests cho CLI parser với các kịch bản tham số hợp lệ và không hợp lệ trong `tests/FShot.UI.Tests/`.
   - [x] Verify chạy các lệnh thực tế từ PowerShell: `fshot gui`, `fshot full -c`, `fshot full -p output.png`, `fshot --help`.
-- [ ] **P1.28** Cấu hình độ trễ chụp (`-d / --delay`) (`FR-CAP-05`).
+- [x] **P1.28** Cấu hình độ trễ chụp (`-d / --delay`) (`FR-CAP-05`).
   - [x] Định nghĩa trường `DelayMs: int` trong `CaptureRequest` domain model.
-  - [ ] Rà soát `docs/2.Design/02_Capture/02_03_CaptureRequest.md` mục cấu hình độ trễ.
-  - [ ] Ánh xạ tham số `-d` / `--delay <ms>` từ Argu parser vào `CaptureRequest.DelayMs`.
-  - [ ] Triển khai `Async.Sleep delayMs` trước thời điểm gọi `CaptureAdapter.CaptureVirtualScreen()` trong cả chế độ `gui` và `full`.
-  - [ ] Xử lý validation giá trị delay (clamp $\ge 0$, bỏ qua giá trị âm hoặc không hợp lệ).
-  - [ ] Viết unit tests kiểm thử parse delay flag và kiểm tra không block bất thường khi `delay = 0`.
-  - [ ] Verify runtime trên Windows: chạy `fshot gui -d 3000`, xác nhận overlay xuất hiện đúng sau 3 giây chờ để kịp chuẩn bị màn hình.
+  - [x] Rà soát `docs/2.Design/02_Capture/02_03_CaptureRequest.md` mục cấu hình độ trễ.
+  - [x] Ánh xạ tham số `-d` / `--delay <ms>` từ Argu parser vào `CaptureRequest.DelayMs`.
+  - [x] Triển khai `Async.Sleep delayMs` trước thời điểm gọi `CaptureAdapter.CaptureVirtualScreen()` trong cả chế độ `gui` và `full`.
+  - [x] Xử lý validation giá trị delay (clamp $>= 0$, bỏ qua giá trị âm hoặc không hợp lệ).
+  - [x] Viết unit tests kiểm thử parse delay flag và kiểm tra không block bất thường khi `delay = 0`.
+  - [x] Verify runtime trên Windows: chạy `fshot full -d 2000`, xác nhận delay ~2 giây trước khi chụp.
 - [ ] **P1.29** Lưu trữ và nạp cấu hình cơ bản từ JSON tại `%APPDATA%\FShot\config.json`.
   - [ ] Hoàn thiện tài liệu thiết kế `docs/2.Design/07_Config/07_02_Schema.md`, `07_03_MvpConfig.md`, `07_04_FileStore.md`.
   - [ ] Định nghĩa `AppConfig` record trong `src/FShot.Core/Domain/Config.fs` gồm các trường MVP: `SavePath`, `FilenamePattern`, `DrawColor`, `DrawThickness`, `DefaultTool`, `CloseAfterExport` (`FR-CFG-001/003/200/201`).

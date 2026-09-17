@@ -25,6 +25,14 @@ let ``CaptureTime được tính đúng`` () =
     let expected = requestTime.AddMilliseconds(1500.0)
     Assert.Equal(expected, captureTime)
 
+/// Kiểm tra DelayMs = 0 không làm dịch chuyển thời điểm chụp.
+[<Fact>]
+let ``CaptureTime với delay 0 giữ nguyên requestTime`` () =
+    let request = { CaptureRequest.Default with DelayMs = 0 }
+    let requestTime = DateTime.UtcNow
+    let captureTime = request.CaptureTime(requestTime)
+    Assert.Equal(requestTime, captureTime)
+
 /// Kiểm tra CaptureResult tính đúng tổng số byte.
 /// Công thức: totalBytes = Stride * Height.
 [<Fact>]

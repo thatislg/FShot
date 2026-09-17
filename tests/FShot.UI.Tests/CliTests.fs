@@ -38,6 +38,27 @@ let ``parse full with path``() =
     | _ -> Assert.Fail("Expected File output target")
 
 [<Fact>]
+let ``parse full with delay zero``() =
+    let request = CliParser.parse [| "full"; "-d"; "0"; "-p"; "shot.png" |]
+    Assert.Equal(FullScreen, request.Mode)
+    Assert.Equal(0, request.DelayMs)
+
+[<Fact>]
+let ``parse gui with delay zero``() =
+    let request = CliParser.parse [| "gui"; "-d"; "0" |]
+    Assert.Equal(GuiInteractive, request.Mode)
+    Assert.Equal(0, request.DelayMs)
+
+[<Fact>]
+let ``parse screen with delay zero``() =
+    let request = CliParser.parse [| "screen"; "0"; "-d"; "0"; "-c" |]
+    match request.Mode with
+    | SingleScreen idx -> Assert.Equal(0, idx)
+    | _ -> Assert.Fail("Expected SingleScreen mode")
+    Assert.Equal(0, request.DelayMs)
+    Assert.Equal(OutputTarget.Clipboard, request.OutputTarget)
+
+[<Fact>]
 let ``parse full with delay and path``() =
     let request = CliParser.parse [| "full"; "-d"; "1500"; "-p"; "shot.jpg" |]
     Assert.Equal(FullScreen, request.Mode)
