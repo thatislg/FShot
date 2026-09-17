@@ -2,61 +2,17 @@
 
 open System
 open Avalonia
+open Avalonia.Controls.ApplicationLifetimes
+open Avalonia.Threading
 open FShot.Core.Domain
-
-/// Parse tham số dòng lệnh đơn giản.
-/// Xem tài liệu 11_02_AppLifecycle.md.
-module CliParser =
-
-    /// Tìm giá trị của một flag, ví dụ ["-d"; "3000"] → Some "3000".
-    let tryGetFlagValue (flag: string) (args: string[]) : string option =
-        let index = Array.tryFindIndex ((=) flag) args
-        match index with
-        | Some i when i + 1 < args.Length -> Some args.[i + 1]
-        | _ -> None
-
-    /// Kiểm tra flag có tồn tại không.
-    let hasFlag (flag: string) (args: string[]) : bool =
-        Array.contains flag args
-
-    /// Parse args thành CaptureRequest.
-    let parse (args: string[]) : CaptureRequest =
-        let delay =
-            match tryGetFlagValue "-d" args with
-            | Some value ->
-                match Int32.TryParse value with
-                | true, d -> d
-                | _ -> 0
-            | None -> 0
-
-        let outputTarget =
-            if hasFlag "-c" args then
-                Clipboard
-            elif hasFlag "-p" args then
-                match tryGetFlagValue "-p" args with
-                | Some path -> File path
-                | None -> OpenGui
-            else
-                OpenGui
-
-        let mode =
-            if hasFlag "full" args then FullScreen
-            elif hasFlag "screen" args then
-                match tryGetFlagValue "-n" args with
-                | Some value ->
-                    match Int32.TryParse value with
-                    | true, id -> SingleScreen id
-                    | _ -> FullScreen
-                | None -> FullScreen
-            elif hasFlag "gui" args then GuiInteractive
-            else GuiInteractive
-
-        {
-          CaptureRequest.Default with
-              Mode = mode
-              DelayMs = delay
-              OutputTarget = outputTarget
-        }
+open FShot.Core.Geometry
+open FShot.Platform.Win32.Capture
+open FShot.Platform.Win32.Clipboard
+open FShot.Platform.Win32.Screen
+open FShot.Rendering.Skia.Renderers
+open FShot.UI.Cli
+open FShot.UI.Logging
+open SkiaSharp
 
 module Program =
 
@@ -71,14 +27,129 @@ module Program =
             .WithInterFont()
             .LogToTrace(areas = Array.empty)
 
+    /// Chụp màn hình theo CaptureMode và độ trễ, sau đó xuất ra OutputTarget.
+    /// Trả về exit code 0 nếu thành công, 1 nếu thất bại.
+    let rec runHeadlessCaptureAsync (request: ParsedCliRequest) : Async<int> =
+        async {
+            try
+                if request.DelayMs > 0 then
+                    do! Async.Sleep request.DelayMs
+
+                let captureService = WindowsCaptureService() :> ICaptureService
+                let! captureResultOpt =
+                    async {
+                        let! res =
+                            match request.Mode with
+                            | FullScreen -> captureService.CaptureCursorScreenAsync()
+                            | SingleScreen index -> captureService.CaptureScreenAsync index
+                            | _ -> captureService.CaptureCursorScreenAsync()
+                        match res with
+                        | Ok r -> return Ok r
+                        | Error err ->
+                            FShotLog.write (sprintf "WindowsCaptureService failed (%A), falling back to StubCaptureService" err)
+                            let stubService = StubCaptureService() :> ICaptureService
+                            return! stubService.CaptureVirtualScreenAsync()
+                    }
+
+                match captureResultOpt with
+                | Ok captureResult ->
+                    let virtualBounds = captureResult.VirtualBounds
+                    let selection =
+                        {
+                          Selection.Empty with
+                              State = Selected
+                              Bounds =
+                                {
+                                  X = virtualBounds.X
+                                  Y = virtualBounds.Y
+                                  Width = virtualBounds.Width
+                                  Height = virtualBounds.Height
+                                }
+                        }
+
+                    use exportBitmap = SceneComposer.renderExport captureResult selection []
+
+                    let exitCode =
+                        match request.OutputTarget with
+                        | OutputTarget.File path ->
+                            let format =
+                                if path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
+                                   path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) then
+                                    SKEncodedImageFormat.Jpeg
+                                else
+                                    SKEncodedImageFormat.Png
+
+                            let quality = ConfigSnapshot.Default.SaveOptions.NormalizedJpegQuality
+                            use data = exportBitmap.Encode(format, quality)
+                            use stream = System.IO.File.Create(path)
+                            data.SaveTo(stream)
+                            stream.Flush()
+                            FShotLog.write (sprintf "Headless save succeeded: %s" path)
+                            printfn "Saved to %s" path
+                            0
+
+                        | OutputTarget.Clipboard ->
+                            use data = exportBitmap.Encode(SKEncodedImageFormat.Png, 100)
+                            let pngBytes = data.ToArray()
+                            let pixelBytes = Array.zeroCreate<byte> (exportBitmap.Width * exportBitmap.Height * 4)
+                            let ptr = exportBitmap.GetPixels()
+                            if ptr <> IntPtr.Zero then
+                                Runtime.InteropServices.Marshal.Copy(ptr, pixelBytes, 0, pixelBytes.Length)
+                            let ok = ClipboardService.copyImageToClipboard exportBitmap.Width exportBitmap.Height pngBytes pixelBytes
+                            ClipboardService.playNotificationSound()
+                            FShotLog.write (sprintf "Headless clipboard copy result: %b" ok)
+                            printfn "Copied to clipboard"
+                            0
+
+                        | OutputTarget.OpenGui ->
+                            FShotLog.write "Headless mode requires -p or -c. Falling back to GUI."
+                            // Không thể gọi return! trong expression, nên chạy GUI ở ngoài.
+                            -1
+
+                        | _ ->
+                            FShotLog.write (sprintf "Unsupported headless output target: %A" request.OutputTarget)
+                            1
+
+                    if exitCode = -1 then
+                        return! runGuiAsync { request with OutputTarget = OutputTarget.OpenGui }
+                    else
+                        return exitCode
+
+                | Error err ->
+                    FShotLog.write (sprintf "Headless capture failed: %A" err)
+                    printfn "Capture failed: %A" err
+                    return 1
+            with ex ->
+                FShotLog.writeEx "Headless capture failed" ex
+                printfn "Error: %s" ex.Message
+                return 1
+        }
+
+    and runGuiAsync (request: ParsedCliRequest) : Async<int> =
+        async {
+            let app = buildAvaloniaApp()
+            // Truyền request vào App thông qua static field đơn giản.
+            App.CaptureRequest <-
+                {
+                  CaptureRequest.Default with
+                      Mode = request.Mode
+                      DelayMs = request.DelayMs
+                      OutputTarget = request.OutputTarget
+                }
+            return app.StartWithClassicDesktopLifetime([||])
+        }
+
     [<EntryPoint; STAThread>]
     let main argv =
         let request = CliParser.parse argv
 
-        match request.Mode with
-        | GuiInteractive ->
-            buildAvaloniaApp().StartWithClassicDesktopLifetime(argv)
-        | _ ->
-            // TODO: chụp trực tiếp full/screen và xuất.
-            // Hiện tại mở GUI để test.
-            buildAvaloniaApp().StartWithClassicDesktopLifetime(argv)
+        let exitCode =
+            if request.OutputTarget <> OutputTarget.OpenGui || request.Mode = GuiInteractive then
+                if request.Mode = GuiInteractive then
+                    runGuiAsync request |> Async.RunSynchronously
+                else
+                    runHeadlessCaptureAsync request |> Async.RunSynchronously
+            else
+                runGuiAsync request |> Async.RunSynchronously
+
+        exitCode

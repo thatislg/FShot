@@ -243,16 +243,16 @@
   - [x] Bổ sung âm thanh phản hồi xác nhận copy thành công (`MessageBeep`).
   - [x] Bổ sung / cập nhật unit tests cho luồng copy trong `tests/FShot.Core.Tests/State/OverlayStateTests.fs`.
   - [x] Verify runtime thực tế trên Windows: dán (`Ctrl+V`) ảnh đã copy vào Paint, Word, Telegram/Discord, Zalo hoặc trình duyệt web.
-- [ ] **P1.27** Parser lệnh dòng lệnh bằng Argu (`fshot gui`, `fshot full`) (`FR-CLI-01/02`).
-  - [ ] Thêm package `Argu` (v6.2.4) vào `src/FShot.UI/FShot.UI.fsproj`.
-  - [ ] Hoàn thiện tài liệu thiết kế CLI trong `docs/2.Design/10_CLI/10_01_CliParser.md` (hoặc `docs/2.Design/06_Export/06_06_CliOutput.md`).
-  - [ ] Khai báo cây tham số dòng lệnh dạng F# Discriminated Union với thuộc tính Argu (`CliArguments.fs`): subcommands `gui`, `full`, `screen` và các tùy chọn `-p/--path`, `-c/--clipboard`, `-d/--delay`, `--version`, `--help`.
-  - [ ] Tích hợp `ArgumentParser.Create<CliArgs>()` trong `src/FShot.UI/Program.fs`, hiển thị thông tin hướng dẫn chuẩn khi gọi `--help` hoặc nhập sai tham số (`FR-CLI-07`).
-  - [ ] Định tuyến thực thi theo subcommand:
-    - [ ] `gui`: khởi chạy Avalonia interactive overlay window (`CaptureOverlayWindow`).
-    - [ ] `full`: chụp trực tiếp toàn màn hình (headless/direct), render xuất thẳng ra file hoặc clipboard theo tham số `-p` / `-c`, thoát app mà không hiện GUI.
-  - [ ] Viết unit tests cho CLI parser với các kịch bản tham số hợp lệ và không hợp lệ trong `tests/FShot.UI.Tests/`.
-  - [ ] Verify chạy các lệnh thực tế từ PowerShell: `fshot gui`, `fshot full -c`, `fshot full -p output.png`, `fshot --help`.
+- [x] **P1.27** Parser lệnh dòng lệnh bằng Argu (`fshot gui`, `fshot full`) (`FR-CLI-01/02`).
+  - [x] Thêm package `Argu` (v6.2.4) vào `src/FShot.UI/FShot.UI.fsproj`.
+  - [x] Hoàn thiện tài liệu thiết kế CLI trong `docs/2.Design/10_CLI/10_01_CliParser.md` (hoặc `docs/2.Design/06_Export/06_06_CliOutput.md`).
+  - [x] Khai báo cây tham số dòng lệnh dạng F# Discriminated Union với thuộc tính Argu (`CliArguments.fs`): subcommands `gui`, `full`, `screen` và các tùy chọn `-p/--path`, `-c/--clipboard`, `-d/--delay`, `--version`, `--help`.
+  - [x] Tích hợp `ArgumentParser.Create<CliArgs>()` trong `src/FShot.UI/Program.fs`, hiển thị thông tin hướng dẫn chuẩn khi gọi `--help` hoặc nhập sai tham số (`FR-CLI-07`).
+  - [x] Định tuyến thực thi theo subcommand:
+    - [x] `gui`: khởi chạy Avalonia interactive overlay window (`CaptureOverlayWindow`).
+    - [x] `full`: chụp trực tiếp toàn bộ màn hình (headless/direct), render xuất thẳng ra file hoặc clipboard theo tham số `-p` / `-c`, thoát app mà không hiện GUI.
+  - [x] Viết unit tests cho CLI parser với các kịch bản tham số hợp lệ và không hợp lệ trong `tests/FShot.UI.Tests/`.
+  - [x] Verify chạy các lệnh thực tế từ PowerShell: `fshot gui`, `fshot full -c`, `fshot full -p output.png`, `fshot --help`.
 - [ ] **P1.28** Cấu hình độ trễ chụp (`-d / --delay`) (`FR-CAP-05`).
   - [x] Định nghĩa trường `DelayMs: int` trong `CaptureRequest` domain model.
   - [ ] Rà soát `docs/2.Design/02_Capture/02_03_CaptureRequest.md` mục cấu hình độ trễ.

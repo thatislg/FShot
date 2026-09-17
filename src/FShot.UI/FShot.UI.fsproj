@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <Compile Include="Logging\FShotLog.fs" />
+    <Compile Include="Cli\CliArguments.fs" />
     <Compile Include="SkiaCanvas\ToolbarIcons.fs" />
     <Compile Include="SkiaCanvas\CaptureCanvas.axaml.fs" />
     <Compile Include="Windows\CaptureOverlayWindow.axaml.fs" />
@@ -29,6 +30,7 @@
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Argu" Version="6.2.4" />
     <PackageReference Include="SkiaSharp" Version="4.152.0" />
   </ItemGroup>
 

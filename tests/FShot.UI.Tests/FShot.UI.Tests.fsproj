@@ -11,6 +11,7 @@
   <ItemGroup>
     <Compile Include="CaptureCanvasRegressionTests.fs" />
     <Compile Include="ToolbarIconsTests.fs" />
+    <Compile Include="CliTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
