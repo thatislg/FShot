@@ -192,10 +192,19 @@ type App() as this =
     let captureScreenHeadless (screenIndex: int) =
         async {
             try
+                FShotLog.write (sprintf "[Tray] Starting headless capture for screen %d" screenIndex)
                 let config = ConfigStore.loadSnapshot()
                 let captureService = WindowsCaptureService() :> ICaptureService
                 let! result = captureService.CaptureScreenAsync screenIndex
-                match result with
+                let! captureResult =
+                    match result with
+                    | Ok r -> async { return Ok r }
+                    | Error err ->
+                        FShotLog.write (sprintf "[Tray] WindowsCaptureService failed for screen %d: %A; falling back to stub" screenIndex err)
+                        let stubService = StubCaptureService() :> ICaptureService
+                        stubService.CaptureScreenAsync screenIndex
+
+                match captureResult with
                 | Ok captureResult ->
                     let selection =
                         { Selection.Empty with
@@ -233,7 +242,7 @@ type App() as this =
                         notificationService |> Option.iter (fun n ->
                             n.ShowNotification(CopySuccess, config.ShowDesktopNotification) |> ignore)
                 | Error err ->
-                    FShotLog.write (sprintf "[Tray] Screen %d capture failed: %A" screenIndex err)
+                    FShotLog.write (sprintf "[Tray] Screen %d headless capture failed: %A" screenIndex err)
             with ex ->
                 FShotLog.writeEx "[Tray] Screen capture failed" ex
         } |> Async.Start
