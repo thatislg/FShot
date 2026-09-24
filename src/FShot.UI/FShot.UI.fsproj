@@ -10,6 +10,7 @@
     <Compile Include="Cli\CliArguments.fs" />
     <Compile Include="SkiaCanvas\ToolbarIcons.fs" />
     <Compile Include="SkiaCanvas\CaptureCanvas.axaml.fs" />
+    <Compile Include="Windows\NotificationWindow.axaml.fs" />
     <Compile Include="Windows\AboutWindow.axaml.fs" />
     <Compile Include="Windows\CaptureOverlayWindow.axaml.fs" />
     <Compile Include="ViewModels\PlaceholderViewModel.fs" />
@@ -18,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Windows\NotificationWindow.axaml" />
     <EmbeddedResource Include="Windows\AboutWindow.axaml" />
     <EmbeddedResource Include="Windows\CaptureOverlayWindow.axaml" />
   </ItemGroup>

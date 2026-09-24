@@ -1,7 +1,7 @@
 # F-Shot Master Progress Tracking
 
-- **Cập nhật gần nhất:** 2026-09-24
-- **Tiến độ tổng quan:** `[ 40 / 84 ] Tasks hoàn thành (~47.6%)` (Phase 0 PoC và Phase 1 MVP Core đã hoàn thành 100% & verify runtime)
+- **Cập nhật gần nhất:** 2026-09-25
+- **Tiến độ tổng quan:** `[ 41 / 84 ] Tasks hoàn thành (~48.8%)` (Phase 0 PoC và Phase 1 MVP Core đã hoàn thành 100% & verify runtime; Epic 6 P2.03 đã verify runtime notification)
 - **Mục tiêu hiện tại:** Bắt đầu Phase 2: Windows v1.0 (Epic 6: System Tray & App Lifecycle).
 
 ---
@@ -311,18 +311,20 @@
   - [x] Triển khai quản lý vòng đời ứng dụng và giải phóng tài nguyên tập trung (`AppLifecycle` / `Dispose` pattern):
     - [x] Đăng ký bắt các sự kiện hệ thống `AppDomain.CurrentDomain.ProcessExit`, `Console.CancelKeyPress`.
     - [x] Đảm bảo giải phóng toàn bộ unmanaged resources khi thoát: đóng Mutex (`App.SingleInstanceMutex`), ngắt Named Pipe Server (`App.IpcCancellation`), gỡ TrayIcon khỏi Taskbar để tránh icon bị "treo mờ" (ghost tray icon).
-  - [x] Triển khai dịch vụ thông báo Windows (`NotificationService`) trong `src/FShot.Platform.Win32/Notifications/`:
-    - [x] Triển khai **Toast Notification** qua `Microsoft.Toolkit.Uwp.Notifications` (`ToastContentBuilder`) làm thông báo chính; fallback Balloon Notification qua Win32 `Shell_NotifyIcon` khi Toast không khả dụng.
-    - [x] Tạo message-only window (`HWND_MESSAGE`) làm owner cho balloon nếu app không có console window.
+  - [x] Triển khai dịch vụ thông báo desktop (`NotificationService`) trong `src/FShot.UI/Services/` dưới dạng **Avalonia Notification Window** thay cho Win32 Toast/Balloon API không ổn định:
+    - [x] Cửa sổ thông báo nhỏ (320x80), không viền, `Topmost`, không hiện trên Taskbar, đặt ở góc dưới phải màn hình chính.
+    - [x] Tự động đóng sau ~4 giây; click để đóng; click khi có đường dẫn save sẽ mở Explorer highlight file.
+    - [x] Nền đặc `#FF222222`, viền trắng mờ `#55FFFFFF`, chữ trắng/xám — nhìn rõ trên mọi nền.
     - [x] `FR-CFG-008`: Tôn trọng cấu hình `showDesktopNotification` (thông báo khi copy/save thành công kèm tên file) và `showAbortNotification` (thông báo khi hủy thao tác chụp).
-    - [x] CaptureCanvas phát sự kiện `CaptureCanvasEvents.exportCompleted` (Saved/Copied/Failed), App subscribe để gọi `NotificationService.ShowNotification`.
-    - [x] Click/selection từ CaptureCanvas khi hủy (Esc) phát sự kiện `CaptureCanvasEvents.abortRequested`, App subscribe để hiển thị thông báo hủy trong daemon mode.
+    - [x] CaptureCanvas phát sự kiện `CaptureCanvasEvents.ExportCompleted` (Saved/Copied/Failed), App subscribe để gọi `NotificationService.ShowNotification`.
+    - [x] Click/selection từ CaptureCanvas khi hủy (Esc) phát sự kiện `CaptureCanvasEvents.AbortRequested`, App subscribe để hiển thị thông báo hủy trong daemon mode.
     - [x] Bổ sung helper `HighlightFileInExplorer(filePath)` để mở và highlight file từ thông báo.
+  - [x] Loại bỏ implementation Win32 Balloon/Toast phức tạp (`RegisterClassEx`, `WNDCLASSEX`, `Shell_NotifyIcon`, `Microsoft.Toolkit.Uwp.Notifications`) khỏi `src/FShot.Platform.Win32/Notifications/NotificationService.fs`; giữ lại module helper `highlightFileInExplorer`.
   - [x] `FR-CFG-007`: Hỗ trợ tùy chọn ẩn hoàn toàn tray icon (`disabledTrayIcon = true`):
     - [x] Ứng dụng vẫn chạy nền và lắng nghe phím nóng toàn cục (sẵn sàng cho Epic 7) mà không xuất hiện icon ở Taskbar tray.
     - [x] Đảm bảo có cảnh báo log và hướng dẫn chỉnh sửa `config.json` khi đã ẩn tray icon.
   - [x] Viết unit tests cho notification payload builder (`NotificationServiceTests.fs`) và cấu hình hiển thị.
-  - [ ] Verify runtime trên Windows: xác nhận balloon notification hiển thị khi copy/save từ tray menu; thoát app từ menu tray xác nhận tiến trình tắt sạch và không để lại icon mờ.
+  - [x] Verify runtime trên Windows: xác nhận notification window hiển thị khi copy/save từ tray menu (màn 1, màn 2, capture full); thoát app từ menu tray xác nhận tiến trình tắt sạch và không để lại icon mờ.
 
 ### Epic 7: Global Hotkeys
 - [ ] **P2.04** Đăng ký phím nóng toàn hệ thống `Win+Shift+X` để kích hoạt chụp (`FR-SYS-009`, `FR-WIN-002`, `FR-SH-028`).

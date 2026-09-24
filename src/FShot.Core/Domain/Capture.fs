@@ -94,15 +94,20 @@ type CaptureResult =
     member this.TotalBytes = this.Stride * this.Height
 
     /// Chuyển vùng chọn logical sang physical để crop từ bitmap.
-    /// Công thức: round(virtualX * s), round(virtualY * s),
-    /// round(virtualWidth * s), round(virtualHeight * s).
+    /// Công thức: round((virtualX - VirtualBounds.X) * s),
+    /// round((virtualY - VirtualBounds.Y) * s),
+    /// round((virtualRight - VirtualBounds.X) * s) - left,
+    /// round((virtualBottom - VirtualBounds.Y) * s) - top.
+    /// VirtualBounds là gốc của bitmap; selection luôn nằm trong VirtualBounds.
     /// Xem 02_04_CaptureResult.md, mục 4.
     member this.LogicalSelectionToPhysical(selection: Rect) : Rect =
         let s = this.ScaleFactor.Value
-        let left = Math.Round(selection.Left * s)
-        let top = Math.Round(selection.Top * s)
-        let right = Math.Round(selection.Right * s)
-        let bottom = Math.Round(selection.Bottom * s)
+        let originX = this.VirtualBounds.X
+        let originY = this.VirtualBounds.Y
+        let left = Math.Round((selection.Left - originX) * s)
+        let top = Math.Round((selection.Top - originY) * s)
+        let right = Math.Round((selection.Right - originX) * s)
+        let bottom = Math.Round((selection.Bottom - originY) * s)
         {
           X = left
           Y = top

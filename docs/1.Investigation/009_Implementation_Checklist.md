@@ -197,7 +197,7 @@
 | 13.4 | Print geometry stdout | FR-OUT-10 | [ ] | 29/10/2026 | | |
 | 13.5 | Open with external app | FR-OUT-11 | [ ] | 30/10/2026 | | |
 | 13.6 | File extension preference (PNG/JPG) | FR-OUT-13 | [ ] | 30/10/2026 | | |
-| 13.7 | Windows Toast notifications | FR-OUT-15 | [ ] | 31/10/2026 | | |
+| 13.7 | Desktop notifications (save/copy/abort) | FR-OUT-15/16 | [x] | 31/10/2026 | 2026-09-25 | Avalonia Notification Window, verify trên 2 màn hình |
 | 13.8 | i18n framework | FR-NF-005 | [ ] | 31/10/2026 | | |
 | 13.9 | Keyboard-only accessibility test | FR-NF-006 | [ ] | 31/10/2026 | | |
 

@@ -58,7 +58,7 @@ let ``CaptureResult tính tổng số byte đúng`` () =
     Assert.Equal(11520 * 1620, result.TotalBytes)
 
 /// Kiểm tra chuyển vùng chọn logical sang physical.
-/// Công thức: round(virtual * scaleFactor).
+/// Công thức: round((virtual - VirtualBounds) * scaleFactor).
 [<Fact>]
 let ``LogicalSelectionToPhysical đúng với scale 1.5`` () =
     let result =
@@ -90,3 +90,36 @@ let ``LogicalSelectionToPhysical đúng với scale 1.5`` () =
     Assert.Equal(120.0, physical.Y)
     Assert.Equal(450.0, physical.Width)
     Assert.Equal(300.0, physical.Height)
+
+/// Kiểm tra LogicalSelectionToPhysical trừ VirtualBounds khi bitmap không bắt đầu tại (0,0).
+[<Fact>]
+let ``LogicalSelectionToPhysical trừ VirtualBounds cho màn hình phụ`` () =
+    let result =
+        {
+          Pixels = Array.empty
+          Width = 1920
+          Height = 1080
+          Stride = 7680
+          PixelFormat = PixelFormat.Bgra32
+          VirtualBounds =
+            {
+              X = 1920.0
+              Y = 0.0
+              Width = 1920.0
+              Height = 1080.0
+            }
+          ScaleFactor = ScaleFactor.Create 1.0
+          ScreenIndex = 1
+        }
+    let selection =
+        {
+          X = 2000.0
+          Y = 100.0
+          Width = 300.0
+          Height = 200.0
+        }
+    let physical = result.LogicalSelectionToPhysical selection
+    Assert.Equal(80.0, physical.X)
+    Assert.Equal(100.0, physical.Y)
+    Assert.Equal(300.0, physical.Width)
+    Assert.Equal(200.0, physical.Height)

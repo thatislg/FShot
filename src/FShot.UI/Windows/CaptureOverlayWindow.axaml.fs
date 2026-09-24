@@ -103,29 +103,58 @@ type CaptureOverlayWindow() as this =
             let! captureResultOpt =
                 async {
                     let realService = WindowsCaptureService() :> ICaptureService
-                    let! res =
+                    let screens = ScreenEnumeration.getScreens()
+                    let screenOpt =
+                        match captureBounds with
+                        | Some _ ->
+                            screens
+                            |> List.tryFind (fun s ->
+                                abs(s.VirtualBounds.X - targetBounds.X) < 0.001 &&
+                                abs(s.VirtualBounds.Y - targetBounds.Y) < 0.001)
+                        | None -> None
+
+                    let! res = async {
                         match captureBounds with
                         | Some _ when targetBounds = ScreenEnumeration.getVirtualScreenBounds() ->
-                            realService.CaptureVirtualScreenAsync()
+                            let! virtualRes = realService.CaptureVirtualScreenAsync()
+                            match virtualRes with
+                            | Ok r -> return Ok r
+                            | Error err ->
+                                FShotLog.write (sprintf "WindowsCaptureService failed (%A), falling back to StubCaptureService" err)
+                                let stubService = StubCaptureService() :> ICaptureService
+                                return! stubService.CaptureVirtualScreenAsync()
                         | Some _ ->
-                            // Tìm screen index tương ứng với bounds
-                            let screens = ScreenEnumeration.getScreens()
-                            let screenOpt =
-                                screens
-                                |> List.tryFind (fun s ->
-                                    abs(s.VirtualBounds.X - targetBounds.X) < 0.001 &&
-                                    abs(s.VirtualBounds.Y - targetBounds.Y) < 0.001)
                             match screenOpt with
-                            | Some s -> realService.CaptureScreenAsync s.Index
-                            | None -> realService.CaptureVirtualScreenAsync()
+                            | Some s ->
+                                let! windowsRes = realService.CaptureScreenAsync s.Index
+                                match windowsRes with
+                                | Ok r -> return Ok r
+                                | Error err ->
+                                    FShotLog.write (sprintf "WindowsCaptureService failed for screen %d (%A), falling back to StubCaptureService" s.Index err)
+                                    let stubService = StubCaptureService() :> ICaptureService
+                                    return! stubService.CaptureScreenAsync s.Index
+                            | None ->
+                                let! virtualRes = realService.CaptureVirtualScreenAsync()
+                                match virtualRes with
+                                | Ok r -> return Ok r
+                                | Error err ->
+                                    FShotLog.write (sprintf "WindowsCaptureService failed (%A), falling back to StubCaptureService" err)
+                                    let stubService = StubCaptureService() :> ICaptureService
+                                    return! stubService.CaptureVirtualScreenAsync()
                         | None ->
-                            realService.CaptureVirtualScreenAsync()
+                            let! virtualRes = realService.CaptureVirtualScreenAsync()
+                            match virtualRes with
+                            | Ok r -> return Ok r
+                            | Error err ->
+                                FShotLog.write (sprintf "WindowsCaptureService failed (%A), falling back to StubCaptureService" err)
+                                let stubService = StubCaptureService() :> ICaptureService
+                                return! stubService.CaptureVirtualScreenAsync()
+                    }
                     match res with
                     | Ok r -> return Ok r
                     | Error err ->
-                        FShotLog.write (sprintf "WindowsCaptureService failed (%A), falling back to StubCaptureService" err)
-                        let stubService = StubCaptureService() :> ICaptureService
-                        return! stubService.CaptureVirtualScreenAsync()
+                        FShotLog.write (sprintf "Screen capture failed completely: %A" err)
+                        return Error err
                 }
 
             match captureResultOpt with

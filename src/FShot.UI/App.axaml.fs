@@ -17,13 +17,13 @@ open FShot.Platform.Win32.Capture
 open FShot.Platform.Win32.Clipboard
 open FShot.Platform.Win32.Config
 open FShot.Platform.Win32.Lifecycle
-open FShot.Platform.Win32.Notifications
 open FShot.Platform.Win32.Screen
 open FShot.Platform.Win32.Startup
 open FShot.Platform.Win32.Tray
 open FShot.Rendering.Skia.Renderers
 open FShot.UI.Cli
 open FShot.UI.SkiaCanvas
+open FShot.UI.Services
 open FShot.UI.Windows
 open FShot.UI.Logging
 open SkiaSharp
@@ -77,10 +77,28 @@ type App() as this =
     let mutable trayService: TrayIconService option = None
     let mutable desktopLifetime: IClassicDesktopStyleApplicationLifetime option = None
     let mutable notificationService: NotificationService option = None
+    let mutable abortSubscription: obj option = None
+    let mutable exportSubscription: obj option = None
 
     /// Giải phóng tài nguyên tập trung khi thoát ứng dụng.
     member private this.DisposeResources() =
         FShotLog.write "[AppLifecycle] Disposing resources"
+        abortSubscription |> Option.iter (fun d ->
+            try
+                let t = d.GetType()
+                let remove = t.GetMethod("RemoveHandler")
+                if not (isNull remove) then
+                    remove.Invoke(d, [| box (d) |]) |> ignore
+            with _ -> ())
+        abortSubscription <- None
+        exportSubscription |> Option.iter (fun d ->
+            try
+                let t = d.GetType()
+                let remove = t.GetMethod("RemoveHandler")
+                if not (isNull remove) then
+                    remove.Invoke(d, [| box (d) |]) |> ignore
+            with _ -> ())
+        exportSubscription <- None
         trayService |> Option.iter (fun t -> t.Dispose())
         trayService <- None
         notificationService |> Option.iter (fun n -> n.Dispose())
@@ -163,26 +181,6 @@ type App() as this =
                         else
                             desktop.Shutdown()
                     )
-
-                    // Subscribe abort event từ CaptureCanvas để hiển thị thông báo hủy nếu cấu hình bật.
-                    CaptureCanvasEvents.abortRequested.Publish.Add(fun () ->
-                        if App.IsDaemon then
-                            this.ShowAbortNotification())
-
-                    // Subscribe sự kiện xuất ảnh từ CaptureCanvas để phát thông báo desktop.
-                    CaptureCanvasEvents.exportCompleted.Publish.Add(fun outcome ->
-                        let config = ConfigStore.loadSnapshot()
-                        match outcome with
-                        | Saved path ->
-                            notificationService |> Option.iter (fun n ->
-                                n.ShowNotification(CaptureSuccess (Some path), config.ShowDesktopNotification) |> ignore)
-                            FShotLog.write (sprintf "[App] Export saved notification: %s" path)
-                        | Copied ->
-                            notificationService |> Option.iter (fun n ->
-                                n.ShowNotification(CopySuccess, config.ShowDesktopNotification) |> ignore)
-                            FShotLog.write "[App] Export copied notification"
-                        | Failed ->
-                            FShotLog.write "[App] Export failed; no success notification")
 
                     overlay.Show()
                     overlay.Focus() |> ignore
@@ -389,6 +387,40 @@ type App() as this =
                 this.DisposeResources()
                 desktop.Shutdown()
             )
+
+            // Khởi tạo dịch vụ thông báo desktop (toast/balloon fallback).
+            notificationService <- Some (new NotificationService())
+            FShotLog.write "[App] Notification service initialized"
+
+            let mutable abortSub: obj = null
+            let mutable exportSub: obj = null
+
+            // Subscribe abort event từ CaptureCanvas để hiển thị thông báo hủy nếu cấu hình bật.
+            // Chỉ subscribe một lần toàn cục để tránh spam notification khi mở overlay nhiều lần.
+            CaptureCanvasEvents.AbortRequested.Add(fun () ->
+                if App.IsDaemon then
+                    this.ShowAbortNotification())
+            |> fun d -> abortSub <- d
+
+            abortSubscription <- Some abortSub
+
+            // Subscribe sự kiện xuất ảnh từ CaptureCanvas để phát thông báo desktop.
+            CaptureCanvasEvents.ExportCompleted.Add(fun outcome ->
+                let config = ConfigStore.loadSnapshot()
+                match outcome with
+                | Saved path ->
+                    notificationService |> Option.iter (fun n ->
+                        n.ShowNotification(CaptureSuccess (Some path), config.ShowDesktopNotification) |> ignore)
+                    FShotLog.write (sprintf "[App] Export saved notification: %s" path)
+                | Copied ->
+                    notificationService |> Option.iter (fun n ->
+                        n.ShowNotification(CopySuccess, config.ShowDesktopNotification) |> ignore)
+                    FShotLog.write "[App] Export copied notification"
+                | Failed ->
+                    FShotLog.write "[App] Export failed; no success notification")
+            |> fun d -> exportSub <- d
+
+            exportSubscription <- Some exportSub
 
             // Đăng ký tray icon nếu không bị tắt trong cấu hình (FR-CFG-007).
             let appConfig = ConfigStore.loadConfig()

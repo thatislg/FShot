@@ -35,9 +35,15 @@ type ExportOutcome =
 
 /// Sự kiện toàn cục báo hiệu người dùng yêu cầu hủy thao tác chụp (nhấn Esc trên overlay),
 /// và kết quả xuất ảnh để phát thông báo.
-module CaptureCanvasEvents =
-    let abortRequested = Event<unit>()
-    let exportCompleted = Event<ExportOutcome>()
+type CaptureCanvasEvents() =
+    static let abortRequested = Event<unit>()
+    static let exportCompleted = Event<ExportOutcome>()
+
+    static member AbortRequested = abortRequested.Publish
+    static member ExportCompleted = exportCompleted.Publish
+
+    static member TriggerAbortRequested() = abortRequested.Trigger()
+    static member TriggerExportCompleted(outcome: ExportOutcome) = exportCompleted.Trigger(outcome)
 
 /// Vị trí đặt toolbar quanh vùng chọn.
 type ToolbarPlacement =
@@ -595,22 +601,40 @@ type CaptureCanvas() as this =
         this.InvalidateVisual()
 
     /// Chuyển tọa độ pointer sang Virtual Screen space.
-    /// Công thức: virtualX = controlX + windowX, virtualY = controlY + windowY.
-    /// Xem 11_05_InputHandling.md, mục 4.
+    /// Công thức: virtualX = controlX + captureBounds.X, virtualY = controlY + captureBounds.Y.
+    /// Dùng capture bounds thay vì window position vì Avalonia Window.Position có thể chưa cập nhật
+    /// sau khi di chuyển window bằng Win32 SetWindowPos.
     member private this.ToVirtualPoint(e: PointerEventArgs) =
         let pos = e.GetPosition(this)
-        let windowPos =
-            match this.VisualRoot with
-            | :? Window as w -> w.Position
-            | _ -> PixelPoint(0, 0)
+        let offset =
+            match captureResult with
+            | Some result -> result.VirtualBounds
+            | None -> { X = 0.0; Y = 0.0; Width = 0.0; Height = 0.0 }
 
         let point =
             {
-                X = float pos.X + float windowPos.X
-                Y = float pos.Y + float windowPos.Y
+                X = float pos.X + offset.X
+                Y = float pos.Y + offset.Y
             }
-        FShotLog.write (sprintf "[CaptureCanvas] ToVirtualPoint: control=(%.1f,%.1f) windowPos=%A virtual=(%.1f,%.1f)" pos.X pos.Y windowPos point.X point.Y)
+        FShotLog.write (sprintf "[CaptureCanvas] ToVirtualPoint: control=(%.1f,%.1f) captureOffset=(%.1f,%.1f) virtual=(%.1f,%.1f)" pos.X pos.Y offset.X offset.Y point.X point.Y)
         point
+
+    /// Chuyển tọa độ Virtual Screen sang tọa độ control-local (0..Width, 0..Height).
+    /// Dùng cho vẽ UI (selection, toolbar, dimming) trong per-screen overlay.
+    member private this.ToControlPoint(virtualPoint: Point) =
+        let offset =
+            match captureResult with
+            | Some result -> result.VirtualBounds
+            | None -> { X = 0.0; Y = 0.0; Width = 0.0; Height = 0.0 }
+        { X = virtualPoint.X - offset.X; Y = virtualPoint.Y - offset.Y }
+
+    /// Chuyển Rect từ Virtual Screen sang control-local (0..Width, 0..Height).
+    member private this.ToControlRect(virtualRect: Rect) =
+        let offset =
+            match captureResult with
+            | Some result -> result.VirtualBounds
+            | None -> { X = 0.0; Y = 0.0; Width = 0.0; Height = 0.0 }
+        { X = virtualRect.X - offset.X; Y = virtualRect.Y - offset.Y; Width = virtualRect.Width; Height = virtualRect.Height }
 
     /// Chuyển KeyEventArgs sang chuỗi key dùng trong OverlayEvent.
     /// Format: "Ctrl+Shift+KeyName".
@@ -654,7 +678,7 @@ type CaptureCanvas() as this =
                     Dispatcher.UIThread.Post(fun () ->
                         try
                             // Thông báo hủy nếu đang ở chế độ daemon trước khi đóng overlay.
-                            CaptureCanvasEvents.abortRequested.Trigger()
+                            CaptureCanvasEvents.TriggerAbortRequested()
                             w.Close()
                         with ex ->
                             FShotLog.writeEx "Failed to close overlay window" ex
@@ -721,7 +745,7 @@ type CaptureCanvas() as this =
                         data.SaveTo(stream)
                         stream.Flush()
                         FShotLog.write (sprintf "[CaptureCanvas] Instant save succeeded: %s" resolvedPath)
-                        CaptureCanvasEvents.exportCompleted.Trigger(Saved resolvedPath)
+                        CaptureCanvasEvents.TriggerExportCompleted(Saved resolvedPath)
                         this.Dispatch(ExportCompleted true)
 
                     | SaveToFile None ->
@@ -753,7 +777,7 @@ type CaptureCanvas() as this =
                             data.SaveTo(stream)
                             stream.Flush()
                             FShotLog.write (sprintf "[CaptureCanvas] Instant save (from config) succeeded: %s" resolvedPath)
-                            CaptureCanvasEvents.exportCompleted.Trigger(Saved resolvedPath)
+                            CaptureCanvasEvents.TriggerExportCompleted(Saved resolvedPath)
                             this.Dispatch(ExportCompleted true)
 
                         | _ ->
@@ -799,7 +823,7 @@ type CaptureCanvas() as this =
                                 data.SaveTo(stream)
                                 stream.Flush()
                                 FShotLog.write (sprintf "[CaptureCanvas] Saved to %s" localPath)
-                                CaptureCanvasEvents.exportCompleted.Trigger(Saved localPath)
+                                CaptureCanvasEvents.TriggerExportCompleted(Saved localPath)
                                 this.Dispatch(ExportCompleted true)
 
                     | CopyToClipboard ->
@@ -820,14 +844,14 @@ type CaptureCanvas() as this =
                         ClipboardService.playNotificationSound ()
 
                         FShotLog.write "[CaptureCanvas] Copy completed successfully, dispatching ExportCompleted true"
-                        CaptureCanvasEvents.exportCompleted.Trigger(Copied)
+                        CaptureCanvasEvents.TriggerExportCompleted(Copied)
                         this.Dispatch(ExportCompleted true)
                     | _ ->
                         FShotLog.write (sprintf "[CaptureCanvas] Unsupported export target: %A" target)
                         this.Dispatch(ExportCompleted false)
                 with ex ->
                     FShotLog.writeEx "[CaptureCanvas] Export failed" ex
-                    CaptureCanvasEvents.exportCompleted.Trigger(Failed)
+                    CaptureCanvasEvents.TriggerExportCompleted(Failed)
                     this.Dispatch(ExportCompleted false)
             }
             Async.StartImmediate(runExport)
@@ -885,13 +909,9 @@ type CaptureCanvas() as this =
             | Some r -> r.ScaleFactor.Value
             | None -> 1.0
 
-        let windowPos =
-            match this.VisualRoot with
-            | :? Window as w -> w.Position
-            | _ -> PixelPoint(0, 0)
-
-        let x = position.X * scale - float windowPos.X
-        let y = position.Y * scale - float windowPos.Y
+        let localPos = this.ToControlPoint position
+        let x = localPos.X * scale
+        let y = localPos.Y * scale
         Canvas.SetLeft(tb, x)
         Canvas.SetTop(tb, y)
 
@@ -1008,7 +1028,9 @@ type CaptureCanvas() as this =
             overlayState
             |> Option.map buildRenderModel
             |> Option.bind (fun rm -> rm.Selection)
-            |> Option.map (fun sel -> Toolbar.bounds scale sel.Bounds this.Bounds.Width this.Bounds.Height)
+            |> Option.map (fun sel ->
+                let localBounds = this.ToControlRect sel.Bounds
+                Toolbar.bounds scale localBounds this.Bounds.Width this.Bounds.Height)
 
         match toolbarBounds with
         | Some tb when tb.Contains avPoint ->
@@ -1234,12 +1256,13 @@ type CaptureCanvas() as this =
             match captureResult with
             | Some result ->
                 let scale = result.ScaleFactor.Value
+                let localBounds = this.ToControlRect selection.Bounds
                 let selectionRect =
                     Rect(
-                        selection.Bounds.X * scale,
-                        selection.Bounds.Y * scale,
-                        selection.Bounds.Width * scale,
-                        selection.Bounds.Height * scale
+                        localBounds.X * scale,
+                        localBounds.Y * scale,
+                        localBounds.Width * scale,
+                        localBounds.Height * scale
                     )
 
                 // Vẽ 4 strips đen mờ xung quanh vùng chọn.
@@ -1265,7 +1288,8 @@ type CaptureCanvas() as this =
                     | Some result -> result.ScaleFactor.Value
                     | None -> 1.0
 
-                let tb = Toolbar.bounds scale selection.Bounds this.Bounds.Width this.Bounds.Height
+                let localBounds = this.ToControlRect selection.Bounds
+                let tb = Toolbar.bounds scale localBounds this.Bounds.Width this.Bounds.Height
                 Toolbar.draw context tb renderModel.CurrentTool renderModel.CanUndo renderModel.CanRedo
 
     /// Vẽ vùng chọn và các handle lên overlay theo thiết kế Claymorphism / SVG Knob.
@@ -1273,12 +1297,13 @@ type CaptureCanvas() as this =
         match captureResult with
         | Some result ->
             let scale = result.ScaleFactor.Value
+            let localBounds = this.ToControlRect selection.Bounds
             let selectionRect =
                 Rect(
-                    selection.Bounds.X * scale,
-                    selection.Bounds.Y * scale,
-                    selection.Bounds.Width * scale,
-                    selection.Bounds.Height * scale
+                    localBounds.X * scale,
+                    localBounds.Y * scale,
+                    localBounds.Width * scale,
+                    localBounds.Height * scale
                 )
 
             // Capture region hiển thị desktop gốc rõ; bắt buộc fill brush trong suốt (alpha 0)
@@ -1320,8 +1345,9 @@ type CaptureCanvas() as this =
                 let highlightBrush = Brushes.White
 
                 for (_, center) in selection.HandleCenters do
-                    let cx = center.X * scale
-                    let cy = center.Y * scale
+                    let localCenter = this.ToControlPoint center
+                    let cx = localCenter.X * scale
+                    let cy = localCenter.Y * scale
 
                     // Drop shadow dưới knob
                     context.DrawEllipse(shadowBrush, null, Avalonia.Point(cx, cy + 1.8), knobRadius, knobRadius)
@@ -1554,7 +1580,8 @@ type CaptureCanvas() as this =
             let clipRect =
                 match renderModel.Selection with
                 | Some sel ->
-                    Rect(sel.Bounds.X * scale, sel.Bounds.Y * scale, sel.Bounds.Width * scale, sel.Bounds.Height * scale)
+                    let localBounds = this.ToControlRect sel.Bounds
+                    Rect(localBounds.X * scale, localBounds.Y * scale, localBounds.Width * scale, localBounds.Height * scale)
                 | None -> Rect(0.0, 0.0, this.Bounds.Width, this.Bounds.Height)
 
             use _clip = context.PushClip(clipRect)

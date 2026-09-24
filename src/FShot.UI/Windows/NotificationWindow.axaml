@@ -1,0 +1,51 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="FShot.UI.Services.NotificationWindow"
+        Title="F-Shot"
+        Width="320"
+        Height="80"
+        CanResize="False"
+        ShowInTaskbar="False"
+        Topmost="True"
+        Background="#FF222222"
+        WindowStartupLocation="Manual"
+        x:Name="NotificationRoot">
+    <Border CornerRadius="8"
+            Background="#FF222222"
+            BorderBrush="#55FFFFFF"
+            BorderThickness="1"
+            Padding="16,12">
+        <Grid ColumnDefinitions="Auto,*"
+              RowDefinitions="Auto,Auto">
+            <!-- Icon -->
+            <TextBlock Grid.Row="0"
+                      Grid.RowSpan="2"
+                      Grid.Column="0"
+                      Text="📸"
+                      FontSize="28"
+                      VerticalAlignment="Center"
+                      Margin="0,0,12,0" />
+
+            <!-- Title -->
+            <TextBlock Grid.Row="0"
+                      Grid.Column="1"
+                      x:Name="TitleText"
+                      Text="Thông báo"
+                      FontSize="14"
+                      FontWeight="SemiBold"
+                      Foreground="White"
+                      TextTrimming="CharacterEllipsis" />
+
+            <!-- Message -->
+            <TextBlock Grid.Row="1"
+                      Grid.Column="1"
+                      x:Name="MessageText"
+                      Text=""
+                      FontSize="12"
+                      Foreground="#CCCCCC"
+                      TextTrimming="CharacterEllipsis"
+                      MaxHeight="36"
+                      TextWrapping="Wrap" />
+        </Grid>
+    </Border>
+</Window>
