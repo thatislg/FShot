@@ -1,6 +1,7 @@
 namespace FShot.UI
 
 open System
+open System.Threading
 open Avalonia
 open Avalonia.Controls.ApplicationLifetimes
 open Avalonia.Threading
@@ -9,6 +10,7 @@ open FShot.Core.Geometry
 open FShot.Platform.Win32.Capture
 open FShot.Platform.Win32.Clipboard
 open FShot.Platform.Win32.Config
+open FShot.Platform.Win32.Lifecycle
 open FShot.Platform.Win32.Screen
 open FShot.Rendering.Skia.Renderers
 open FShot.UI.Cli
@@ -127,7 +129,7 @@ module Program =
                 return 1
         }
 
-    and runDaemonAsync () : Async<int> =
+    and runDaemonAsync (cancellationToken: CancellationToken) : Async<int> =
         async {
             let app = buildAvaloniaApp()
             App.IsDaemon <- true
@@ -151,22 +153,43 @@ module Program =
 
     [<EntryPoint; STAThread>]
     let main argv =
-        let config = ConfigStore.loadSnapshot()
+        let appConfig = ConfigStore.loadConfig()
+        let config = appConfig.ToSnapshot()
         App.ConfigSnapshot <- config
-        FShotLog.write (sprintf "Main entry: Config loaded: Tool=%A, Color=%s, Thickness=%.1f, SavePath=%A, Close=%b"
+        FShotLog.write (sprintf "Main entry: Config loaded: Tool=%A, Color=%s, Thickness=%.1f, SavePath=%A, Close=%b, Startup=%b"
             config.DefaultTool
             (config.DefaultColor.ToHex())
             config.DefaultStrokeWidth.Value
             config.SaveOptions.Path
-            config.CloseAfterExport)
+            config.CloseAfterExport
+            appConfig.StartupLaunch)
         let request = CliParser.parse argv
 
-        let exitCode =
-            if request.RunAsDaemon then
-                runDaemonAsync () |> Async.RunSynchronously
-            elif request.Mode = GuiInteractive then
-                runGuiAsync request |> Async.RunSynchronously
-            else
-                runHeadlessCaptureAsync request |> Async.RunSynchronously
+        use cts = new CancellationTokenSource()
+        let instanceResult = SingleInstance.enforce argv request.AllowMultiple cts.Token App.HandleIpcCommand
 
-        exitCode
+        match instanceResult with
+        | SecondaryInstance ->
+            FShotLog.write "[Program] Secondary instance: command forwarded; exiting"
+            0
+        | MultipleAllowed ->
+            FShotLog.write "[Program] Multiple instances allowed"
+            let exitCode =
+                if request.RunAsDaemon then
+                    runDaemonAsync cts.Token |> Async.RunSynchronously
+                elif request.Mode = GuiInteractive then
+                    runGuiAsync request |> Async.RunSynchronously
+                else
+                    runHeadlessCaptureAsync request |> Async.RunSynchronously
+            exitCode
+        | FirstInstance _ ->
+            FShotLog.write "[Program] First instance: continuing"
+            let exitCode =
+                if request.RunAsDaemon then
+                    runDaemonAsync cts.Token |> Async.RunSynchronously
+                elif request.Mode = GuiInteractive then
+                    runGuiAsync request |> Async.RunSynchronously
+                else
+                    runHeadlessCaptureAsync request |> Async.RunSynchronously
+            cts.Cancel()
+            exitCode

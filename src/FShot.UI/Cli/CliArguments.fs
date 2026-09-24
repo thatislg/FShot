@@ -1,5 +1,6 @@
 namespace FShot.UI.Cli
 
+open System
 open Argu
 open Microsoft.FSharp.Quotations
 open FShot.Core.Domain
@@ -63,6 +64,7 @@ type ParsedCliRequest =
       DelayMs: int
       OutputTarget: OutputTarget
       RunAsDaemon: bool
+      AllowMultiple: bool
     }
 
 module CliParser =
@@ -101,9 +103,13 @@ module CliParser =
 
     /// Parse mảng args thành ParsedCliRequest.
     /// Nếu args rỗng hoặc không khớp subcommand, mặc định là daemon (tray icon).
+    /// Cờ `--allow-multiple` được phát hiện thủ công từ raw args để bỏ qua single-instance.
     let parse (args: string[]) : ParsedCliRequest =
+        let allowMultiple = args |> Array.contains "--allow-multiple"
+        let filteredArgs = args |> Array.filter (fun a -> not (a.Equals("--allow-multiple", StringComparison.OrdinalIgnoreCase)))
+
         try
-            let results = parser.Parse(args, ignoreUnrecognized = true, raiseOnUsage = false)
+            let results = parser.Parse(filteredArgs, ignoreUnrecognized = true, raiseOnUsage = false)
 
             if results.IsUsageRequested then
                 printfn "%s" (parser.PrintUsage())
@@ -120,6 +126,7 @@ module CliParser =
                   DelayMs = getGuiDelay gui
                   OutputTarget = OpenGui
                   RunAsDaemon = false
+                  AllowMultiple = allowMultiple
                 }
             elif results.Contains Full then
                 let full = results.GetResult Full
@@ -136,10 +143,11 @@ module CliParser =
                   DelayMs = getDelay full
                   OutputTarget = outputTarget
                   RunAsDaemon = false
+                  AllowMultiple = allowMultiple
                 }
             elif results.Contains Screen then
                 let screen = results.GetResult Screen
-                let screenIndex = parseScreenIndex args |> Option.defaultValue 0
+                let screenIndex = parseScreenIndex filteredArgs |> Option.defaultValue 0
                 let outputTarget =
                     if screen.Contains <@ ScreenArgs.Clipboard @> then
                         OutputTarget.Clipboard
@@ -153,6 +161,7 @@ module CliParser =
                   DelayMs = getScreenDelay screen
                   OutputTarget = outputTarget
                   RunAsDaemon = false
+                  AllowMultiple = allowMultiple
                 }
             else
                 // Mặc định: chạy nền với tray icon.
@@ -161,14 +170,15 @@ module CliParser =
                   DelayMs = 0
                   OutputTarget = OpenGui
                   RunAsDaemon = true
+                  AllowMultiple = allowMultiple
                 }
         with
         | :? ArguParseException as ex ->
             printfn "%s" ex.Message
             System.Environment.Exit(1)
             // never reached
-            { Mode = GuiInteractive; DelayMs = 0; OutputTarget = OpenGui; RunAsDaemon = true }
+            { Mode = GuiInteractive; DelayMs = 0; OutputTarget = OpenGui; RunAsDaemon = true; AllowMultiple = allowMultiple }
         | ex ->
             printfn "Lỗi khi phân tích tham số dòng lệnh: %s" ex.Message
             System.Environment.Exit(1)
-            { Mode = GuiInteractive; DelayMs = 0; OutputTarget = OpenGui; RunAsDaemon = true }
+            { Mode = GuiInteractive; DelayMs = 0; OutputTarget = OpenGui; RunAsDaemon = true; AllowMultiple = allowMultiple }

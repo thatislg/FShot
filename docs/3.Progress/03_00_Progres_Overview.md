@@ -293,19 +293,19 @@
     - [x] `FR-SYS-008`: Menu "Thoát F-Shot" kích hoạt luồng đóng ứng dụng sạch sẽ.
   - [x] Viết unit tests kiểm thử khởi tạo menu, trạng thái hiển thị và dispatch command từ tray.
   - [x] Verify runtime trên Windows 10/11: kiểm tra biểu tượng hiển thị rõ nét trên Taskbar (cả light/dark theme), chuột phải mở menu nhạy, click từng action hoạt động chính xác, **và ứng dụng khởi động nền không tự mở overlay (chỉ mở khi click tray)**.
-- [ ] **P2.02** Giới hạn single-instance và khởi động cùng Windows (`FR-SYS-010`, `FR-CFG-006`, `FR-WIN-005`).
-  - [ ] Hoàn thiện tài liệu thiết kế `docs/2.Design/10_Platform_Win32/10_09_Startup.md` và `docs/2.Design/10_Platform_Win32/10_10_SingleInstance.md`.
-  - [ ] Triển khai cơ chế kiểm soát tiến trình duy nhất (Single-Instance Enforcement) trong `src/FShot.Platform.Win32/Lifecycle/SingleInstance.fs`:
-    - [ ] Dùng `System.Threading.Mutex` toàn cục (`Global\FShot_SingleInstance_Mutex`) để nhận diện instance đầu tiên đang chạy.
-    - [ ] Thiết lập kênh giao tiếp liên tiến trình qua `NamedPipeServerStream` (`FShot_Ipc_Pipe`): instance nền lắng nghe các lệnh từ instance mới.
-    - [ ] Khi người dùng chạy tiếp lệnh (ví dụ `fshot gui` hoặc click icon shortcut), instance thứ hai đóng vai trò `NamedPipeClientStream`, gửi tham số chụp sang instance đang chạy rồi tự thoát ngay lập tức (`FR-SYS-010`).
-    - [ ] Bổ sung cờ CLI `--allow-multiple` để bỏ qua kiểm tra single-instance khi cần debug hoặc chạy kiểm thử song song.
-  - [ ] Triển khai đăng ký tự khởi động cùng Windows (`StartupLaunch`) trong `src/FShot.Platform.Win32/Startup/StartupRegistration.fs`:
-    - [ ] Quản lý ghi/xóa Registry key `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` với tên value `"FShot"`.
-    - [ ] Hàm `isStartupEnabled() : bool`, `setStartup(enable: bool) : Result<unit, string>`.
-    - [ ] Đảm bảo đường dẫn thực thi trỏ chuẩn xác tới `FShot.exe` kèm cờ chạy nền (ví dụ `fshot daemon` hoặc `--tray`).
-    - [ ] Đồng bộ hai chiều với trường cấu hình `StartupLaunch: bool` trong `AppConfig` (`FR-CFG-006`, `FR-WIN-005`).
-  - [ ] Bổ sung unit tests cho SingleInstance message parsing, IPC serialization và logic kiểm tra Registry.
+- [x] **P2.02** Giới hạn single-instance và khởi động cùng Windows (`FR-SYS-010`, `FR-CFG-006`, `FR-WIN-005`).
+  - [x] Hoàn thiện tài liệu thiết kế `docs/2.Design/10_Platform_Win32/10_09_Startup.md` và `docs/2.Design/10_Platform_Win32/10_10_SingleInstance.md`.
+  - [x] Triển khai cơ chế kiểm soát tiến trình duy nhất (Single-Instance Enforcement) trong `src/FShot.Platform.Win32/Lifecycle/SingleInstance.fs`:
+    - [x] Dùng `System.Threading.Mutex` toàn cục (`Global\FShot_SingleInstance_Mutex`) để nhận diện instance đầu tiên đang chạy.
+    - [x] Thiết lập kênh giao tiếp liên tiến trình qua `NamedPipeServerStream` (`FShot_Ipc_Pipe`): instance nền lắng nghe các lệnh từ instance mới.
+    - [x] Khi người dùng chạy tiếp lệnh (ví dụ `fshot gui` hoặc click icon shortcut), instance thứ hai đóng vai trò `NamedPipeClientStream`, gửi tham số chụp sang instance đang chạy rồi tự thoát ngay lập tức (`FR-SYS-010`).
+    - [x] Bổ sung cờ CLI `--allow-multiple` để bỏ qua kiểm tra single-instance khi cần debug hoặc chạy kiểm thử song song.
+  - [x] Triển khai đăng ký tự khởi động cùng Windows (`StartupLaunch`) trong `src/FShot.Platform.Win32/Startup/StartupRegistration.fs`:
+    - [x] Quản lý ghi/xóa Registry key `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` với tên value `"FShot"`.
+    - [x] Hàm `isStartupEnabled() : bool`, `setStartup(enable: bool) : Result<unit, string>`.
+    - [x] Đảm bảo đường dẫn thực thi trỏ chuẩn xác tới `FShot.exe` (không cần cờ đặc biệt vì chế độ mặc định đã là daemon).
+    - [x] Đồng bộ hai chiều với trường cấu hình `StartupLaunch: bool` trong `AppConfig` (`FR-CFG-006`, `FR-WIN-005`).
+  - [x] Bổ sung unit tests cho SingleInstance message parsing, IPC serialization và logic kiểm tra Registry.
   - [ ] Verify runtime: bật FShot, thử mở thêm instance từ PowerShell/CMD xác nhận lệnh được chuyển tiếp; kiểm tra Registry trong `regedit` khi bật/tắt tùy chọn khởi động cùng Windows.
 - [ ] **P2.03** Thoát graceful, thông báo thành công / hủy, tùy chọn ẩn tray icon (`FR-CFG-007`, `FR-CFG-008`).
   - [ ] Triển khai quản lý vòng đời ứng dụng và giải phóng tài nguyên tập trung (`AppLifecycle` / `Dispose` pattern):

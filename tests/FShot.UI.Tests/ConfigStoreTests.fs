@@ -42,6 +42,7 @@ let ``ConfigStore saveConfigTo va loadConfigFrom doc ghi dung du lieu`` () =
             DrawThickness = 4.0
             DefaultTool = "ArrowTool"
             CloseAfterExport = false
+            StartupLaunch = true
         }
 
         ConfigStore.saveConfigTo testConfigFile customConfig
@@ -54,6 +55,7 @@ let ``ConfigStore saveConfigTo va loadConfigFrom doc ghi dung du lieu`` () =
         Assert.Equal(customConfig.DrawThickness, loaded.DrawThickness)
         Assert.Equal(customConfig.DefaultTool, loaded.DefaultTool)
         Assert.Equal(customConfig.CloseAfterExport, loaded.CloseAfterExport)
+        Assert.Equal(customConfig.StartupLaunch, loaded.StartupLaunch)
 
         // Kiểm tra loadSnapshotFrom
         let snapshot = ConfigStore.loadSnapshotFrom testConfigFile

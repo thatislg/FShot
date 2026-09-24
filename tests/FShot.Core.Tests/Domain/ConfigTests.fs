@@ -84,6 +84,7 @@ let ``AppConfig default có đúng các trường MVP`` () =
     Assert.Equal(2.0, cfg.DrawThickness)
     Assert.Equal("SelectionTool", cfg.DefaultTool)
     Assert.True(cfg.CloseAfterExport)
+    Assert.False(cfg.StartupLaunch)
 
 /// Kiểm tra AppConfig chuyển sang ConfigSnapshot chính xác.
 [<Fact>]
@@ -95,6 +96,7 @@ let ``AppConfig ToSnapshot chuyển đổi đúng`` () =
         DrawThickness = 4.0
         DefaultTool = "ArrowTool"
         CloseAfterExport = false
+        StartupLaunch = true
     }
     let snapshot = appConfig.ToSnapshot()
     Assert.Equal(ArrowTool, snapshot.DefaultTool)
@@ -144,6 +146,7 @@ let ``AppConfig FromSnapshot và ToSnapshot tương thích hai chiều`` () =
     Assert.Equal(3.5, appCfg.DrawThickness)
     Assert.Equal("RectangleTool", appCfg.DefaultTool)
     Assert.False(appCfg.CloseAfterExport)
+    Assert.False(appCfg.StartupLaunch)
 
     let backToSnapshot = appCfg.ToSnapshot()
     Assert.Equal(snapshot.DefaultTool, backToSnapshot.DefaultTool)
@@ -162,6 +165,7 @@ let ``AppConfig Normalized làm sạch dữ liệu bất thường`` () =
         DrawThickness = -10.0
         DefaultTool = "unknown_tool"
         CloseAfterExport = true
+        StartupLaunch = false
     }
     let clean = dirty.Normalized()
     Assert.Equal("", clean.SavePath)
@@ -169,6 +173,7 @@ let ``AppConfig Normalized làm sạch dữ liệu bất thường`` () =
     Assert.Equal("#FF0000", clean.DrawColor)
     Assert.Equal(2.0, clean.DrawThickness)
     Assert.Equal("SelectionTool", clean.DefaultTool)
+    Assert.False(clean.StartupLaunch)
 
 /// Kiểm tra tuần tự hóa JSON bằng ConfigJson.serialize.
 [<Fact>]
@@ -180,6 +185,7 @@ let ``ConfigJson serialize tạo chuỗi JSON đúng định dạng`` () =
         DrawThickness = 3.0
         DefaultTool = "PencilTool"
         CloseAfterExport = true
+        StartupLaunch = false
     }
     let json = ConfigJson.serialize cfg
     Assert.Contains("\"savePath\": \"C:\\\\Captures\"", json)
@@ -188,6 +194,7 @@ let ``ConfigJson serialize tạo chuỗi JSON đúng định dạng`` () =
     Assert.Contains("\"drawThickness\": 3", json)
     Assert.Contains("\"defaultTool\": \"PencilTool\"", json)
     Assert.Contains("\"closeAfterExport\": true", json)
+    Assert.Contains("\"startupLaunch\": false", json)
 
 /// Kiểm tra giải tuần tự hóa JSON bằng ConfigJson.deserialize.
 [<Fact>]
@@ -199,7 +206,8 @@ let ``ConfigJson deserialize nạp đúng JSON`` () =
         "drawColor": "#00FF00",
         "drawThickness": 4.5,
         "defaultTool": "MarkerTool",
-        "closeAfterExport": false
+        "closeAfterExport": false,
+        "startupLaunch": true
     }
     """
     let cfgOpt = ConfigJson.deserialize json
@@ -211,6 +219,7 @@ let ``ConfigJson deserialize nạp đúng JSON`` () =
     Assert.Equal(4.5, cfg.DrawThickness)
     Assert.Equal("MarkerTool", cfg.DefaultTool)
     Assert.False(cfg.CloseAfterExport)
+    Assert.True(cfg.StartupLaunch)
 
 /// Kiểm tra deserialize chịu lỗi khi JSON thiếu trường hoặc rỗng.
 [<Fact>]
@@ -232,3 +241,4 @@ let ``ConfigJson deserializeOrDefault fallback an toàn khi JSON lỗi hoặc th
     Assert.Equal(2.0, partialResult.DrawThickness)
     Assert.Equal("SelectionTool", partialResult.DefaultTool)
     Assert.True(partialResult.CloseAfterExport)
+    Assert.False(partialResult.StartupLaunch)

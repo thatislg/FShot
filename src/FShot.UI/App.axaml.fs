@@ -16,8 +16,10 @@ open FShot.Platform.Win32.Capture
 open FShot.Platform.Win32.Clipboard
 open FShot.Platform.Win32.Config
 open FShot.Platform.Win32.Screen
+open FShot.Platform.Win32.Startup
 open FShot.Platform.Win32.Tray
 open FShot.Rendering.Skia.Renderers
+open FShot.UI.Cli
 open FShot.UI.Windows
 open FShot.UI.Logging
 open SkiaSharp
@@ -55,6 +57,7 @@ type App() =
 
     let mutable currentOverlay: CaptureOverlayWindow option = None
     let mutable trayService: TrayIconService option = None
+    let mutable desktopLifetime: IClassicDesktopStyleApplicationLifetime option = None
 
     /// Mở file cấu hình bằng ứng dụng mặc định của hệ thống (FR-SYS-006).
     let openSettingsFile () =
@@ -217,6 +220,33 @@ type App() =
             trayService |> Option.iter (fun t -> t.Dispose())
             desktop.Shutdown()
 
+    /// Xử lý lệnh IPC từ instance thứ hai.
+    member private this.HandleIpcCommand (args: string[]) =
+        let request = CliParser.parse args
+        FShotLog.write (sprintf "[IPC] Handling command: %A" args)
+        let isHeadless =
+            match request.Mode with
+            | FullScreen | SingleScreen _ -> true
+            | _ -> false
+
+        match desktopLifetime with
+        | Some desktop when request.Mode = GuiInteractive || request.OutputTarget = OpenGui ->
+            FShotLog.write "[IPC] Opening GUI overlay from IPC command"
+            showCaptureOverlay desktop { CaptureRequest.Default with Mode = request.Mode; DelayMs = request.DelayMs; OutputTarget = request.OutputTarget }
+        | Some _ when isHeadless ->
+            // TODO: Chạy headless capture trong nền mà không thoát app daemon.
+            FShotLog.write "[IPC] Headless capture commands via IPC not yet implemented"
+        | _ ->
+            FShotLog.write "[IPC] App not ready or unknown command"
+
+    /// Xử lý lệnh IPC từ instance thứ hai (static entry point, thread-safe).
+    static member HandleIpcCommand (args: string[]) =
+        match Application.Current with
+        | :? App as app ->
+            Dispatcher.UIThread.InvokeAsync(fun () -> app.HandleIpcCommand(args)) |> ignore
+        | _ ->
+            FShotLog.write "[IPC] No running App instance to handle command"
+
     member this.InitializeComponent() =
         AvaloniaXamlLoader.Load(this)
 
@@ -235,6 +265,12 @@ type App() =
             configSnapshot.DefaultStrokeWidth.Value
             configSnapshot.SaveOptions.Path)
 
+        // Đồng bộ khởi động cùng Windows với cấu hình (FR-CFG-006, FR-WIN-005).
+        let appConfig = ConfigStore.loadConfig()
+        match StartupRegistration.syncStartup appConfig.StartupLaunch with
+        | Ok () -> FShotLog.write "[Startup] Synced startup registration"
+        | Error err -> FShotLog.write (sprintf "[Startup] %s" err)
+
         AppDomain.CurrentDomain.UnhandledException.AddHandler(
             new UnhandledExceptionEventHandler(fun _ e ->
                 match e.ExceptionObject with
@@ -245,6 +281,8 @@ type App() =
 
         match this.ApplicationLifetime with
         | :? IClassicDesktopStyleApplicationLifetime as desktop ->
+            desktopLifetime <- Some desktop
+
             // Đăng ký tray icon ngay khi lifetime sẵn sàng (FR-SYS-001).
             let service = TrayIconService.Create(this, dispatchTrayCommand desktop)
             trayService <- Some service
@@ -257,10 +295,7 @@ type App() =
             else
                 // Chế độ GUI: mở overlay ngay theo CaptureRequest được truyền vào.
                 let request = App.CaptureRequest
-                if request.DelayMs = 0 && request.Mode = GuiInteractive then
-                    showCaptureOverlay desktop request
-                else
-                    showCaptureOverlay desktop request
+                showCaptureOverlay desktop request
 
         | _ ->
             FShotLog.write "Unknown application lifetime"

@@ -52,6 +52,7 @@ type AppConfig = {
     DrawThickness: float
     DefaultTool: string
     CloseAfterExport: bool
+    StartupLaunch: bool
 } with
     /// Cấu hình mặc định của ứng dụng.
     static member Default = {
@@ -61,6 +62,7 @@ type AppConfig = {
         DrawThickness = 2.0
         DefaultTool = "SelectionTool"
         CloseAfterExport = true
+        StartupLaunch = false
     }
 
     /// Làm sạch và chuẩn hóa dữ liệu, đảm bảo không có giá trị null hoặc không hợp lệ.
@@ -109,6 +111,7 @@ type AppConfig = {
             DrawThickness = thickness
             DefaultTool = tool
             CloseAfterExport = this.CloseAfterExport
+            StartupLaunch = this.StartupLaunch
         }
 
     /// Chuyển đổi AppConfig sang ConfigSnapshot dùng cho OverlayState.
@@ -173,6 +176,7 @@ type AppConfig = {
             | PixelateTool -> "PixelateTool"
             | IconTool -> "IconTool"
         CloseAfterExport = snapshot.CloseAfterExport
+        StartupLaunch = false
     }
 
 /// Custom JSON Converter cho AppConfig để đảm bảo tương thích mọi định dạng,
@@ -223,6 +227,7 @@ and AppConfigJsonConverter() =
             DrawThickness = getFloat "drawThickness" def.DrawThickness
             DefaultTool = getString "defaultTool" def.DefaultTool
             CloseAfterExport = getBool "closeAfterExport" def.CloseAfterExport
+            StartupLaunch = getBool "startupLaunch" def.StartupLaunch
         }.Normalized()
 
     override _.Write(writer: Utf8JsonWriter, value: AppConfig, _options: JsonSerializerOptions) =
@@ -234,6 +239,7 @@ and AppConfigJsonConverter() =
         writer.WriteNumber("drawThickness", norm.DrawThickness)
         writer.WriteString("defaultTool", norm.DefaultTool)
         writer.WriteBoolean("closeAfterExport", norm.CloseAfterExport)
+        writer.WriteBoolean("startupLaunch", norm.StartupLaunch)
         writer.WriteEndObject()
 
 /// Các tiện ích tuần tự hóa JSON cho cấu hình FShot.

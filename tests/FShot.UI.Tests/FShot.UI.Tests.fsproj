@@ -14,6 +14,8 @@
     <Compile Include="CliTests.fs" />
     <Compile Include="ConfigStoreTests.fs" />
     <Compile Include="TrayIconTests.fs" />
+    <Compile Include="SingleInstanceTests.fs" />
+    <Compile Include="StartupRegistrationTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

@@ -91,3 +91,16 @@ let ``parse screen with index and path``() =
 let ``negative delay is clamped to zero``() =
     let request = CliParser.parse [| "full"; "-d"; "-100"; "-c" |]
     Assert.Equal(0, request.DelayMs)
+
+[<Fact>]
+let ``parse allow-multiple flag``() =
+    let request = CliParser.parse [| "--allow-multiple" |]
+    Assert.True(request.AllowMultiple)
+    Assert.True(request.RunAsDaemon)
+
+[<Fact>]
+let ``parse gui with allow-multiple``() =
+    let request = CliParser.parse [| "gui"; "--allow-multiple" |]
+    Assert.True(request.AllowMultiple)
+    Assert.False(request.RunAsDaemon)
+    Assert.Equal(GuiInteractive, request.Mode)
