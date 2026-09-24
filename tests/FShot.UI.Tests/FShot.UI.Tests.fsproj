@@ -13,6 +13,7 @@
     <Compile Include="ToolbarIconsTests.fs" />
     <Compile Include="CliTests.fs" />
     <Compile Include="ConfigStoreTests.fs" />
+    <Compile Include="TrayIconTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

@@ -127,6 +127,14 @@ module Program =
                 return 1
         }
 
+    and runDaemonAsync () : Async<int> =
+        async {
+            let app = buildAvaloniaApp()
+            App.IsDaemon <- true
+            FShotLog.write "[Program] Starting daemon mode (tray only)"
+            return app.StartWithClassicDesktopLifetime([||])
+        }
+
     and runGuiAsync (request: ParsedCliRequest) : Async<int> =
         async {
             let app = buildAvaloniaApp()
@@ -154,12 +162,11 @@ module Program =
         let request = CliParser.parse argv
 
         let exitCode =
-            if request.OutputTarget <> OutputTarget.OpenGui || request.Mode = GuiInteractive then
-                if request.Mode = GuiInteractive then
-                    runGuiAsync request |> Async.RunSynchronously
-                else
-                    runHeadlessCaptureAsync request |> Async.RunSynchronously
-            else
+            if request.RunAsDaemon then
+                runDaemonAsync () |> Async.RunSynchronously
+            elif request.Mode = GuiInteractive then
                 runGuiAsync request |> Async.RunSynchronously
+            else
+                runHeadlessCaptureAsync request |> Async.RunSynchronously
 
         exitCode

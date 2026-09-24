@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <Compile Include="Converters\DomainToSkia.fs" />
+    <Compile Include="Icons\TrayIconBitmap.fs" />
     <Compile Include="Renderers\ScreenshotRenderer.fs" />
     <Compile Include="Renderers\DimmingRenderer.fs" />
     <Compile Include="Renderers\SelectionRenderer.fs" />

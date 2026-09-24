@@ -5,8 +5,9 @@ open FShot.UI.Cli
 open Xunit
 
 [<Fact>]
-let ``parse empty args defaults to gui interactive``() =
+let ``parse empty args defaults to daemon mode``() =
     let request = CliParser.parse [||]
+    Assert.True(request.RunAsDaemon)
     Assert.Equal(GuiInteractive, request.Mode)
     Assert.Equal(0, request.DelayMs)
     Assert.Equal(OpenGui, request.OutputTarget)
@@ -14,6 +15,7 @@ let ``parse empty args defaults to gui interactive``() =
 [<Fact>]
 let ``parse gui subcommand``() =
     let request = CliParser.parse [| "gui" |]
+    Assert.False(request.RunAsDaemon)
     Assert.Equal(GuiInteractive, request.Mode)
     Assert.Equal(OpenGui, request.OutputTarget)
 

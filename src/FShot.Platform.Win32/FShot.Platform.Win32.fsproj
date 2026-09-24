@@ -19,7 +19,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\FShot.Core\FShot.Core.fsproj" />
+    <ProjectReference Include="..\FShot.Rendering.Skia\FShot.Rendering.Skia.fsproj" />
   </ItemGroup>
 
 </Project>

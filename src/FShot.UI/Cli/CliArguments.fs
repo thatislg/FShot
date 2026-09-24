@@ -4,6 +4,7 @@ open Argu
 open Microsoft.FSharp.Quotations
 open FShot.Core.Domain
 
+
 /// Subcommand "gui": mở overlay tương tác để người dùng chọn vùng và chú thích.
 type GuiArgs =
     | [<AltCommandLine("-d")>] Delay_Ms of int
@@ -50,7 +51,7 @@ type CliArguments =
     interface IArgParserTemplate with
         member this.Usage =
             match this with
-            | Gui _ -> "Mở overlay tương tác (mặc định)."
+            | Gui _ -> "Mở overlay tương tác."
             | Full _ -> "Chụp toàn bộ màn hình hiện tại và xuất ra file hoặc clipboard."
             | Screen _ -> "Chụp màn hình chỉ định theo chỉ số và xuất ra file hoặc clipboard."
             | Version -> "Hiển thị phiên bản."
@@ -61,6 +62,7 @@ type ParsedCliRequest =
       Mode: CaptureMode
       DelayMs: int
       OutputTarget: OutputTarget
+      RunAsDaemon: bool
     }
 
 module CliParser =
@@ -98,7 +100,7 @@ module CliParser =
         | _ -> None
 
     /// Parse mảng args thành ParsedCliRequest.
-    /// Nếu args rỗng hoặc không khớp subcommand, mặc định là gui.
+    /// Nếu args rỗng hoặc không khớp subcommand, mặc định là daemon (tray icon).
     let parse (args: string[]) : ParsedCliRequest =
         try
             let results = parser.Parse(args, ignoreUnrecognized = true, raiseOnUsage = false)
@@ -117,6 +119,7 @@ module CliParser =
                   Mode = GuiInteractive
                   DelayMs = getGuiDelay gui
                   OutputTarget = OpenGui
+                  RunAsDaemon = false
                 }
             elif results.Contains Full then
                 let full = results.GetResult Full
@@ -132,6 +135,7 @@ module CliParser =
                   Mode = FullScreen
                   DelayMs = getDelay full
                   OutputTarget = outputTarget
+                  RunAsDaemon = false
                 }
             elif results.Contains Screen then
                 let screen = results.GetResult Screen
@@ -148,20 +152,23 @@ module CliParser =
                   Mode = SingleScreen screenIndex
                   DelayMs = getScreenDelay screen
                   OutputTarget = outputTarget
+                  RunAsDaemon = false
                 }
             else
+                // Mặc định: chạy nền với tray icon.
                 {
                   Mode = GuiInteractive
                   DelayMs = 0
                   OutputTarget = OpenGui
+                  RunAsDaemon = true
                 }
         with
         | :? ArguParseException as ex ->
             printfn "%s" ex.Message
             System.Environment.Exit(1)
             // never reached
-            { Mode = GuiInteractive; DelayMs = 0; OutputTarget = OpenGui }
+            { Mode = GuiInteractive; DelayMs = 0; OutputTarget = OpenGui; RunAsDaemon = true }
         | ex ->
             printfn "Lỗi khi phân tích tham số dòng lệnh: %s" ex.Message
             System.Environment.Exit(1)
-            { Mode = GuiInteractive; DelayMs = 0; OutputTarget = OpenGui }
+            { Mode = GuiInteractive; DelayMs = 0; OutputTarget = OpenGui; RunAsDaemon = true }

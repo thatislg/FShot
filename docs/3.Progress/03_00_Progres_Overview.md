@@ -278,21 +278,21 @@
 ## 4. Checklist chi tiết Phase 2: Windows v1.0 (Target: 11/10 → 07/11/2026)
 
 ### Epic 6: System Tray & App Lifecycle
-- [ ] **P2.01** Biểu tượng tray liên tục với menu ngữ cảnh: chụp GUI, chụp màn hình, mở cài đặt, mở thư mục lưu, thoát (`FR-SYS-001`–`FR-SYS-008`).
-  - [ ] Hoàn thiện tài liệu thiết kế chi tiết `docs/2.Design/10_Platform_Win32/10_05_TrayIcon.md` (vòng đời Tray, cơ chế Avalonia NativeMenuItem/TrayIcon kết hợp Win32 WinProc, xử lý sự kiện click).
-  - [ ] Chuẩn bị và tích hợp icon tray chuyên dụng từ vector Kawaii `docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/tray-icon.svg` (chuyển đổi sang WindowIcon / icon định dạng thích hợp cho khay hệ thống Windows Taskbar).
-  - [ ] Triển khai `TrayService` trong `src/FShot.Platform.Win32/Tray/TrayIcon.fs` và tích hợp vào `App.axaml` / `App.axaml.fs`:
-    - [ ] `FR-SYS-001`: Khởi tạo biểu tượng thường trực trên khay hệ thống khi khởi động ứng dụng ở chế độ background/daemon.
-    - [ ] Thao tác Click / Double-click chuột trái vào TrayIcon: kích hoạt chụp ảnh màn hình tương tác GUI ngay lập tức.
-    - [ ] `FR-SYS-002`: Menu ngữ cảnh "Chụp màn hình (GUI)" kích hoạt `CaptureOverlayWindow`.
-    - [ ] `FR-SYS-003`: Submenu "Chụp theo màn hình" tự động cập nhật danh sách màn hình từ `ScreenEnumeration.getScreens()` để chụp riêng từng monitor.
-    - [ ] `FR-SYS-004`: Menu "Trình phóng nhanh (Launcher)" hỗ trợ chụp với độ trễ hoặc tùy chọn nhanh.
-    - [ ] `FR-SYS-005`: Menu "Thông tin & Phím tắt (About)" hiển thị dialog giới thiệu phiên bản F-Shot và cheat sheet phím tắt.
-    - [ ] `FR-SYS-006`: Menu "Cài đặt (Settings)" mở cửa sổ cấu hình hoặc điều hướng nhanh tới file cấu hình.
-    - [ ] `FR-SYS-007`: Menu "Mở thư mục ảnh chụp" mở đường dẫn `savePath` trong Windows Explorer qua `Process.Start("explorer.exe", path)`.
-    - [ ] `FR-SYS-008`: Menu "Thoát F-Shot" kích hoạt luồng đóng ứng dụng sạch sẽ.
-  - [ ] Viết unit tests kiểm thử khởi tạo menu, trạng thái hiển thị và dispatch command từ tray.
-  - [ ] Verify runtime trên Windows 10/11: kiểm tra biểu tượng hiển thị rõ nét trên Taskbar (cả light/dark theme), chuột phải mở menu nhạy, click từng action hoạt động chính xác.
+- [x] **P2.01** Biểu tượng tray liên tục với menu ngữ cảnh: chụp GUI, chụp màn hình, mở cài đặt, mở thư mục lưu, thoát (`FR-SYS-001`–`FR-SYS-008`).
+  - [x] Hoàn thiện tài liệu thiết kế chi tiết `docs/2.Design/10_Platform_Win32/10_05_TrayIcon.md` (vòng đời Tray, cơ chế Avalonia NativeMenuItem/TrayIcon kết hợp Win32 WinProc, xử lý sự kiện click).
+  - [x] Chuẩn bị và tích hợp icon tray chuyên dụng từ vector Kawaii `docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/tray-icon.svg` (chuyển đổi sang WindowIcon / icon định dạng thích hợp cho khay hệ thống Windows Taskbar).
+  - [x] Triển khai `TrayService` trong `src/FShot.Platform.Win32/Tray/TrayIcon.fs` và tích hợp vào `App.axaml` / `App.axaml.fs`:
+    - [x] `FR-SYS-001`: Khởi tạo biểu tượng thường trực trên khay hệ thống khi khởi động ứng dụng ở chế độ background/daemon.
+    - [x] Thao tác Click / Double-click chuột trái vào TrayIcon: kích hoạt chụp ảnh màn hình tương tác GUI ngay lập tức.
+    - [x] `FR-SYS-002`: Menu ngữ cảnh "Chụp màn hình (GUI)" kích hoạt `CaptureOverlayWindow`.
+    - [x] `FR-SYS-003`: Submenu "Chụp theo màn hình" tự động cập nhật danh sách màn hình từ `ScreenEnumeration.getScreens()` để chụp riêng từng monitor.
+    - [x] `FR-SYS-004`: Menu "Trình phóng nhanh (Launcher)" hỗ trợ chụp với độ trễ hoặc tùy chọn nhanh.
+    - [x] `FR-SYS-005`: Menu "Thông tin & Phím tắt (About)" hiển thị dialog giới thiệu phiên bản F-Shot và cheat sheet phím tắt.
+    - [x] `FR-SYS-006`: Menu "Cài đặt (Settings)" mở cửa sổ cấu hình hoặc điều hướng nhanh tới file cấu hình.
+    - [x] `FR-SYS-007`: Menu "Mở thư mục ảnh chụp" mở đường dẫn `savePath` trong Windows Explorer qua `Process.Start("explorer.exe", path)`.
+    - [x] `FR-SYS-008`: Menu "Thoát F-Shot" kích hoạt luồng đóng ứng dụng sạch sẽ.
+  - [x] Viết unit tests kiểm thử khởi tạo menu, trạng thái hiển thị và dispatch command từ tray.
+  - [x] Verify runtime trên Windows 10/11: kiểm tra biểu tượng hiển thị rõ nét trên Taskbar (cả light/dark theme), chuột phải mở menu nhạy, click từng action hoạt động chính xác, **và ứng dụng khởi động nền không tự mở overlay (chỉ mở khi click tray)**.
 - [ ] **P2.02** Giới hạn single-instance và khởi động cùng Windows (`FR-SYS-010`, `FR-CFG-006`, `FR-WIN-005`).
   - [ ] Hoàn thiện tài liệu thiết kế `docs/2.Design/10_Platform_Win32/10_09_Startup.md` và `docs/2.Design/10_Platform_Win32/10_10_SingleInstance.md`.
   - [ ] Triển khai cơ chế kiểm soát tiến trình duy nhất (Single-Instance Enforcement) trong `src/FShot.Platform.Win32/Lifecycle/SingleInstance.fs`:
