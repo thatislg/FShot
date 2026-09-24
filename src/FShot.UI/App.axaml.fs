@@ -6,6 +6,7 @@ open Avalonia.Controls.ApplicationLifetimes
 open Avalonia.Markup.Xaml
 
 open FShot.Core.Domain
+open FShot.Platform.Win32.Config
 open FShot.UI.Windows
 open FShot.UI.Logging
 
@@ -20,11 +21,33 @@ type App() =
         with get() = App._captureRequest
         and set(value) = App._captureRequest <- value
 
+    [<DefaultValue>]
+    static val mutable private _configSnapshot: ConfigSnapshot
+
+    static member ConfigSnapshot
+        with get() =
+            if box App._configSnapshot = null then
+                let cfg = ConfigStore.loadSnapshot()
+                App._configSnapshot <- cfg
+                cfg
+            else
+                App._configSnapshot
+        and set(value) = App._configSnapshot <- value
+
     override this.Initialize() =
         AvaloniaXamlLoader.Load(this)
 
     override this.OnFrameworkInitializationCompleted() =
         FShotLog.write "=== F-Shot UI started ==="
+
+        // Nạp cấu hình từ %APPDATA%\FShot\config.json
+        let configSnapshot = ConfigStore.loadSnapshot()
+        App.ConfigSnapshot <- configSnapshot
+        FShotLog.write (sprintf "Config loaded: Tool=%A, Color=%s, Thickness=%.1f, SavePath=%A"
+            configSnapshot.DefaultTool
+            (configSnapshot.DefaultColor.ToHex())
+            configSnapshot.DefaultStrokeWidth.Value
+            configSnapshot.SaveOptions.Path)
 
         AppDomain.CurrentDomain.UnhandledException.AddHandler(
             new UnhandledExceptionEventHandler(fun _ e ->
@@ -37,6 +60,7 @@ type App() =
         match this.ApplicationLifetime with
         | :? IClassicDesktopStyleApplicationLifetime as desktop ->
             let overlay = CaptureOverlayWindow()
+            overlay.ConfigSnapshot <- App.ConfigSnapshot
             desktop.MainWindow <- overlay
 
             overlay.Closed.Add(fun _ ->

@@ -1,4 +1,4 @@
-﻿namespace FShot.UI
+namespace FShot.UI
 
 open System
 open Avalonia
@@ -8,6 +8,7 @@ open FShot.Core.Domain
 open FShot.Core.Geometry
 open FShot.Platform.Win32.Capture
 open FShot.Platform.Win32.Clipboard
+open FShot.Platform.Win32.Config
 open FShot.Platform.Win32.Screen
 open FShot.Rendering.Skia.Renderers
 open FShot.UI.Cli
@@ -79,7 +80,8 @@ module Program =
                                 else
                                     SKEncodedImageFormat.Png
 
-                            let quality = ConfigSnapshot.Default.SaveOptions.NormalizedJpegQuality
+                            let config = ConfigStore.loadSnapshot()
+                            let quality = config.SaveOptions.NormalizedJpegQuality
                             use data = exportBitmap.Encode(format, quality)
                             use stream = System.IO.File.Create(path)
                             data.SaveTo(stream)
@@ -141,6 +143,14 @@ module Program =
 
     [<EntryPoint; STAThread>]
     let main argv =
+        let config = ConfigStore.loadSnapshot()
+        App.ConfigSnapshot <- config
+        FShotLog.write (sprintf "Main entry: Config loaded: Tool=%A, Color=%s, Thickness=%.1f, SavePath=%A, Close=%b"
+            config.DefaultTool
+            (config.DefaultColor.ToHex())
+            config.DefaultStrokeWidth.Value
+            config.SaveOptions.Path
+            config.CloseAfterExport)
         let request = CliParser.parse argv
 
         let exitCode =

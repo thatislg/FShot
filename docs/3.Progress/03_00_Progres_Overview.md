@@ -1,8 +1,8 @@
 # F-Shot Master Progress Tracking
 
-- **Cập nhật gần nhất:** 2026-09-16
-- **Tiến độ tổng quan:** `[ 37 / 84 ] Tasks hoàn thành (~44.0%)` (Phase 0 PoC đã verify xong; P1.01–P1.26 của Phase 1 đã hoàn thành & verify runtime)
-- **Mục tiêu hiện tại:** Tiếp tục Epic 5: CLI & Cấu hình (P1.27–P1.29).
+- **Cập nhật gần nhất:** 2026-09-24
+- **Tiến độ tổng quan:** `[ 40 / 84 ] Tasks hoàn thành (~47.6%)` (Phase 0 PoC và Phase 1 MVP Core đã hoàn thành 100% & verify runtime)
+- **Mục tiêu hiện tại:** Bắt đầu Phase 2: Windows v1.0 (Epic 6: System Tray & App Lifecycle).
 
 ---
 
@@ -11,7 +11,7 @@
 | Phase | Mục tiêu | Trạng thái | Hoàn thành |
 | :--- | :--- | :---: | :---: |
 | **Phase 0: PoC** | Khung Solution, Screen Capture, Overlay Canvas, đo 60 FPS | **DONE** | **8 / 8** (đã verify trên desktop Windows) |
-| **Phase 1: MVP Core** | Bounding box, 9 Annotation tools, Undo/Redo, Toolbar, Save/Clipboard | **IN PROGRESS** | 26 / 29 (~89.7%) |
+| **Phase 1: MVP Core** | Bounding box, 9 Annotation tools, Undo/Redo, Toolbar, Save/Clipboard, CLI, Config | **DONE** | **29 / 29 (100%)** (đã verify trên desktop Windows) |
 | **Phase 2: Windows v1.0** | Tray, Hotkeys, Real Capture, Config UI, Pin Widget, Advanced tools | **PENDING** | 0 / 39 (0%) |
 | **Phase 3: Advanced** | Imgur upload, Snap-to-grid, Tùy biến nâng cao | **PENDING** | 0 / 8 (0%) |
 
@@ -261,17 +261,17 @@
   - [x] Xử lý validation giá trị delay (clamp $>= 0$, bỏ qua giá trị âm hoặc không hợp lệ).
   - [x] Viết unit tests kiểm thử parse delay flag và kiểm tra không block bất thường khi `delay = 0`.
   - [x] Verify runtime trên Windows: chạy `fshot full -d 2000`, xác nhận delay ~2 giây trước khi chụp.
-- [ ] **P1.29** Lưu trữ và nạp cấu hình cơ bản từ JSON tại `%APPDATA%\FShot\config.json`.
-  - [ ] Hoàn thiện tài liệu thiết kế `docs/2.Design/07_Config/07_02_Schema.md`, `07_03_MvpConfig.md`, `07_04_FileStore.md`.
-  - [ ] Định nghĩa `AppConfig` record trong `src/FShot.Core/Domain/Config.fs` gồm các trường MVP: `SavePath`, `FilenamePattern`, `DrawColor`, `DrawThickness`, `DefaultTool`, `CloseAfterExport` (`FR-CFG-001/003/200/201`).
-  - [ ] Triển khai hàm chuyển đổi giữa `AppConfig` và `ConfigSnapshot` trong `Config.fs`.
-  - [ ] Triển khai `ConfigStore` trong `src/FShot.Platform.Win32/Config/ConfigStore.fs`:
-    - [ ] Xác định đường dẫn thư mục cấu hình `%APPDATA%\FShot\` và file `config.json`.
-    - [ ] Hàm `LoadConfig()`: đọc và parse JSON qua `System.Text.Json`, tự động tạo file với cấu hình mặc định nếu chưa tồn tại, fallback an toàn nếu file JSON lỗi.
-    - [ ] Hàm `SaveConfig(config)`: serialize và ghi file JSON với định dạng indented.
-  - [ ] Tích hợp nạp cấu hình khi khởi động app (`Program.fs` / `App.axaml.fs`), truyền `ConfigSnapshot` vào `OverlayState` và áp dụng `SaveOptions`.
-  - [ ] Bổ sung unit tests cho serialize/deserialize JSON, load/save và fallback config trong `tests/FShot.Core.Tests/Domain/ConfigTests.fs`.
-  - [ ] Verify runtime: xác nhận file `%APPDATA%\FShot\config.json` được tạo tự động khi chạy lần đầu; sửa cấu hình file và xác nhận app nhận đúng thay đổi.
+- [x] **P1.29** Lưu trữ và nạp cấu hình cơ bản từ JSON tại `%APPDATA%\FShot\config.json`.
+  - [x] Hoàn thiện tài liệu thiết kế `docs/2.Design/07_Config/07_02_Schema.md`, `07_03_MvpConfig.md`, `07_04_FileStore.md`.
+  - [x] Định nghĩa `AppConfig` record trong `src/FShot.Core/Domain/Config.fs` gồm các trường MVP: `SavePath`, `FilenamePattern`, `DrawColor`, `DrawThickness`, `DefaultTool`, `CloseAfterExport` (`FR-CFG-001/003/200/201`).
+  - [x] Triển khai hàm chuyển đổi giữa `AppConfig` và `ConfigSnapshot` trong `Config.fs`.
+  - [x] Triển khai `ConfigStore` trong `src/FShot.Platform.Win32/Config/ConfigStore.fs`:
+    - [x] Xác định đường dẫn thư mục cấu hình `%APPDATA%\FShot\` và file `config.json`.
+    - [x] Hàm `LoadConfig()`: đọc và parse JSON qua `System.Text.Json`, tự động tạo file với cấu hình mặc định nếu chưa tồn tại, fallback an toàn nếu file JSON lỗi.
+    - [x] Hàm `SaveConfig(config)`: serialize và ghi file JSON với định dạng indented.
+  - [x] Tích hợp nạp cấu hình khi khởi động app (`Program.fs` / `App.axaml.fs`), truyền `ConfigSnapshot` vào `OverlayState` và áp dụng `SaveOptions`.
+  - [x] Bổ sung unit tests cho serialize/deserialize JSON, load/save và fallback config trong `tests/FShot.Core.Tests/Domain/ConfigTests.fs`.
+  - [x] Verify runtime: xác nhận file `%APPDATA%\FShot\config.json` được tạo tự động khi chạy lần đầu; sửa cấu hình file và xác nhận app nhận đúng thay đổi.
 
 ---
 
@@ -373,6 +373,7 @@
 - **Epic 5 & Toàn bộ Icon Kawaii:** `docs/3.Progress/03_11_Epic5_Subtasks_And_Kawaii_Icons_Report.md` (chi tiết subtask Epic 5 + tích hợp toàn diện bộ icon Kawaii Claymorphism)
 - **P1.24 (Save/Export & Real Capture):** `docs/099.Report/20260916_0915_Platform_Capture_Export_Save_Feature.md` (chụp màn hình thật Win32 BitBlt và lưu file)
 - **P1.25 & P1.26 (Clipboard & Close Overlay):** `docs/099.Report/20260916_0945_Clipboard_Lifecycle_And_Overlay_Close_Feature.md` (Win32 Native Clipboard CF_DIB + PNG, tự động đóng overlay và âm thanh thông báo)
+- **P1.29 (JSON Config Persistence):** `docs/099.Report/20260924_1330_P1.29_Json_Config_Persistence.md` (lưu trữ và nạp cấu hình JSON tại `%APPDATA%\FShot\config.json`, tự động sinh file, fallback an toàn)
 
 ---
 

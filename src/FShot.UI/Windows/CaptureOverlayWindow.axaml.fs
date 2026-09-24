@@ -9,6 +9,7 @@ open Avalonia.Threading
 open FShot.Core.Domain
 open FShot.Core.Geometry
 open FShot.Platform.Win32.Capture
+open FShot.Platform.Win32.Config
 open FShot.Platform.Win32.Screen
 open FShot.UI.SkiaCanvas
 open FShot.UI.Logging
@@ -21,6 +22,7 @@ type CaptureOverlayWindow() as this =
     let mutable canvas: CaptureCanvas option = None
     let mutable rootCanvas: Canvas option = None
     let mutable overlayState: FShot.Core.State.OverlayState option = None
+    let mutable configSnapshot: ConfigSnapshot = ConfigStore.loadSnapshot()
 
     do
         this.InitializeComponent()
@@ -28,6 +30,10 @@ type CaptureOverlayWindow() as this =
 
         // Key handling đã được chuyển xuống CaptureCanvas để OverlayState xử lý.
         // Window không còn đóng trực tiếp từ Esc.
+
+    member this.ConfigSnapshot
+        with get() = configSnapshot
+        and set(v) = configSnapshot <- v
 
     member private this.InitializeComponent() =
         AvaloniaXamlLoader.Load(this)
@@ -96,7 +102,7 @@ type CaptureOverlayWindow() as this =
                             c.SetCaptureResult captureResult
                         )
 
-                        let config = ConfigSnapshot.Default
+                        let config = this.ConfigSnapshot
                         let state = FShot.Core.State.OverlayStateLogic.init captureResult config
                         overlayState <- Some state
 
