@@ -284,8 +284,8 @@
   - [x] Triển khai `TrayService` trong `src/FShot.Platform.Win32/Tray/TrayIcon.fs` và tích hợp vào `App.axaml` / `App.axaml.fs`:
     - [x] `FR-SYS-001`: Khởi tạo biểu tượng thường trực trên khay hệ thống khi khởi động ứng dụng ở chế độ background/daemon.
     - [x] Thao tác Click / Double-click chuột trái vào TrayIcon: kích hoạt chụp ảnh màn hình tương tác GUI ngay lập tức.
-    - [x] `FR-SYS-002`: Menu ngữ cảnh "Chụp màn hình (GUI)" kích hoạt `CaptureOverlayWindow`.
-    - [x] `FR-SYS-003`: Submenu "Chụp theo màn hình" tự động cập nhật danh sách màn hình từ `ScreenEnumeration.getScreens()` để chụp riêng từng monitor.
+    - [x] `FR-SYS-002`: Menu ngữ cảnh "Chụp màn hình (GUI)" kích hoạt `CaptureOverlayWindow` phủ toàn Virtual Screen.
+    - [x] `FR-SYS-003`: Submenu "Chụp theo màn hình" tự động cập nhật danh sách màn hình từ `ScreenEnumeration.getScreens()`. Khi chọn màn hình, `CaptureOverlayWindow` chỉ phủ đúng màn hình đó, màn hình khác vẫn sáng bình thường, cho phép chọn region và save/copy.
     - [x] `FR-SYS-004`: Menu "Trình phóng nhanh (Launcher)" hỗ trợ chụp với độ trễ hoặc tùy chọn nhanh.
     - [x] `FR-SYS-005`: Menu "Thông tin & Phím tắt (About)" hiển thị dialog giới thiệu phiên bản F-Shot và cheat sheet phím tắt.
     - [x] `FR-SYS-006`: Menu "Cài đặt (Settings)" mở cửa sổ cấu hình hoặc điều hướng nhanh tới file cấu hình.
@@ -312,10 +312,12 @@
     - [x] Đăng ký bắt các sự kiện hệ thống `AppDomain.CurrentDomain.ProcessExit`, `Console.CancelKeyPress`.
     - [x] Đảm bảo giải phóng toàn bộ unmanaged resources khi thoát: đóng Mutex (`App.SingleInstanceMutex`), ngắt Named Pipe Server (`App.IpcCancellation`), gỡ TrayIcon khỏi Taskbar để tránh icon bị "treo mờ" (ghost tray icon).
   - [x] Triển khai dịch vụ thông báo Windows (`NotificationService`) trong `src/FShot.Platform.Win32/Notifications/`:
-    - [x] Triển khai fallback Balloon Notification qua Win32 `Shell_NotifyIcon` (`NOTIFYICONDATA` struct định nghĩa hoàn toàn bằng F# tại top-level).
+    - [x] Triển khai **Toast Notification** qua `Microsoft.Toolkit.Uwp.Notifications` (`ToastContentBuilder`) làm thông báo chính; fallback Balloon Notification qua Win32 `Shell_NotifyIcon` khi Toast không khả dụng.
+    - [x] Tạo message-only window (`HWND_MESSAGE`) làm owner cho balloon nếu app không có console window.
     - [x] `FR-CFG-008`: Tôn trọng cấu hình `showDesktopNotification` (thông báo khi copy/save thành công kèm tên file) và `showAbortNotification` (thông báo khi hủy thao tác chụp).
+    - [x] CaptureCanvas phát sự kiện `CaptureCanvasEvents.exportCompleted` (Saved/Copied/Failed), App subscribe để gọi `NotificationService.ShowNotification`.
     - [x] Click/selection từ CaptureCanvas khi hủy (Esc) phát sự kiện `CaptureCanvasEvents.abortRequested`, App subscribe để hiển thị thông báo hủy trong daemon mode.
-    - [x] Bổ sung helper `HighlightFileInExplorer(filePath)` để tương lai mở và highlight file từ thông báo.
+    - [x] Bổ sung helper `HighlightFileInExplorer(filePath)` để mở và highlight file từ thông báo.
   - [x] `FR-CFG-007`: Hỗ trợ tùy chọn ẩn hoàn toàn tray icon (`disabledTrayIcon = true`):
     - [x] Ứng dụng vẫn chạy nền và lắng nghe phím nóng toàn cục (sẵn sàng cho Epic 7) mà không xuất hiện icon ở Taskbar tray.
     - [x] Đảm bảo có cảnh báo log và hướng dẫn chỉnh sửa `config.json` khi đã ẩn tray icon.

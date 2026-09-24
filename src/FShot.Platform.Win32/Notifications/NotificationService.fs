@@ -11,17 +11,19 @@ type NotificationKind =
     | CopySuccess
     | CaptureAborted
 
-/// Module nội bộ chứa các P/Invoke binding Win32 cho thông báo.
+/// Module nội bộ chứa các helper logging.
+module private NotificationLog =
+    let write message = Trace.WriteLine(sprintf "[FShot.Notification] %s" message)
+    let writeEx message (ex: exn) =
+        Trace.WriteLine(sprintf "[FShot.Notification] %s" message)
+        Trace.WriteLine(sprintf "[FShot.Notification] EXCEPTION: %s" (ex.ToString()))
+
+/// Module nội bộ chứa các P/Invoke binding Win32 cho balloon notification fallback.
 module private NotificationPInvoke =
     // Win32 constants for creating a message-only window to own the tray icon.
     let HWND_MESSAGE = nativeint (-3)
     let WM_DESTROY = 0x0002u
     let IDC_ARROW = nativeint 32512
-
-    let log message = Trace.WriteLine(sprintf "[FShot.Notification] %s" message)
-    let logEx message (ex: exn) =
-        Trace.WriteLine(sprintf "[FShot.Notification] %s" message)
-        Trace.WriteLine(sprintf "[FShot.Notification] EXCEPTION: %s" (ex.ToString()))
 
     /// Win32 NOTIFYICONDATA structure dùng cho Shell_NotifyIcon.
     [<Struct; StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)>]
@@ -138,7 +140,7 @@ type NotificationService() =
             let atom = NotificationPInvoke.RegisterClassEx(&wcex)
             if atom = 0us then
                 let err = Marshal.GetLastWin32Error()
-                NotificationPInvoke.log (sprintf "RegisterClassEx failed: %d" err)
+                NotificationLog.write (sprintf "RegisterClassEx failed: %d" err)
                 IntPtr.Zero
             else
                 wndProcDelegate <- Some delegateInst
@@ -155,12 +157,12 @@ type NotificationService() =
                         IntPtr.Zero)
                 if hwnd = IntPtr.Zero then
                     let err = Marshal.GetLastWin32Error()
-                    NotificationPInvoke.log (sprintf "CreateWindowEx failed: %d" err)
+                    NotificationLog.write (sprintf "CreateWindowEx failed: %d" err)
                 else
-                    NotificationPInvoke.log (sprintf "Message-only window created: %A" hwnd)
+                    NotificationLog.write (sprintf "Message-only window created: %A" hwnd)
                 hwnd
         with ex ->
-            NotificationPInvoke.logEx "Failed to create message-only window" ex
+            NotificationLog.writeEx "Failed to create message-only window" ex
             IntPtr.Zero
 
     /// Lấy HWND để làm owner cho balloon tip.
@@ -211,7 +213,7 @@ type NotificationService() =
     let showBalloon (title: string) (text: string) (infoFlags: uint32) : bool =
         let hwnd = ensureHwnd()
         if hwnd = IntPtr.Zero then
-            NotificationPInvoke.log "Cannot show balloon: no valid HWND"
+            NotificationLog.write "Cannot show balloon: no valid HWND"
             false
         else
             let mutable data = createNotifyIconData hwnd
@@ -219,20 +221,43 @@ type NotificationService() =
             data.szInfoTitle <- title
             data.dwInfoFlags <- infoFlags
             let ok = NotificationPInvoke.Shell_NotifyIcon(NIM_ADD, &data)
-            NotificationPInvoke.log (sprintf "Shell_NotifyIcon ADD returned %b (hwnd=%A)" ok hwnd)
+            NotificationLog.write (sprintf "Shell_NotifyIcon ADD returned %b (hwnd=%A)" ok hwnd)
             ok
 
+    /// Phát thông báo Windows Toast Notification qua Windows Community Toolkit.
+    /// Trả về true nếu hiển thị thành công.
+    let showToast (title: string) (text: string) : bool =
+        try
+            let builder =
+                Microsoft.Toolkit.Uwp.Notifications.ToastContentBuilder()
+                    .AddText(title)
+                    .AddText(text)
+            builder.Show()
+            NotificationLog.write (sprintf "Toast shown: %s - %s" title text)
+            true
+        with ex ->
+            NotificationLog.writeEx "Toast notification failed" ex
+            false
+
     /// Phát thông báo theo cấu hình.
+    /// Thử Toast Notification trước; nếu lỗi thì fallback sang Balloon Notification.
     /// `force` cho phép bỏ qua cờ cấu hình (dùng cho abort nếu `showAbortNotification` false).
     member _.ShowNotification(kind: NotificationKind, enabled: bool, ?force: bool) : bool =
         let force = defaultArg force false
+        NotificationLog.write (sprintf "ShowNotification called: kind=%A enabled=%b force=%b" kind enabled force)
         if not enabled && not force then
-            NotificationPInvoke.log "Notification skipped by config"
+            NotificationLog.write "Notification skipped by config"
             false
         else
-            let (title, text, flags) = buildContent kind
-            NotificationPInvoke.log (sprintf "Showing notification: %s - %s" title text)
-            showBalloon title text flags
+            let (title, text, balloonFlags) = buildContent kind
+            NotificationLog.write (sprintf "Showing notification: %s - %s" title text)
+            let toastOk = showToast title text
+            if toastOk then
+                NotificationLog.write "Toast notification succeeded"
+                true
+            else
+                NotificationLog.write "Falling back to balloon notification"
+                showBalloon title text balloonFlags
 
     /// Mở file ảnh trong Windows Explorer và highlight.
     /// Trả về true nếu khởi chạy explorer thành công.
@@ -253,7 +278,7 @@ type NotificationService() =
         match lastHwnd with
         | Some hwnd when hwnd <> IntPtr.Zero ->
             let mutable data = createNotifyIconData hwnd
-            NotificationPInvoke.Shell_NotifyIcon(NIM_DELETE, &data) |> ignore
+            NotificationPInvoke.Shell_NotifyIcon(NIM_DELETE, &data) |> ignore |> ignore
             // Nếu hwnd là message-only window do chúng ta tạo thì destroy nó.
             match wndProcDelegate with
             | Some _ ->

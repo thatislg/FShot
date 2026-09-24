@@ -43,11 +43,11 @@ let ``buildContent tao noi dung thong bao dung`` () =
 [<Fact>]
 let ``ShowNotification ton trong co enabled va force`` () =
     use service = new NotificationService()
-    // Khi disabled và không force, không gọi Win32, trả về false.
+    // Khi disabled và không force, không gọi Win32/Toast, trả về false.
     Assert.False(service.ShowNotification(CaptureSuccess None, false))
-    // Khi disabled nhưng force=true, vẫn cố gắng gọi Win32 (trên môi trường không có HWND sẽ false).
+    // Khi disabled nhưng force=true, vẫn cố gắng hiển thị (trả về true nếu toast/balloon thành công).
     // Điều này chủ yếu đảm bảo code path đi qua mà không throw.
-    Assert.False(service.ShowNotification(CaptureSuccess None, false, force = true))
+    Assert.True(service.ShowNotification(CaptureSuccess None, false, force = true))
 
 /// Kiểm tra HighlightFileInExplorer trả về false khi file không tồn tại.
 [<Fact>]

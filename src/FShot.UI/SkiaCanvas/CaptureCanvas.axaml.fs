@@ -27,10 +27,17 @@ open FShot.Platform.Win32.Clipboard
 open FShot.Rendering.Skia.Renderers
 open SkiaSharp
 
-/// Sự kiện toàn cục báo hiệu người dùng yêu cầu hủy thao tác chụp (nhấn Esc trên overlay).
-/// App.axaml.fs (compile sau) sẽ đăng ký để phát thông báo phù hợp với cấu hình.
+/// Kết quả xuất ảnh để thông báo cho app bên ngoài.
+type ExportOutcome =
+    | Saved of filePath: string
+    | Copied
+    | Failed
+
+/// Sự kiện toàn cục báo hiệu người dùng yêu cầu hủy thao tác chụp (nhấn Esc trên overlay),
+/// và kết quả xuất ảnh để phát thông báo.
 module CaptureCanvasEvents =
     let abortRequested = Event<unit>()
+    let exportCompleted = Event<ExportOutcome>()
 
 /// Vị trí đặt toolbar quanh vùng chọn.
 type ToolbarPlacement =
@@ -597,10 +604,13 @@ type CaptureCanvas() as this =
             | :? Window as w -> w.Position
             | _ -> PixelPoint(0, 0)
 
-        {
-            X = float pos.X + float windowPos.X
-            Y = float pos.Y + float windowPos.Y
-        }
+        let point =
+            {
+                X = float pos.X + float windowPos.X
+                Y = float pos.Y + float windowPos.Y
+            }
+        FShotLog.write (sprintf "[CaptureCanvas] ToVirtualPoint: control=(%.1f,%.1f) windowPos=%A virtual=(%.1f,%.1f)" pos.X pos.Y windowPos point.X point.Y)
+        point
 
     /// Chuyển KeyEventArgs sang chuỗi key dùng trong OverlayEvent.
     /// Format: "Ctrl+Shift+KeyName".
@@ -711,6 +721,7 @@ type CaptureCanvas() as this =
                         data.SaveTo(stream)
                         stream.Flush()
                         FShotLog.write (sprintf "[CaptureCanvas] Instant save succeeded: %s" resolvedPath)
+                        CaptureCanvasEvents.exportCompleted.Trigger(Saved resolvedPath)
                         this.Dispatch(ExportCompleted true)
 
                     | SaveToFile None ->
@@ -742,6 +753,7 @@ type CaptureCanvas() as this =
                             data.SaveTo(stream)
                             stream.Flush()
                             FShotLog.write (sprintf "[CaptureCanvas] Instant save (from config) succeeded: %s" resolvedPath)
+                            CaptureCanvasEvents.exportCompleted.Trigger(Saved resolvedPath)
                             this.Dispatch(ExportCompleted true)
 
                         | _ ->
@@ -787,6 +799,7 @@ type CaptureCanvas() as this =
                                 data.SaveTo(stream)
                                 stream.Flush()
                                 FShotLog.write (sprintf "[CaptureCanvas] Saved to %s" localPath)
+                                CaptureCanvasEvents.exportCompleted.Trigger(Saved localPath)
                                 this.Dispatch(ExportCompleted true)
 
                     | CopyToClipboard ->
@@ -807,12 +820,14 @@ type CaptureCanvas() as this =
                         ClipboardService.playNotificationSound ()
 
                         FShotLog.write "[CaptureCanvas] Copy completed successfully, dispatching ExportCompleted true"
+                        CaptureCanvasEvents.exportCompleted.Trigger(Copied)
                         this.Dispatch(ExportCompleted true)
                     | _ ->
                         FShotLog.write (sprintf "[CaptureCanvas] Unsupported export target: %A" target)
                         this.Dispatch(ExportCompleted false)
                 with ex ->
                     FShotLog.writeEx "[CaptureCanvas] Export failed" ex
+                    CaptureCanvasEvents.exportCompleted.Trigger(Failed)
                     this.Dispatch(ExportCompleted false)
             }
             Async.StartImmediate(runExport)

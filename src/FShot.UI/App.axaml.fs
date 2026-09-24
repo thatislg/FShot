@@ -137,7 +137,8 @@ type App() as this =
         ) |> ignore
 
     /// Tạo và hiển thị overlay chụp màn hình.
-    let showCaptureOverlay (desktop: IClassicDesktopStyleApplicationLifetime) (request: CaptureRequest) =
+    /// `captureBounds` giới hạn overlay trên một màn hình cụ thể; None = toàn Virtual Screen.
+    let showCaptureOverlay (desktop: IClassicDesktopStyleApplicationLifetime) (request: CaptureRequest) (captureBounds: Rect option) =
         Dispatcher.UIThread.InvokeAsync(fun () ->
             try
                 // Nếu overlay đã hiển thị thì chỉ focus lại.
@@ -149,6 +150,7 @@ type App() as this =
                 | _ ->
                     let overlay = CaptureOverlayWindow()
                     overlay.ConfigSnapshot <- App.ConfigSnapshot
+                    overlay.CaptureBounds <- captureBounds
                     desktop.MainWindow <- overlay
                     currentOverlay <- Some overlay
 
@@ -166,6 +168,21 @@ type App() as this =
                     CaptureCanvasEvents.abortRequested.Publish.Add(fun () ->
                         if App.IsDaemon then
                             this.ShowAbortNotification())
+
+                    // Subscribe sự kiện xuất ảnh từ CaptureCanvas để phát thông báo desktop.
+                    CaptureCanvasEvents.exportCompleted.Publish.Add(fun outcome ->
+                        let config = ConfigStore.loadSnapshot()
+                        match outcome with
+                        | Saved path ->
+                            notificationService |> Option.iter (fun n ->
+                                n.ShowNotification(CaptureSuccess (Some path), config.ShowDesktopNotification) |> ignore)
+                            FShotLog.write (sprintf "[App] Export saved notification: %s" path)
+                        | Copied ->
+                            notificationService |> Option.iter (fun n ->
+                                n.ShowNotification(CopySuccess, config.ShowDesktopNotification) |> ignore)
+                            FShotLog.write "[App] Export copied notification"
+                        | Failed ->
+                            FShotLog.write "[App] Export failed; no success notification")
 
                     overlay.Show()
                     overlay.Focus() |> ignore
@@ -187,7 +204,30 @@ type App() as this =
                 FShotLog.writeEx "[Tray] Show capture overlay failed" ex
         ) |> ignore
 
-    /// Chụp headless một màn hình cụ thể từ tray menu (FR-SYS-003).
+    /// Mở overlay chụp cho một màn hình cụ thể từ tray menu (FR-SYS-003).
+    /// Overlay sẽ phủ đúng màn hình đó, cho phép chọn vùng, save/copy, và thông báo.
+    let captureScreenInteractive (screenIndex: int) =
+        Dispatcher.UIThread.InvokeAsync(fun () ->
+            try
+                match ScreenEnumeration.getScreens() |> List.tryFind (fun s -> s.Index = screenIndex) with
+                | Some screen ->
+                    match desktopLifetime with
+                    | Some desktop ->
+                        let request =
+                            { CaptureRequest.Default with
+                                Mode = SingleScreen screenIndex
+                                OutputTarget = OpenGui }
+                        showCaptureOverlay desktop request (Some screen.VirtualBounds)
+                        FShotLog.write (sprintf "[Tray] Opening interactive overlay for screen %d: %A" screenIndex screen.VirtualBounds)
+                    | None ->
+                        FShotLog.write "[Tray] No desktop lifetime available for interactive capture"
+                | None ->
+                    FShotLog.write (sprintf "[Tray] Screen %d not found for interactive capture" screenIndex)
+            with ex ->
+                FShotLog.writeEx "[Tray] Interactive screen capture failed" ex
+        ) |> ignore
+
+    /// Chụp headless toàn màn hình (không qua overlay) từ tray menu.
     /// Nếu có `savePath` thì lưu file, ngược lại copy vào clipboard.
     let captureScreenHeadless (screenIndex: int) =
         async {
@@ -196,15 +236,7 @@ type App() as this =
                 let config = ConfigStore.loadSnapshot()
                 let captureService = WindowsCaptureService() :> ICaptureService
                 let! result = captureService.CaptureScreenAsync screenIndex
-                let! captureResult =
-                    match result with
-                    | Ok r -> async { return Ok r }
-                    | Error err ->
-                        FShotLog.write (sprintf "[Tray] WindowsCaptureService failed for screen %d: %A; falling back to stub" screenIndex err)
-                        let stubService = StubCaptureService() :> ICaptureService
-                        stubService.CaptureScreenAsync screenIndex
-
-                match captureResult with
+                match result with
                 | Ok captureResult ->
                     let selection =
                         { Selection.Empty with
@@ -258,16 +290,16 @@ type App() as this =
         match cmd with
         | GuiCapture ->
             FShotLog.write "[Tray] GuiCapture requested"
-            showCaptureOverlay desktop { CaptureRequest.Default with Mode = GuiInteractive }
+            showCaptureOverlay desktop { CaptureRequest.Default with Mode = GuiInteractive } None
         | CaptureScreen index ->
             FShotLog.write (sprintf "[Tray] CaptureScreen %d requested" index)
-            captureScreenHeadless index
+            captureScreenInteractive index
         | LaunchWithDelay delayMs ->
             FShotLog.write (sprintf "[Tray] LaunchWithDelay %d requested" delayMs)
             async {
                 if delayMs > 0 then
                     do! Async.Sleep delayMs
-                showCaptureOverlay desktop { CaptureRequest.Default with Mode = GuiInteractive }
+                showCaptureOverlay desktop { CaptureRequest.Default with Mode = GuiInteractive } None
             } |> Async.Start
         | OpenAbout ->
             FShotLog.write "[Tray] OpenAbout requested"
@@ -295,7 +327,7 @@ type App() as this =
         match desktopLifetime with
         | Some desktop when request.Mode = GuiInteractive || request.OutputTarget = OpenGui ->
             FShotLog.write "[IPC] Opening GUI overlay from IPC command"
-            showCaptureOverlay desktop { CaptureRequest.Default with Mode = request.Mode; DelayMs = request.DelayMs; OutputTarget = request.OutputTarget }
+            showCaptureOverlay desktop { CaptureRequest.Default with Mode = request.Mode; DelayMs = request.DelayMs; OutputTarget = request.OutputTarget } None
         | Some _ when isHeadless ->
             // TODO: Chạy headless capture trong nền mà không thoát app daemon.
             FShotLog.write "[IPC] Headless capture commands via IPC not yet implemented"
@@ -367,7 +399,7 @@ type App() as this =
                     desktop.ShutdownMode <- ShutdownMode.OnExplicitShutdown
                     desktop.MainWindow <- null
                 else
-                    showCaptureOverlay desktop App.CaptureRequest
+                    showCaptureOverlay desktop App.CaptureRequest None
             else
                 let service = TrayIconService.Create(this, this.DispatchTrayCommand desktop)
                 trayService <- Some service
@@ -378,7 +410,7 @@ type App() as this =
                     FShotLog.write "[App] Daemon mode active: tray icon only"
                 else
                     let request = App.CaptureRequest
-                    showCaptureOverlay desktop request
+                    showCaptureOverlay desktop request None
 
         | _ ->
             FShotLog.write "Unknown application lifetime"

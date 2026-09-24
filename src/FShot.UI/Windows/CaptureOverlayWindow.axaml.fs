@@ -23,6 +23,7 @@ type CaptureOverlayWindow() as this =
     let mutable rootCanvas: Canvas option = None
     let mutable overlayState: FShot.Core.State.OverlayState option = None
     let mutable configSnapshot: ConfigSnapshot = ConfigStore.loadSnapshot()
+    let mutable captureBounds: Rect option = None
 
     do
         this.InitializeComponent()
@@ -35,16 +36,22 @@ type CaptureOverlayWindow() as this =
         with get() = configSnapshot
         and set(v) = configSnapshot <- v
 
+    /// Bounds của vùng chụp giới hạn. None = toàn Virtual Screen.
+    member this.CaptureBounds
+        with get() = captureBounds
+        and set(v) = captureBounds <- v
+
     member private this.InitializeComponent() =
         AvaloniaXamlLoader.Load(this)
         canvas <- Some (this.FindControl<CaptureCanvas>("CaptureCanvas"))
         rootCanvas <- Some (this.FindControl<Canvas>("RootCanvas"))
         FShotLog.write "CaptureOverlayWindow initialized"
 
-    /// Cấu hình cửa sổ borderless topmost phủ toàn Virtual Screen.
+    /// Cấu hình cửa sổ borderless topmost phủ đúng vùng chụp.
     member private this.ConfigureOverlayWindow() =
         this.WindowState <- WindowState.Normal
         this.WindowDecorations <- WindowDecorations.None
+        this.WindowStartupLocation <- WindowStartupLocation.Manual
         this.Topmost <- true
         this.CanResize <- false
         this.ShowInTaskbar <- false
@@ -57,16 +64,38 @@ type CaptureOverlayWindow() as this =
         this.Opacity <- 1.0
         this.Cursor <- new Avalonia.Input.Cursor(StandardCursorType.Cross)
 
-    /// Mở cửa sổ phủ toàn Virtual Screen và chụp ảnh nền thực tế.
+    /// Mở cửa sổ phủ vùng chụp và chụp ảnh nền thực tế.
+    /// Nếu `CaptureBounds` được đặt, chỉ phủ và chụp màn hình đó; ngược lại phủ toàn Virtual Screen.
     member this.ShowOverlayAsync() =
         async {
             FShotLog.write "ShowOverlayAsync starting: capturing screen before showing window..."
+
+            let targetBounds =
+                match captureBounds with
+                | Some b -> b
+                | None -> ScreenEnumeration.getVirtualScreenBounds()
 
             // 1. Chụp màn hình thật TRƯỚC KHI hiển thị cửa sổ overlay để có ảnh sạch
             let! captureResultOpt =
                 async {
                     let realService = WindowsCaptureService() :> ICaptureService
-                    let! res = realService.CaptureVirtualScreenAsync()
+                    let! res =
+                        match captureBounds with
+                        | Some _ when targetBounds = ScreenEnumeration.getVirtualScreenBounds() ->
+                            realService.CaptureVirtualScreenAsync()
+                        | Some _ ->
+                            // Tìm screen index tương ứng với bounds
+                            let screens = ScreenEnumeration.getScreens()
+                            let screenOpt =
+                                screens
+                                |> List.tryFind (fun s ->
+                                    abs(s.VirtualBounds.X - targetBounds.X) < 0.001 &&
+                                    abs(s.VirtualBounds.Y - targetBounds.Y) < 0.001)
+                            match screenOpt with
+                            | Some s -> realService.CaptureScreenAsync s.Index
+                            | None -> realService.CaptureVirtualScreenAsync()
+                        | None ->
+                            realService.CaptureVirtualScreenAsync()
                     match res with
                     | Ok r -> return Ok r
                     | Error err ->
@@ -82,13 +111,12 @@ type CaptureOverlayWindow() as this =
                 // 2. Cấu hình canvas, khởi tạo state và hiển thị cửa sổ trên UI thread
                 let uiTask =
                     Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(fun () ->
-                        let bounds = ScreenEnumeration.getVirtualScreenBounds ()
+                        let bounds = targetBounds
                         let width = int bounds.Width
                         let height = int bounds.Height
 
-                        FShotLog.write (sprintf "Virtual Screen bounds: X=%.0f Y=%.0f W=%.0f H=%.0f" bounds.X bounds.Y bounds.Width bounds.Height)
+                        FShotLog.write (sprintf "Capture bounds: X=%.0f Y=%.0f W=%.0f H=%.0f" bounds.X bounds.Y bounds.Width bounds.Height)
 
-                        this.Position <- PixelPoint(int bounds.X, int bounds.Y)
                         this.Width <- float width
                         this.Height <- float height
 
@@ -111,9 +139,12 @@ type CaptureOverlayWindow() as this =
                         this.IsVisible <- true
                         FShotLog.write "ShowOverlayAsync: showing window"
                         this.Show()
+                        // Đặt position SAU Show() để Avalonia tuân thủ Manual startup location.
+                        this.Position <- PixelPoint(int bounds.X, int bounds.Y)
                         this.Focus() |> ignore
                         this.Activate() |> ignore
                         this.Topmost <- true
+                        FShotLog.write (sprintf "ShowOverlayAsync: window position set to %A" this.Position)
                     )
 
                 let! _ = uiTask.GetTask() |> Async.AwaitTask
