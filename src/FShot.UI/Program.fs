@@ -184,7 +184,7 @@ module Program =
                         runGuiAsync request |> Async.RunSynchronously
                     else
                         runHeadlessCaptureAsync request |> Async.RunSynchronously
-                cts.Cancel()
+                try cts.Cancel() with _ -> ()
                 exitCode
         | SingleInstanceCheckResult.SecondaryInstance ->
             FShotLog.write "[Program] Secondary instance: command forwarded; exiting"
@@ -198,5 +198,5 @@ module Program =
                     runGuiAsync request |> Async.RunSynchronously
                 else
                     runHeadlessCaptureAsync request |> Async.RunSynchronously
-            cts.Cancel()
+            try cts.Cancel() with _ -> ()
             exitCode
