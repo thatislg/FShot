@@ -104,6 +104,10 @@ module SingleInstance =
         with ex ->
             Error (sprintf "Mutex acquisition failed: %s" ex.Message)
 
+    /// Kiểm tra và xử lý single-instance.
+    /// - Nếu `allowMultiple` là true: luôn trả về MultipleAllowed.
+    /// - Nếu là instance thứ hai: chuyển tiếp args qua IPC và trả về SecondaryInstance.
+    /// - Nếu là instance đầu tiên: khởi động IPC server và trả về FirstInstance kèm mutex.
     let enforce (args: string[]) (allowMultiple: bool) (cancellationToken: CancellationToken) (onCommand: string[] -> unit) : SingleInstanceCheckResult =
         if allowMultiple then
             MultipleAllowed

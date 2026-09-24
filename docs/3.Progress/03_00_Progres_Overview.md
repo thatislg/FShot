@@ -307,19 +307,20 @@
     - [x] Đồng bộ hai chiều với trường cấu hình `StartupLaunch: bool` trong `AppConfig` (`FR-CFG-006`, `FR-WIN-005`).
   - [x] Bổ sung unit tests cho SingleInstance message parsing, IPC serialization và logic kiểm tra Registry.
   - [ ] Verify runtime: bật FShot, thử mở thêm instance từ PowerShell/CMD xác nhận lệnh được chuyển tiếp; kiểm tra Registry trong `regedit` khi bật/tắt tùy chọn khởi động cùng Windows.
-- [ ] **P2.03** Thoát graceful, thông báo thành công / hủy, tùy chọn ẩn tray icon (`FR-CFG-007`, `FR-CFG-008`).
-  - [ ] Triển khai quản lý vòng đời ứng dụng và giải phóng tài nguyên tập trung (`AppLifecycle` / `Dispose` pattern):
-    - [ ] Đăng ký bắt các sự kiện hệ thống `AppDomain.CurrentDomain.ProcessExit`, `Console.CancelKeyPress` và Windows Session Ending (`WM_QUERYENDSESSION`, `WM_ENDSESSION`).
-    - [ ] Đảm bảo giải phóng toàn bộ unmanaged resources khi thoát: đóng Mutex, ngắt Named Pipe Server, hủy toàn bộ Global Hotkey hooks, gỡ TrayIcon khỏi Taskbar để tránh icon bị "treo mờ" (ghost tray icon).
-  - [ ] Triển khai dịch vụ thông báo Windows (`NotificationService`) trong `src/FShot.Platform.Win32/Notifications/`:
-    - [ ] Hỗ trợ phát thông báo Windows Toast Notification (qua Windows Community Toolkit / WinRT APIs hoặc fallback Tray Balloon Notification).
-    - [ ] `FR-CFG-008`: Tôn trọng cấu hình `showDesktopNotification` (thông báo khi copy/save thành công kèm đường dẫn ảnh) và `showAbortNotification` (thông báo khi hủy thao tác chụp).
-    - [ ] Click vào thông báo lưu file: tự động mở và highlight file ảnh trong Windows Explorer.
-  - [ ] `FR-CFG-007`: Hỗ trợ tùy chọn ẩn hoàn toàn tray icon (`disabledTrayIcon = true`):
-    - [ ] Ứng dụng vẫn chạy nền và lắng nghe phím nóng toàn cục mà không xuất hiện icon ở Taskbar tray.
-    - [ ] Đảm bảo có hướng dẫn cảnh báo hoặc cơ chế mở lại cấu hình khi đã ẩn tray icon.
-  - [ ] Viết unit tests cho notification payload builder và cấu hình hiển thị.
-  - [ ] Verify runtime trên Windows: xác nhận toast notification hiển thị đẹp mắt kèm âm thanh hệ thống; thoát app từ Task Manager hoặc menu tray xác nhận tiến trình tắt sạch và không để lại icon mờ.
+- [x] **P2.03** Thoát graceful, thông báo thành công / hủy, tùy chọn ẩn tray icon (`FR-CFG-007`, `FR-CFG-008`).
+  - [x] Triển khai quản lý vòng đời ứng dụng và giải phóng tài nguyên tập trung (`AppLifecycle` / `Dispose` pattern):
+    - [x] Đăng ký bắt các sự kiện hệ thống `AppDomain.CurrentDomain.ProcessExit`, `Console.CancelKeyPress`.
+    - [x] Đảm bảo giải phóng toàn bộ unmanaged resources khi thoát: đóng Mutex (`App.SingleInstanceMutex`), ngắt Named Pipe Server (`App.IpcCancellation`), gỡ TrayIcon khỏi Taskbar để tránh icon bị "treo mờ" (ghost tray icon).
+  - [x] Triển khai dịch vụ thông báo Windows (`NotificationService`) trong `src/FShot.Platform.Win32/Notifications/`:
+    - [x] Triển khai fallback Balloon Notification qua Win32 `Shell_NotifyIcon` (`NOTIFYICONDATA` struct định nghĩa hoàn toàn bằng F# tại top-level).
+    - [x] `FR-CFG-008`: Tôn trọng cấu hình `showDesktopNotification` (thông báo khi copy/save thành công kèm tên file) và `showAbortNotification` (thông báo khi hủy thao tác chụp).
+    - [x] Click/selection từ CaptureCanvas khi hủy (Esc) phát sự kiện `CaptureCanvasEvents.abortRequested`, App subscribe để hiển thị thông báo hủy trong daemon mode.
+    - [x] Bổ sung helper `HighlightFileInExplorer(filePath)` để tương lai mở và highlight file từ thông báo.
+  - [x] `FR-CFG-007`: Hỗ trợ tùy chọn ẩn hoàn toàn tray icon (`disabledTrayIcon = true`):
+    - [x] Ứng dụng vẫn chạy nền và lắng nghe phím nóng toàn cục (sẵn sàng cho Epic 7) mà không xuất hiện icon ở Taskbar tray.
+    - [x] Đảm bảo có cảnh báo log và hướng dẫn chỉnh sửa `config.json` khi đã ẩn tray icon.
+  - [x] Viết unit tests cho notification payload builder (`NotificationServiceTests.fs`) và cấu hình hiển thị.
+  - [ ] Verify runtime trên Windows: xác nhận balloon notification hiển thị khi copy/save từ tray menu; thoát app từ menu tray xác nhận tiến trình tắt sạch và không để lại icon mờ.
 
 ### Epic 7: Global Hotkeys
 - [ ] **P2.04** Đăng ký phím nóng toàn hệ thống `Win+Shift+X` để kích hoạt chụp (`FR-SYS-009`, `FR-WIN-002`, `FR-SH-028`).

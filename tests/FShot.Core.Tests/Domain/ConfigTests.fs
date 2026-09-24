@@ -16,6 +16,8 @@ let ``ConfigSnapshot default có giá trị hợp lệ`` () =
     Assert.Equal(100, config.HistoryLimit)
     Assert.True(config.CloseAfterExport)
     Assert.Equal(SaveOptions.Default, config.SaveOptions)
+    Assert.True(config.ShowDesktopNotification)
+    Assert.False(config.ShowAbortNotification)
 
 /// Kiểm tra ConfigSnapshot có thể tạo với giá trị tùy chỉnh.
 [<Fact>]
@@ -35,6 +37,8 @@ let ``ConfigSnapshot tùy chỉnh lưu đúng giá trị`` () =
         HistoryLimit = 50
         CloseAfterExport = false
         SaveOptions = customSave
+        ShowDesktopNotification = false
+        ShowAbortNotification = true
     }
     Assert.Equal(LineTool, config.DefaultTool)
     Assert.Equal(Color.Blue, config.DefaultColor)
@@ -45,6 +49,8 @@ let ``ConfigSnapshot tùy chỉnh lưu đúng giá trị`` () =
     Assert.Equal(Some "C:\\Screenshots", config.SaveOptions.Path)
     Assert.Equal(Jpg, config.SaveOptions.Format)
     Assert.Equal(85, config.SaveOptions.JpegQuality)
+    Assert.False(config.ShowDesktopNotification)
+    Assert.True(config.ShowAbortNotification)
 
 /// Kiểm tra ConfigSnapshot dùng để khởi tạo OverlayState tạo đúng style.
 [<Fact>]
@@ -67,6 +73,8 @@ let ``ConfigSnapshot khởi tạo OverlayState tạo đúng CurrentStyle`` () =
         HistoryLimit = 20
         CloseAfterExport = true
         SaveOptions = SaveOptions.Default
+        ShowDesktopNotification = true
+        ShowAbortNotification = false
     }
     let state = FShot.Core.State.OverlayStateLogic.init capture config
     Assert.Equal(ArrowTool, state.CurrentTool)
@@ -97,6 +105,9 @@ let ``AppConfig ToSnapshot chuyển đổi đúng`` () =
         DefaultTool = "ArrowTool"
         CloseAfterExport = false
         StartupLaunch = true
+        ShowDesktopNotification = true
+        ShowAbortNotification = false
+        DisabledTrayIcon = false
     }
     let snapshot = appConfig.ToSnapshot()
     Assert.Equal(ArrowTool, snapshot.DefaultTool)
@@ -166,6 +177,9 @@ let ``AppConfig Normalized làm sạch dữ liệu bất thường`` () =
         DefaultTool = "unknown_tool"
         CloseAfterExport = true
         StartupLaunch = false
+        ShowDesktopNotification = false
+        ShowAbortNotification = false
+        DisabledTrayIcon = false
     }
     let clean = dirty.Normalized()
     Assert.Equal("", clean.SavePath)
@@ -186,6 +200,9 @@ let ``ConfigJson serialize tạo chuỗi JSON đúng định dạng`` () =
         DefaultTool = "PencilTool"
         CloseAfterExport = true
         StartupLaunch = false
+        ShowDesktopNotification = true
+        ShowAbortNotification = false
+        DisabledTrayIcon = false
     }
     let json = ConfigJson.serialize cfg
     Assert.Contains("\"savePath\": \"C:\\\\Captures\"", json)
@@ -195,6 +212,9 @@ let ``ConfigJson serialize tạo chuỗi JSON đúng định dạng`` () =
     Assert.Contains("\"defaultTool\": \"PencilTool\"", json)
     Assert.Contains("\"closeAfterExport\": true", json)
     Assert.Contains("\"startupLaunch\": false", json)
+    Assert.Contains("\"showDesktopNotification\": true", json)
+    Assert.Contains("\"showAbortNotification\": false", json)
+    Assert.Contains("\"disabledTrayIcon\": false", json)
 
 /// Kiểm tra giải tuần tự hóa JSON bằng ConfigJson.deserialize.
 [<Fact>]
@@ -207,7 +227,10 @@ let ``ConfigJson deserialize nạp đúng JSON`` () =
         "drawThickness": 4.5,
         "defaultTool": "MarkerTool",
         "closeAfterExport": false,
-        "startupLaunch": true
+        "startupLaunch": true,
+        "showDesktopNotification": false,
+        "showAbortNotification": true,
+        "disabledTrayIcon": true
     }
     """
     let cfgOpt = ConfigJson.deserialize json
@@ -220,6 +243,9 @@ let ``ConfigJson deserialize nạp đúng JSON`` () =
     Assert.Equal("MarkerTool", cfg.DefaultTool)
     Assert.False(cfg.CloseAfterExport)
     Assert.True(cfg.StartupLaunch)
+    Assert.False(cfg.ShowDesktopNotification)
+    Assert.True(cfg.ShowAbortNotification)
+    Assert.True(cfg.DisabledTrayIcon)
 
 /// Kiểm tra deserialize chịu lỗi khi JSON thiếu trường hoặc rỗng.
 [<Fact>]
@@ -242,3 +268,6 @@ let ``ConfigJson deserializeOrDefault fallback an toàn khi JSON lỗi hoặc th
     Assert.Equal("SelectionTool", partialResult.DefaultTool)
     Assert.True(partialResult.CloseAfterExport)
     Assert.False(partialResult.StartupLaunch)
+    Assert.True(partialResult.ShowDesktopNotification)
+    Assert.False(partialResult.ShowAbortNotification)
+    Assert.False(partialResult.DisabledTrayIcon)

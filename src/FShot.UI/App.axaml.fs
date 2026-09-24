@@ -4,6 +4,7 @@ open System
 open System.Diagnostics
 open System.IO
 open System.Runtime.InteropServices
+open System.Threading
 open Avalonia
 open Avalonia.Controls
 open Avalonia.Controls.ApplicationLifetimes
@@ -15,17 +16,20 @@ open FShot.Core.Geometry
 open FShot.Platform.Win32.Capture
 open FShot.Platform.Win32.Clipboard
 open FShot.Platform.Win32.Config
+open FShot.Platform.Win32.Lifecycle
+open FShot.Platform.Win32.Notifications
 open FShot.Platform.Win32.Screen
 open FShot.Platform.Win32.Startup
 open FShot.Platform.Win32.Tray
 open FShot.Rendering.Skia.Renderers
 open FShot.UI.Cli
+open FShot.UI.SkiaCanvas
 open FShot.UI.Windows
 open FShot.UI.Logging
 open SkiaSharp
 
 /// Khởi tạo ứng dụng Avalonia, quản lý overlay chụp và tray icon.
-type App() =
+type App() as this =
     inherit Application()
 
     [<DefaultValue>]
@@ -55,9 +59,44 @@ type App() =
                 App._configSnapshot
         and set(value) = App._configSnapshot <- value
 
+    [<DefaultValue>]
+    static val mutable private _singleInstanceMutex: Mutex
+
+    static member SingleInstanceMutex
+        with get() = App._singleInstanceMutex
+        and set(value) = App._singleInstanceMutex <- value
+
+    [<DefaultValue>]
+    static val mutable private _ipcCancellation: CancellationTokenSource
+
+    static member IpcCancellation
+        with get() = App._ipcCancellation
+        and set(value) = App._ipcCancellation <- value
+
     let mutable currentOverlay: CaptureOverlayWindow option = None
     let mutable trayService: TrayIconService option = None
     let mutable desktopLifetime: IClassicDesktopStyleApplicationLifetime option = None
+    let mutable notificationService: NotificationService option = None
+
+    /// Giải phóng tài nguyên tập trung khi thoát ứng dụng.
+    member private this.DisposeResources() =
+        FShotLog.write "[AppLifecycle] Disposing resources"
+        trayService |> Option.iter (fun t -> t.Dispose())
+        trayService <- None
+        notificationService |> Option.iter (fun n -> n.Dispose())
+        notificationService <- None
+        match App.IpcCancellation with
+        | null -> ()
+        | cts ->
+            try cts.Cancel() with _ -> ()
+            try cts.Dispose() with _ -> ()
+            App.IpcCancellation <- null
+        match App.SingleInstanceMutex with
+        | null -> ()
+        | m ->
+            try m.ReleaseMutex() with _ -> ()
+            try m.Dispose() with _ -> ()
+            App.SingleInstanceMutex <- null
 
     /// Mở file cấu hình bằng ứng dụng mặc định của hệ thống (FR-SYS-006).
     let openSettingsFile () =
@@ -123,6 +162,11 @@ type App() =
                             desktop.Shutdown()
                     )
 
+                    // Subscribe abort event từ CaptureCanvas để hiển thị thông báo hủy nếu cấu hình bật.
+                    CaptureCanvasEvents.abortRequested.Publish.Add(fun () ->
+                        if App.IsDaemon then
+                            this.ShowAbortNotification())
+
                     overlay.Show()
                     overlay.Focus() |> ignore
                     overlay.Activate() |> ignore
@@ -175,6 +219,8 @@ type App() =
                         data.SaveTo(stream)
                         stream.Flush()
                         FShotLog.write (sprintf "[Tray] Screen %d saved to %s" screenIndex fullPath)
+                        notificationService |> Option.iter (fun n ->
+                            n.ShowNotification(CaptureSuccess (Some fullPath), config.ShowDesktopNotification) |> ignore)
                     | None ->
                         use data = exportBitmap.Encode(SKEncodedImageFormat.Png, 100)
                         let pngBytes = data.ToArray()
@@ -184,14 +230,22 @@ type App() =
                             Marshal.Copy(ptr, pixelBytes, 0, pixelBytes.Length)
                         let ok = ClipboardService.copyImageToClipboard exportBitmap.Width exportBitmap.Height pngBytes pixelBytes
                         FShotLog.write (sprintf "[Tray] Screen %d copied to clipboard: %b" screenIndex ok)
+                        notificationService |> Option.iter (fun n ->
+                            n.ShowNotification(CopySuccess, config.ShowDesktopNotification) |> ignore)
                 | Error err ->
                     FShotLog.write (sprintf "[Tray] Screen %d capture failed: %A" screenIndex err)
             with ex ->
                 FShotLog.writeEx "[Tray] Screen capture failed" ex
         } |> Async.Start
 
+    /// Hiển thị thông báo hủy thao tác chụp (FR-CFG-008).
+    member this.ShowAbortNotification () =
+        let config = ConfigStore.loadSnapshot()
+        notificationService |> Option.iter (fun n ->
+            n.ShowNotification(CaptureAborted, config.ShowAbortNotification) |> ignore)
+
     /// Dispatcher cho các lệnh phát sinh từ tray.
-    let dispatchTrayCommand (desktop: IClassicDesktopStyleApplicationLifetime) (cmd: TrayCommand) =
+    member private this.DispatchTrayCommand (desktop: IClassicDesktopStyleApplicationLifetime) (cmd: TrayCommand) =
         match cmd with
         | GuiCapture ->
             FShotLog.write "[Tray] GuiCapture requested"
@@ -217,7 +271,7 @@ type App() =
             openSaveFolder()
         | Exit ->
             FShotLog.write "[Tray] Exit requested"
-            trayService |> Option.iter (fun t -> t.Dispose())
+            this.DisposeResources()
             desktop.Shutdown()
 
     /// Xử lý lệnh IPC từ instance thứ hai.
@@ -283,19 +337,39 @@ type App() =
         | :? IClassicDesktopStyleApplicationLifetime as desktop ->
             desktopLifetime <- Some desktop
 
-            // Đăng ký tray icon ngay khi lifetime sẵn sàng (FR-SYS-001).
-            let service = TrayIconService.Create(this, dispatchTrayCommand desktop)
-            trayService <- Some service
+            // Đăng ký sự kiện hệ thống để thoát graceful (P2.03).
+            AppDomain.CurrentDomain.ProcessExit.Add(fun _ ->
+                FShotLog.write "[AppLifecycle] ProcessExit event received"
+                this.DisposeResources()
+            )
+            Console.CancelKeyPress.Add(fun e ->
+                FShotLog.write "[AppLifecycle] CancelKeyPress event received"
+                e.Cancel <- true
+                this.DisposeResources()
+                desktop.Shutdown()
+            )
 
-            if App.IsDaemon then
-                // Chế độ nền: không mở overlay, giữ app sống bằng OnExplicitShutdown.
-                desktop.ShutdownMode <- ShutdownMode.OnExplicitShutdown
-                desktop.MainWindow <- null
-                FShotLog.write "[App] Daemon mode active: tray icon only"
+            // Đăng ký tray icon nếu không bị tắt trong cấu hình (FR-CFG-007).
+            let appConfig = ConfigStore.loadConfig()
+            if appConfig.DisabledTrayIcon then
+                FShotLog.write "[App] Tray icon disabled by configuration"
+                if App.IsDaemon then
+                    FShotLog.write "[App] WARNING: daemon mode without tray icon; use global hotkeys or edit config.json to restore"
+                    desktop.ShutdownMode <- ShutdownMode.OnExplicitShutdown
+                    desktop.MainWindow <- null
+                else
+                    showCaptureOverlay desktop App.CaptureRequest
             else
-                // Chế độ GUI: mở overlay ngay theo CaptureRequest được truyền vào.
-                let request = App.CaptureRequest
-                showCaptureOverlay desktop request
+                let service = TrayIconService.Create(this, this.DispatchTrayCommand desktop)
+                trayService <- Some service
+
+                if App.IsDaemon then
+                    desktop.ShutdownMode <- ShutdownMode.OnExplicitShutdown
+                    desktop.MainWindow <- null
+                    FShotLog.write "[App] Daemon mode active: tray icon only"
+                else
+                    let request = App.CaptureRequest
+                    showCaptureOverlay desktop request
 
         | _ ->
             FShotLog.write "Unknown application lifetime"

@@ -156,34 +156,41 @@ module Program =
         let appConfig = ConfigStore.loadConfig()
         let config = appConfig.ToSnapshot()
         App.ConfigSnapshot <- config
-        FShotLog.write (sprintf "Main entry: Config loaded: Tool=%A, Color=%s, Thickness=%.1f, SavePath=%A, Close=%b, Startup=%b"
+        FShotLog.write (sprintf "Main entry: Config loaded: Tool=%A, Color=%s, Thickness=%.1f, SavePath=%A, Close=%b, Startup=%b, ShowDesktopNotification=%b, ShowAbortNotification=%b, DisabledTrayIcon=%b"
             config.DefaultTool
             (config.DefaultColor.ToHex())
             config.DefaultStrokeWidth.Value
             config.SaveOptions.Path
             config.CloseAfterExport
-            appConfig.StartupLaunch)
+            appConfig.StartupLaunch
+            appConfig.ShowDesktopNotification
+            appConfig.ShowAbortNotification
+            appConfig.DisabledTrayIcon)
         let request = CliParser.parse argv
 
         use cts = new CancellationTokenSource()
         let instanceResult = SingleInstance.enforce argv request.AllowMultiple cts.Token App.HandleIpcCommand
 
         match instanceResult with
-        | SecondaryInstance ->
+        | SingleInstanceCheckResult.FirstInstance mutex ->
+                FShotLog.write "[Program] First instance: continuing"
+                App.SingleInstanceMutex <- mutex
+                App.IpcCancellation <- cts
+
+                let exitCode =
+                    if request.RunAsDaemon then
+                        runDaemonAsync cts.Token |> Async.RunSynchronously
+                    elif request.Mode = GuiInteractive then
+                        runGuiAsync request |> Async.RunSynchronously
+                    else
+                        runHeadlessCaptureAsync request |> Async.RunSynchronously
+                cts.Cancel()
+                exitCode
+        | SingleInstanceCheckResult.SecondaryInstance ->
             FShotLog.write "[Program] Secondary instance: command forwarded; exiting"
             0
-        | MultipleAllowed ->
+        | SingleInstanceCheckResult.MultipleAllowed ->
             FShotLog.write "[Program] Multiple instances allowed"
-            let exitCode =
-                if request.RunAsDaemon then
-                    runDaemonAsync cts.Token |> Async.RunSynchronously
-                elif request.Mode = GuiInteractive then
-                    runGuiAsync request |> Async.RunSynchronously
-                else
-                    runHeadlessCaptureAsync request |> Async.RunSynchronously
-            exitCode
-        | FirstInstance _ ->
-            FShotLog.write "[Program] First instance: continuing"
             let exitCode =
                 if request.RunAsDaemon then
                     runDaemonAsync cts.Token |> Async.RunSynchronously

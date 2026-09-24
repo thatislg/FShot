@@ -16,6 +16,7 @@
     <Compile Include="TrayIconTests.fs" />
     <Compile Include="SingleInstanceTests.fs" />
     <Compile Include="StartupRegistrationTests.fs" />
+    <Compile Include="NotificationServiceTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

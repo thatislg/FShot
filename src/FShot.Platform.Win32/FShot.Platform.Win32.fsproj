@@ -13,6 +13,7 @@
     <Compile Include="Hotkeys\GlobalHotkey.fs" />
     <Compile Include="Lifecycle\SingleInstance.fs" />
     <Compile Include="Tray\TrayIcon.fs" />
+    <Compile Include="Notifications\NotificationService.fs" />
     <Compile Include="Clipboard\ClipboardService.fs" />
     <Compile Include="FileSystem\SaveDialog.fs" />
     <Compile Include="Config\ConfigStore.fs" />

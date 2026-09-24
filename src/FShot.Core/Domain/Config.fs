@@ -30,6 +30,12 @@ type ConfigSnapshot = {
 
     /// Tùy chọn lưu file mặc định (đường dẫn, mẫu tên file, format, chất lượng JPEG).
     SaveOptions: SaveOptions
+
+    /// Có hiển thị thông báo desktop khi copy/save thành công không.
+    ShowDesktopNotification: bool
+
+    /// Có hiển thị thông báo khi hủy thao tác chụp không.
+    ShowAbortNotification: bool
 } with
     /// Cấu hình mặc định cho MVP.
     static member Default = {
@@ -40,6 +46,8 @@ type ConfigSnapshot = {
         HistoryLimit = HistoryStack.DefaultLimit
         CloseAfterExport = true
         SaveOptions = SaveOptions.Default
+        ShowDesktopNotification = true
+        ShowAbortNotification = false
     }
 
 /// Cấu hình lưu trữ của FShot (đọc/ghi JSON tại %APPDATA%\FShot\config.json).
@@ -53,6 +61,9 @@ type AppConfig = {
     DefaultTool: string
     CloseAfterExport: bool
     StartupLaunch: bool
+    ShowDesktopNotification: bool
+    ShowAbortNotification: bool
+    DisabledTrayIcon: bool
 } with
     /// Cấu hình mặc định của ứng dụng.
     static member Default = {
@@ -63,6 +74,9 @@ type AppConfig = {
         DefaultTool = "SelectionTool"
         CloseAfterExport = true
         StartupLaunch = false
+        ShowDesktopNotification = true
+        ShowAbortNotification = false
+        DisabledTrayIcon = false
     }
 
     /// Làm sạch và chuẩn hóa dữ liệu, đảm bảo không có giá trị null hoặc không hợp lệ.
@@ -112,6 +126,9 @@ type AppConfig = {
             DefaultTool = tool
             CloseAfterExport = this.CloseAfterExport
             StartupLaunch = this.StartupLaunch
+            ShowDesktopNotification = this.ShowDesktopNotification
+            ShowAbortNotification = this.ShowAbortNotification
+            DisabledTrayIcon = this.DisabledTrayIcon
         }
 
     /// Chuyển đổi AppConfig sang ConfigSnapshot dùng cho OverlayState.
@@ -155,6 +172,8 @@ type AppConfig = {
             HistoryLimit = HistoryStack.DefaultLimit
             CloseAfterExport = norm.CloseAfterExport
             SaveOptions = saveOptions
+            ShowDesktopNotification = norm.ShowDesktopNotification
+            ShowAbortNotification = norm.ShowAbortNotification
         }
 
     /// Tạo AppConfig từ ConfigSnapshot.
@@ -177,6 +196,9 @@ type AppConfig = {
             | IconTool -> "IconTool"
         CloseAfterExport = snapshot.CloseAfterExport
         StartupLaunch = false
+        ShowDesktopNotification = snapshot.ShowDesktopNotification
+        ShowAbortNotification = snapshot.ShowAbortNotification
+        DisabledTrayIcon = false
     }
 
 /// Custom JSON Converter cho AppConfig để đảm bảo tương thích mọi định dạng,
@@ -228,6 +250,9 @@ and AppConfigJsonConverter() =
             DefaultTool = getString "defaultTool" def.DefaultTool
             CloseAfterExport = getBool "closeAfterExport" def.CloseAfterExport
             StartupLaunch = getBool "startupLaunch" def.StartupLaunch
+            ShowDesktopNotification = getBool "showDesktopNotification" def.ShowDesktopNotification
+            ShowAbortNotification = getBool "showAbortNotification" def.ShowAbortNotification
+            DisabledTrayIcon = getBool "disabledTrayIcon" def.DisabledTrayIcon
         }.Normalized()
 
     override _.Write(writer: Utf8JsonWriter, value: AppConfig, _options: JsonSerializerOptions) =
@@ -240,6 +265,9 @@ and AppConfigJsonConverter() =
         writer.WriteString("defaultTool", norm.DefaultTool)
         writer.WriteBoolean("closeAfterExport", norm.CloseAfterExport)
         writer.WriteBoolean("startupLaunch", norm.StartupLaunch)
+        writer.WriteBoolean("showDesktopNotification", norm.ShowDesktopNotification)
+        writer.WriteBoolean("showAbortNotification", norm.ShowAbortNotification)
+        writer.WriteBoolean("disabledTrayIcon", norm.DisabledTrayIcon)
         writer.WriteEndObject()
 
 /// Các tiện ích tuần tự hóa JSON cho cấu hình FShot.

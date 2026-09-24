@@ -19,12 +19,18 @@ open System.Diagnostics
 
 open Avalonia.Threading
 open Avalonia.Controls.ApplicationLifetimes
+open FShot.UI
 open FShot.UI.Logging
 open FShot.UI.SkiaCanvas
 open FShot.Platform.Win32.Clipboard
 
 open FShot.Rendering.Skia.Renderers
 open SkiaSharp
+
+/// Sự kiện toàn cục báo hiệu người dùng yêu cầu hủy thao tác chụp (nhấn Esc trên overlay).
+/// App.axaml.fs (compile sau) sẽ đăng ký để phát thông báo phù hợp với cấu hình.
+module CaptureCanvasEvents =
+    let abortRequested = Event<unit>()
 
 /// Vị trí đặt toolbar quanh vùng chọn.
 type ToolbarPlacement =
@@ -637,6 +643,8 @@ type CaptureCanvas() as this =
                     FShotLog.write (sprintf "[CaptureCanvas] Found window (%s), invoking Close()..." (w.GetType().Name))
                     Dispatcher.UIThread.Post(fun () ->
                         try
+                            // Thông báo hủy nếu đang ở chế độ daemon trước khi đóng overlay.
+                            CaptureCanvasEvents.abortRequested.Trigger()
                             w.Close()
                         with ex ->
                             FShotLog.writeEx "Failed to close overlay window" ex

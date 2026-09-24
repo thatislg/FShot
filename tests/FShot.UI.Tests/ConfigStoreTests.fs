@@ -43,6 +43,9 @@ let ``ConfigStore saveConfigTo va loadConfigFrom doc ghi dung du lieu`` () =
             DefaultTool = "ArrowTool"
             CloseAfterExport = false
             StartupLaunch = true
+            ShowDesktopNotification = false
+            ShowAbortNotification = true
+            DisabledTrayIcon = true
         }
 
         ConfigStore.saveConfigTo testConfigFile customConfig
@@ -56,6 +59,9 @@ let ``ConfigStore saveConfigTo va loadConfigFrom doc ghi dung du lieu`` () =
         Assert.Equal(customConfig.DefaultTool, loaded.DefaultTool)
         Assert.Equal(customConfig.CloseAfterExport, loaded.CloseAfterExport)
         Assert.Equal(customConfig.StartupLaunch, loaded.StartupLaunch)
+        Assert.Equal(customConfig.ShowDesktopNotification, loaded.ShowDesktopNotification)
+        Assert.Equal(customConfig.ShowAbortNotification, loaded.ShowAbortNotification)
+        Assert.Equal(customConfig.DisabledTrayIcon, loaded.DisabledTrayIcon)
 
         // Kiểm tra loadSnapshotFrom
         let snapshot = ConfigStore.loadSnapshotFrom testConfigFile
