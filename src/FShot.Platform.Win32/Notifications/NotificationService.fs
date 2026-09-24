@@ -13,10 +13,26 @@ type NotificationKind =
 
 /// Module nội bộ chứa các helper logging.
 module private NotificationLog =
-    let write message = Trace.WriteLine(sprintf "[FShot.Notification] %s" message)
+    let private logFile =
+        let temp = Environment.GetEnvironmentVariable("TEMP")
+        let dir =
+            if String.IsNullOrWhiteSpace temp then
+                Path.Combine(AppContext.BaseDirectory, "logs")
+            else
+                Path.Combine(temp, "FShot", "logs")
+        Directory.CreateDirectory(dir) |> ignore
+        Path.Combine(dir, "FShot_Current.log")
+
+    let write (message: string) =
+        let line = sprintf "[%s] %s" (DateTime.Now.ToString("HH:mm:ss.fff")) message
+        try
+            File.AppendAllText(logFile, line + Environment.NewLine)
+        with _ ->
+            Trace.WriteLine(line)
+
     let writeEx message (ex: exn) =
-        Trace.WriteLine(sprintf "[FShot.Notification] %s" message)
-        Trace.WriteLine(sprintf "[FShot.Notification] EXCEPTION: %s" (ex.ToString()))
+        write message
+        write (sprintf "EXCEPTION: %s" (ex.ToString()))
 
 /// Module nội bộ chứa các P/Invoke binding Win32 cho balloon notification fallback.
 module private NotificationPInvoke =

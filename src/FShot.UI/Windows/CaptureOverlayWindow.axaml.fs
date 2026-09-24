@@ -1,6 +1,7 @@
 namespace FShot.UI.Windows
 
 open System
+open System.Runtime.InteropServices
 open Avalonia
 open Avalonia.Controls
 open Avalonia.Input
@@ -13,6 +14,29 @@ open FShot.Platform.Win32.Config
 open FShot.Platform.Win32.Screen
 open FShot.UI.SkiaCanvas
 open FShot.UI.Logging
+
+module private Win32Overlay =
+    [<Struct; StructLayout(LayoutKind.Sequential)>]
+    type Win32Rect =
+        val mutable Left: int
+        val mutable Top: int
+        val mutable Right: int
+        val mutable Bottom: int
+
+    let HWND_TOP = IntPtr.Zero
+    let SWP_NOSIZE = 0x0001
+    let SWP_NOZORDER = 0x0004
+    let SWP_SHOWWINDOW = 0x0040
+    let SWP_FRAMECHANGED = 0x0020
+
+    [<DllImport("user32.dll")>]
+    extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags)
+
+    [<DllImport("user32.dll")>]
+    extern bool MoveWindow(IntPtr hWnd, int X, int Y, int nWidth, int nHeight, bool bRepaint)
+
+    [<DllImport("user32.dll")>]
+    extern bool GetWindowRect(IntPtr hWnd, Win32Rect& lpRect)
 
 /// Cửa sổ overlay chụp màn hình.
 /// Xem tài liệu 11_03_OverlayWindow.md và 11_09_OverlayStateIntegration.md.
@@ -144,7 +168,39 @@ type CaptureOverlayWindow() as this =
                         this.Focus() |> ignore
                         this.Activate() |> ignore
                         this.Topmost <- true
-                        FShotLog.write (sprintf "ShowOverlayAsync: window position set to %A" this.Position)
+                        FShotLog.write (sprintf "ShowOverlayAsync: Avalonia position set to %A" this.Position)
+
+                        // Avalonia Win32 đôi khi không di chuyển window sang màn hình phụ; dùng SetWindowPos Win32.
+                        try
+                            let platformHandle =
+                                try
+                                    let prop = this.PlatformImpl.GetType().GetProperty("Handle")
+                                    if isNull prop then IntPtr.Zero
+                                    else
+                                        let handleObj = prop.GetValue(this.PlatformImpl)
+                                        if isNull handleObj then IntPtr.Zero
+                                        else
+                                            let hprop = handleObj.GetType().GetProperty("Handle")
+                                            if isNull hprop then IntPtr.Zero
+                                            else hprop.GetValue(handleObj) :?> IntPtr
+                                with _ -> IntPtr.Zero
+                            let x = int bounds.X
+                            let y = int bounds.Y
+                            let w = width
+                            let h = height
+                            if platformHandle <> IntPtr.Zero then
+                                let mutable rc = Win32Overlay.Win32Rect()
+                                if Win32Overlay.GetWindowRect(platformHandle, &rc) then
+                                    FShotLog.write (sprintf "ShowOverlayAsync: Win32 window rect before move: L=%d T=%d R=%d B=%d" rc.Left rc.Top rc.Right rc.Bottom)
+                                let flags = uint32 (Win32Overlay.SWP_SHOWWINDOW ||| Win32Overlay.SWP_FRAMECHANGED)
+                                let ok = Win32Overlay.SetWindowPos(platformHandle, Win32Overlay.HWND_TOP, x, y, w, h, flags)
+                                FShotLog.write (sprintf "ShowOverlayAsync: SetWindowPos to (%d,%d %dx%d) returned %b" x y w h ok)
+                                if Win32Overlay.GetWindowRect(platformHandle, &rc) then
+                                    FShotLog.write (sprintf "ShowOverlayAsync: Win32 window rect after move: L=%d T=%d R=%d B=%d" rc.Left rc.Top rc.Right rc.Bottom)
+                            else
+                                FShotLog.write "ShowOverlayAsync: no platform handle available for Win32 move"
+                        with ex ->
+                            FShotLog.writeEx "ShowOverlayAsync: Win32 SetWindowPos failed" ex
                     )
 
                 let! _ = uiTask.GetTask() |> Async.AwaitTask
