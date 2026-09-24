@@ -5,31 +5,65 @@ open System.Diagnostics
 open System.IO
 open System.Runtime.InteropServices
 
-/// Win32 NOTIFYICONDATA structure dùng cho Shell_NotifyIcon.
-/// Định nghĩa ở top-level trước module P/Invoke để module có thể tham chiếu.
-[<Struct; StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)>]
-type private NOTIFYICONDATA =
-    val mutable cbSize: uint32
-    val mutable hWnd: IntPtr
-    val mutable uID: uint32
-    val mutable uFlags: uint32
-    val mutable uCallbackMessage: uint32
-    val mutable hIcon: IntPtr
-    [<MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)>]
-    val mutable szTip: string
-    val mutable dwState: uint32
-    val mutable dwStateMask: uint32
-    [<MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)>]
-    val mutable szInfo: string
-    val mutable uVersion: uint32
-    [<MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)>]
-    val mutable szInfoTitle: string
-    val mutable dwInfoFlags: uint32
-    val mutable guidItem: Guid
-    val mutable hBalloonIcon: IntPtr
+/// Loại thông báo F-Shot có thể phát.
+type NotificationKind =
+    | CaptureSuccess of filePath: string option
+    | CopySuccess
+    | CaptureAborted
 
 /// Module nội bộ chứa các P/Invoke binding Win32 cho thông báo.
 module private NotificationPInvoke =
+    // Win32 constants for creating a message-only window to own the tray icon.
+    let HWND_MESSAGE = nativeint (-3)
+    let WM_DESTROY = 0x0002u
+    let IDC_ARROW = nativeint 32512
+
+    let log message = Trace.WriteLine(sprintf "[FShot.Notification] %s" message)
+    let logEx message (ex: exn) =
+        Trace.WriteLine(sprintf "[FShot.Notification] %s" message)
+        Trace.WriteLine(sprintf "[FShot.Notification] EXCEPTION: %s" (ex.ToString()))
+
+    /// Win32 NOTIFYICONDATA structure dùng cho Shell_NotifyIcon.
+    [<Struct; StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)>]
+    type NOTIFYICONDATA =
+        val mutable cbSize: uint32
+        val mutable hWnd: IntPtr
+        val mutable uID: uint32
+        val mutable uFlags: uint32
+        val mutable uCallbackMessage: uint32
+        val mutable hIcon: IntPtr
+        [<MarshalAs(UnmanagedType.ByValTStr, SizeConst = 128)>]
+        val mutable szTip: string
+        val mutable dwState: uint32
+        val mutable dwStateMask: uint32
+        [<MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)>]
+        val mutable szInfo: string
+        val mutable uVersion: uint32
+        [<MarshalAs(UnmanagedType.ByValTStr, SizeConst = 64)>]
+        val mutable szInfoTitle: string
+        val mutable dwInfoFlags: uint32
+        val mutable guidItem: Guid
+        val mutable hBalloonIcon: IntPtr
+
+    [<Struct; StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)>]
+    type WNDCLASSEX =
+        val mutable cbSize: uint32
+        val mutable style: uint32
+        val mutable lpfnWndProc: IntPtr
+        val mutable cbClsExtra: int
+        val mutable cbWndExtra: int
+        val mutable hInstance: IntPtr
+        val mutable hIcon: IntPtr
+        val mutable hCursor: IntPtr
+        val mutable hbrBackground: IntPtr
+        val mutable lpszMenuName: string
+        [<MarshalAs(UnmanagedType.ByValTStr, SizeConst = 256)>]
+        val mutable lpszClassName: string
+        val mutable hIconSm: IntPtr
+
+    // Delegate type that matches Win32 WNDPROC signature.
+    type WndProcDelegate = delegate of IntPtr * uint32 * IntPtr * IntPtr -> IntPtr
+
     [<DllImport("shell32.dll", CharSet = CharSet.Unicode)>]
     extern bool Shell_NotifyIcon(uint32 dwMessage, NOTIFYICONDATA& lpdata)
 
@@ -39,11 +73,17 @@ module private NotificationPInvoke =
     [<DllImport("kernel32.dll")>]
     extern IntPtr GetConsoleWindow()
 
-/// Loại thông báo F-Shot có thể phát.
-type NotificationKind =
-    | CaptureSuccess of filePath: string option
-    | CopySuccess
-    | CaptureAborted
+    [<DllImport("user32.dll", CharSet = CharSet.Unicode)>]
+    extern IntPtr CreateWindowEx(uint32 dwExStyle, string lpClassName, string lpWindowName, uint32 dwStyle, int X, int Y, int nWidth, int nHeight, IntPtr hWndParent, IntPtr hMenu, IntPtr hInstance, IntPtr lpParam)
+
+    [<DllImport("user32.dll", CharSet = CharSet.Unicode)>]
+    extern IntPtr DefWindowProc(IntPtr hWnd, uint32 uMsg, IntPtr wParam, IntPtr lParam)
+
+    [<DllImport("user32.dll", CharSet = CharSet.Unicode)>]
+    extern uint16 RegisterClassEx(WNDCLASSEX& lpwcx)
+
+    [<DllImport("user32.dll")>]
+    extern bool DestroyWindow(IntPtr hWnd)
 
 /// Dịch vụ thông báo Windows cho F-Shot.
 /// Hỗ trợ fallback Balloon Notification qua Win32 API (NotifyIcon / Shell_NotifyIcon).
@@ -64,10 +104,64 @@ type NotificationService() =
     let TRAY_ICON_ID = 0xF1u
 
     let mutable lastHwnd: IntPtr option = None
+    // Giữ delegate sống để GC không thu hồi khi window procedure vẫn được Win32 gọi.
+    let mutable wndProcDelegate: NotificationPInvoke.WndProcDelegate option = None
 
     let getDefaultIcon () : IntPtr =
         // IDI_APPLICATION = 32512
         NotificationPInvoke.LoadIcon(IntPtr.Zero, nativeint 32512)
+
+    /// Tạo message-only window để làm owner cho tray icon/balloon notification.
+    /// Message-only window không có UI, phù hợp cho ứng dụng WinExe không có console.
+    let createMessageOnlyWindow () : IntPtr =
+        try
+            let className = "FShotNotificationWindowClass"
+            let mutable wcex = NotificationPInvoke.WNDCLASSEX()
+            wcex.cbSize <- uint32 (Marshal.SizeOf(typeof<NotificationPInvoke.WNDCLASSEX>))
+            wcex.style <- 0u
+            // Lưu delegate trong biến mutable để giữ alive.
+            let delegateInst =
+                NotificationPInvoke.WndProcDelegate(fun hWnd uMsg _wParam _lParam ->
+                    match uMsg with
+                    | _ when uMsg = NotificationPInvoke.WM_DESTROY -> IntPtr.Zero
+                    | _ -> NotificationPInvoke.DefWindowProc(hWnd, uMsg, _wParam, _lParam))
+            wcex.lpfnWndProc <- Marshal.GetFunctionPointerForDelegate(delegateInst)
+            wcex.cbClsExtra <- 0
+            wcex.cbWndExtra <- 0
+            wcex.hInstance <- Process.GetCurrentProcess().Handle
+            wcex.hIcon <- IntPtr.Zero
+            wcex.hCursor <- NotificationPInvoke.LoadIcon(IntPtr.Zero, NotificationPInvoke.IDC_ARROW)
+            wcex.hbrBackground <- IntPtr.Zero
+            wcex.lpszMenuName <- null
+            wcex.lpszClassName <- className
+            wcex.hIconSm <- IntPtr.Zero
+            let atom = NotificationPInvoke.RegisterClassEx(&wcex)
+            if atom = 0us then
+                let err = Marshal.GetLastWin32Error()
+                NotificationPInvoke.log (sprintf "RegisterClassEx failed: %d" err)
+                IntPtr.Zero
+            else
+                wndProcDelegate <- Some delegateInst
+                let hwnd =
+                    NotificationPInvoke.CreateWindowEx(
+                        0u,
+                        className,
+                        "FShot Notification Window",
+                        0u,
+                        0, 0, 0, 0,
+                        NotificationPInvoke.HWND_MESSAGE,
+                        IntPtr.Zero,
+                        wcex.hInstance,
+                        IntPtr.Zero)
+                if hwnd = IntPtr.Zero then
+                    let err = Marshal.GetLastWin32Error()
+                    NotificationPInvoke.log (sprintf "CreateWindowEx failed: %d" err)
+                else
+                    NotificationPInvoke.log (sprintf "Message-only window created: %A" hwnd)
+                hwnd
+        with ex ->
+            NotificationPInvoke.logEx "Failed to create message-only window" ex
+            IntPtr.Zero
 
     /// Lấy HWND để làm owner cho balloon tip.
     let ensureHwnd () : IntPtr =
@@ -75,8 +169,11 @@ type NotificationService() =
         | Some h when h <> IntPtr.Zero -> h
         | _ ->
             let consoleHwnd = NotificationPInvoke.GetConsoleWindow()
-            lastHwnd <- Some consoleHwnd
-            consoleHwnd
+            let hwnd =
+                if consoleHwnd <> IntPtr.Zero then consoleHwnd
+                else createMessageOnlyWindow()
+            lastHwnd <- Some hwnd
+            hwnd
 
     let buildContent (kind: NotificationKind) : string * string * uint32 =
         match kind with
@@ -91,8 +188,8 @@ type NotificationService() =
             ("Đã hủy", "Thao tác chụp màn hình bị hủy", NIIF_WARNING)
 
     let createNotifyIconData hwnd =
-        let mutable data = NOTIFYICONDATA()
-        data.cbSize <- uint32 (Marshal.SizeOf(typeof<NOTIFYICONDATA>))
+        let mutable data = NotificationPInvoke.NOTIFYICONDATA()
+        data.cbSize <- uint32 (Marshal.SizeOf(typeof<NotificationPInvoke.NOTIFYICONDATA>))
         data.hWnd <- hwnd
         data.uID <- TRAY_ICON_ID
         data.uFlags <- NIF_INFO ||| NIF_ICON ||| NIF_MESSAGE ||| NIF_TIP
@@ -105,28 +202,36 @@ type NotificationService() =
         data.uVersion <- 0u
         data.szInfoTitle <- ""
         data.dwInfoFlags <- 0u
+        data.guidItem <- Guid.Empty
+        data.hBalloonIcon <- IntPtr.Zero
         data
 
     /// Phát thông báo Windows Balloon Tip.
     /// Trả về true nếu gọi Win32 thành công.
     let showBalloon (title: string) (text: string) (infoFlags: uint32) : bool =
         let hwnd = ensureHwnd()
-        if hwnd = IntPtr.Zero then false
+        if hwnd = IntPtr.Zero then
+            NotificationPInvoke.log "Cannot show balloon: no valid HWND"
+            false
         else
             let mutable data = createNotifyIconData hwnd
             data.szInfo <- text
             data.szInfoTitle <- title
             data.dwInfoFlags <- infoFlags
-            NotificationPInvoke.Shell_NotifyIcon(NIM_ADD, &data)
+            let ok = NotificationPInvoke.Shell_NotifyIcon(NIM_ADD, &data)
+            NotificationPInvoke.log (sprintf "Shell_NotifyIcon ADD returned %b (hwnd=%A)" ok hwnd)
+            ok
 
     /// Phát thông báo theo cấu hình.
     /// `force` cho phép bỏ qua cờ cấu hình (dùng cho abort nếu `showAbortNotification` false).
     member _.ShowNotification(kind: NotificationKind, enabled: bool, ?force: bool) : bool =
         let force = defaultArg force false
         if not enabled && not force then
+            NotificationPInvoke.log "Notification skipped by config"
             false
         else
             let (title, text, flags) = buildContent kind
+            NotificationPInvoke.log (sprintf "Showing notification: %s - %s" title text)
             showBalloon title text flags
 
     /// Mở file ảnh trong Windows Explorer và highlight.
@@ -149,6 +254,13 @@ type NotificationService() =
         | Some hwnd when hwnd <> IntPtr.Zero ->
             let mutable data = createNotifyIconData hwnd
             NotificationPInvoke.Shell_NotifyIcon(NIM_DELETE, &data) |> ignore
+            // Nếu hwnd là message-only window do chúng ta tạo thì destroy nó.
+            match wndProcDelegate with
+            | Some _ ->
+                try NotificationPInvoke.DestroyWindow(hwnd) |> ignore
+                with _ -> ()
+                wndProcDelegate <- None
+            | None -> ()
             lastHwnd <- None
         | _ -> ()
 

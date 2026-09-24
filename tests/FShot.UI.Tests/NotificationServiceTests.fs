@@ -42,7 +42,7 @@ let ``buildContent tao noi dung thong bao dung`` () =
 /// Kiểm tra ShowNotification tôn trọng cờ `enabled` và `force`.
 [<Fact>]
 let ``ShowNotification ton trong co enabled va force`` () =
-    let service = NotificationService()
+    use service = new NotificationService()
     // Khi disabled và không force, không gọi Win32, trả về false.
     Assert.False(service.ShowNotification(CaptureSuccess None, false))
     // Khi disabled nhưng force=true, vẫn cố gắng gọi Win32 (trên môi trường không có HWND sẽ false).
@@ -58,7 +58,7 @@ let ``HighlightFileInExplorer tra ve false khi file khong ton tai`` () =
 /// Kiểm tra Dispose không throw khi chưa thêm icon nào.
 [<Fact>]
 let ``Dispose khong throw khi chua co icon`` () =
-    let service = NotificationService()
+    use service = new NotificationService()
     service.Dispose()
     (service :> IDisposable).Dispose()
     Assert.True(true)
