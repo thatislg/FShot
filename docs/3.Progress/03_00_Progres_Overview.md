@@ -279,13 +279,87 @@
 
 ### Epic 6: System Tray & App Lifecycle
 - [ ] **P2.01** Biểu tượng tray liên tục với menu ngữ cảnh: chụp GUI, chụp màn hình, mở cài đặt, mở thư mục lưu, thoát (`FR-SYS-001`–`FR-SYS-008`).
+  - [ ] Hoàn thiện tài liệu thiết kế chi tiết `docs/2.Design/10_Platform_Win32/10_05_TrayIcon.md` (vòng đời Tray, cơ chế Avalonia NativeMenuItem/TrayIcon kết hợp Win32 WinProc, xử lý sự kiện click).
+  - [ ] Chuẩn bị và tích hợp icon tray chuyên dụng từ vector Kawaii `docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/tray-icon.svg` (chuyển đổi sang WindowIcon / icon định dạng thích hợp cho khay hệ thống Windows Taskbar).
+  - [ ] Triển khai `TrayService` trong `src/FShot.Platform.Win32/Tray/TrayIcon.fs` và tích hợp vào `App.axaml` / `App.axaml.fs`:
+    - [ ] `FR-SYS-001`: Khởi tạo biểu tượng thường trực trên khay hệ thống khi khởi động ứng dụng ở chế độ background/daemon.
+    - [ ] Thao tác Click / Double-click chuột trái vào TrayIcon: kích hoạt chụp ảnh màn hình tương tác GUI ngay lập tức.
+    - [ ] `FR-SYS-002`: Menu ngữ cảnh "Chụp màn hình (GUI)" kích hoạt `CaptureOverlayWindow`.
+    - [ ] `FR-SYS-003`: Submenu "Chụp theo màn hình" tự động cập nhật danh sách màn hình từ `ScreenEnumeration.getScreens()` để chụp riêng từng monitor.
+    - [ ] `FR-SYS-004`: Menu "Trình phóng nhanh (Launcher)" hỗ trợ chụp với độ trễ hoặc tùy chọn nhanh.
+    - [ ] `FR-SYS-005`: Menu "Thông tin & Phím tắt (About)" hiển thị dialog giới thiệu phiên bản F-Shot và cheat sheet phím tắt.
+    - [ ] `FR-SYS-006`: Menu "Cài đặt (Settings)" mở cửa sổ cấu hình hoặc điều hướng nhanh tới file cấu hình.
+    - [ ] `FR-SYS-007`: Menu "Mở thư mục ảnh chụp" mở đường dẫn `savePath` trong Windows Explorer qua `Process.Start("explorer.exe", path)`.
+    - [ ] `FR-SYS-008`: Menu "Thoát F-Shot" kích hoạt luồng đóng ứng dụng sạch sẽ.
+  - [ ] Viết unit tests kiểm thử khởi tạo menu, trạng thái hiển thị và dispatch command từ tray.
+  - [ ] Verify runtime trên Windows 10/11: kiểm tra biểu tượng hiển thị rõ nét trên Taskbar (cả light/dark theme), chuột phải mở menu nhạy, click từng action hoạt động chính xác.
 - [ ] **P2.02** Giới hạn single-instance và khởi động cùng Windows (`FR-SYS-010`, `FR-CFG-006`, `FR-WIN-005`).
+  - [ ] Hoàn thiện tài liệu thiết kế `docs/2.Design/10_Platform_Win32/10_09_Startup.md` và `docs/2.Design/10_Platform_Win32/10_10_SingleInstance.md`.
+  - [ ] Triển khai cơ chế kiểm soát tiến trình duy nhất (Single-Instance Enforcement) trong `src/FShot.Platform.Win32/Lifecycle/SingleInstance.fs`:
+    - [ ] Dùng `System.Threading.Mutex` toàn cục (`Global\FShot_SingleInstance_Mutex`) để nhận diện instance đầu tiên đang chạy.
+    - [ ] Thiết lập kênh giao tiếp liên tiến trình qua `NamedPipeServerStream` (`FShot_Ipc_Pipe`): instance nền lắng nghe các lệnh từ instance mới.
+    - [ ] Khi người dùng chạy tiếp lệnh (ví dụ `fshot gui` hoặc click icon shortcut), instance thứ hai đóng vai trò `NamedPipeClientStream`, gửi tham số chụp sang instance đang chạy rồi tự thoát ngay lập tức (`FR-SYS-010`).
+    - [ ] Bổ sung cờ CLI `--allow-multiple` để bỏ qua kiểm tra single-instance khi cần debug hoặc chạy kiểm thử song song.
+  - [ ] Triển khai đăng ký tự khởi động cùng Windows (`StartupLaunch`) trong `src/FShot.Platform.Win32/Startup/StartupRegistration.fs`:
+    - [ ] Quản lý ghi/xóa Registry key `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` với tên value `"FShot"`.
+    - [ ] Hàm `isStartupEnabled() : bool`, `setStartup(enable: bool) : Result<unit, string>`.
+    - [ ] Đảm bảo đường dẫn thực thi trỏ chuẩn xác tới `FShot.exe` kèm cờ chạy nền (ví dụ `fshot daemon` hoặc `--tray`).
+    - [ ] Đồng bộ hai chiều với trường cấu hình `StartupLaunch: bool` trong `AppConfig` (`FR-CFG-006`, `FR-WIN-005`).
+  - [ ] Bổ sung unit tests cho SingleInstance message parsing, IPC serialization và logic kiểm tra Registry.
+  - [ ] Verify runtime: bật FShot, thử mở thêm instance từ PowerShell/CMD xác nhận lệnh được chuyển tiếp; kiểm tra Registry trong `regedit` khi bật/tắt tùy chọn khởi động cùng Windows.
 - [ ] **P2.03** Thoát graceful, thông báo thành công / hủy, tùy chọn ẩn tray icon (`FR-CFG-007`, `FR-CFG-008`).
+  - [ ] Triển khai quản lý vòng đời ứng dụng và giải phóng tài nguyên tập trung (`AppLifecycle` / `Dispose` pattern):
+    - [ ] Đăng ký bắt các sự kiện hệ thống `AppDomain.CurrentDomain.ProcessExit`, `Console.CancelKeyPress` và Windows Session Ending (`WM_QUERYENDSESSION`, `WM_ENDSESSION`).
+    - [ ] Đảm bảo giải phóng toàn bộ unmanaged resources khi thoát: đóng Mutex, ngắt Named Pipe Server, hủy toàn bộ Global Hotkey hooks, gỡ TrayIcon khỏi Taskbar để tránh icon bị "treo mờ" (ghost tray icon).
+  - [ ] Triển khai dịch vụ thông báo Windows (`NotificationService`) trong `src/FShot.Platform.Win32/Notifications/`:
+    - [ ] Hỗ trợ phát thông báo Windows Toast Notification (qua Windows Community Toolkit / WinRT APIs hoặc fallback Tray Balloon Notification).
+    - [ ] `FR-CFG-008`: Tôn trọng cấu hình `showDesktopNotification` (thông báo khi copy/save thành công kèm đường dẫn ảnh) và `showAbortNotification` (thông báo khi hủy thao tác chụp).
+    - [ ] Click vào thông báo lưu file: tự động mở và highlight file ảnh trong Windows Explorer.
+  - [ ] `FR-CFG-007`: Hỗ trợ tùy chọn ẩn hoàn toàn tray icon (`disabledTrayIcon = true`):
+    - [ ] Ứng dụng vẫn chạy nền và lắng nghe phím nóng toàn cục mà không xuất hiện icon ở Taskbar tray.
+    - [ ] Đảm bảo có hướng dẫn cảnh báo hoặc cơ chế mở lại cấu hình khi đã ẩn tray icon.
+  - [ ] Viết unit tests cho notification payload builder và cấu hình hiển thị.
+  - [ ] Verify runtime trên Windows: xác nhận toast notification hiển thị đẹp mắt kèm âm thanh hệ thống; thoát app từ Task Manager hoặc menu tray xác nhận tiến trình tắt sạch và không để lại icon mờ.
 
 ### Epic 7: Global Hotkeys
 - [ ] **P2.04** Đăng ký phím nóng toàn hệ thống `Win+Shift+X` để kích hoạt chụp (`FR-SYS-009`, `FR-WIN-002`, `FR-SH-028`).
+  - [ ] Hoàn thiện tài liệu thiết kế chi tiết `docs/2.Design/10_Platform_Win32/10_04_GlobalHotkey.md` (cơ chế Win32 `RegisterHotKey`, `UnregisterHotKey`, kiến trúc Message-Only Window `HWND_MESSAGE`, điều phối luồng thread-safe).
+  - [ ] Triển khai Win32 P/Invoke trong `src/FShot.Platform.Win32/Hotkeys/GlobalHotkey.fs`:
+    - [ ] Khai báo hàm Win32: `RegisterHotKey`, `UnregisterHotKey`, các cờ modifiers (`MOD_ALT = 0x0001`, `MOD_CONTROL = 0x0002`, `MOD_SHIFT = 0x0004`, `MOD_WIN = 0x0008`, `MOD_NOREPEAT = 0x4000`).
+    - [ ] Tạo cửa sổ nhận thông điệp ẩn (Hidden Message-Only Window) đăng ký lớp `WNDCLASSEX` hoặc hook vào cửa sổ gốc của Avalonia để hứng `WM_HOTKEY` (0x0312).
+    - [ ] Cơ chế điều phối (dispatch) an toàn từ native message loop sang Avalonia UI Thread (`Dispatcher.UIThread.Post`) để khởi động luồng chụp ảnh màn hình.
+  - [ ] Xử lý kịch bản xung đột phím tắt (`FR-SYS-009`):
+    - [ ] Bắt mã lỗi Win32 `ERROR_HOTKEY_ALREADY_REGISTERED` (1409) khi tổ hợp phím bị ứng dụng khác chiếm giữ.
+    - [ ] Ghi log chi tiết qua `FShotLog`, không gây crash ứng dụng, hiển thị thông báo toast/dialog cảnh báo người dùng.
+  - [ ] Đảm bảo gọi `UnregisterHotKey` an toàn trong hàm cleanup khi đổi phím hoặc thoát ứng dụng.
+  - [ ] Viết unit tests kiểm thử parse modifier flags, map Virtual Key code và quản lý danh sách hotkey IDs.
+  - [ ] Verify runtime: nhấn `Win+Shift+X` từ mọi ứng dụng bên ngoài (Edge, VS Code, game cửa sổ, Desktop) xác nhận overlay FShot được kích hoạt lập tức.
 - [ ] **P2.05** Tích hợp phím `PrintScreen` và xử lý xung đột với Windows Snipping Tool (`FR-SYS-020`, `FR-WIN-003`, `FR-SH-030`).
+  - [ ] Rà soát đặc tả kỹ thuật và cơ chế can thiệp `PrintScreen` trên Windows 10/11 (`docs/2.Design/10_Platform_Win32/10_04_GlobalHotkey.md`).
+  - [ ] Triển khai bắt phím `PrintScreen` (`VK_SNAPSHOT = 0x2C`):
+    - [ ] Bước 1: Thử nghiệm đăng ký trực tiếp bằng `RegisterHotKey` với `VK_SNAPSHOT` không modifier (`FR-SH-030`).
+    - [ ] Bước 2 (Fallback cấp thấp): Nếu `RegisterHotKey` thất bại do Windows 11 bảo vệ phím PrtSc, kích hoạt Low-Level Keyboard Hook (`SetWindowsHookEx(WH_KEYBOARD_LL)`) để chặn thông điệp `WM_KEYDOWN/WM_KEYUP` của `VK_SNAPSHOT` và consume event (trả về 1 để nuốt phím).
+  - [ ] Xử lý xung đột với Windows Snipping Tool (`FR-SYS-020`, `FR-WIN-003`):
+    - [ ] Kiểm tra giá trị Registry `HKCU\Control Panel\Keyboard\PrintScreenKeyForSnippingEnabled`.
+    - [ ] Cung cấp hàm tiện ích và tùy chọn trong cấu hình `IgnorePrntScrForcesSnipping` để hỗ trợ người dùng vô hiệu hóa việc Windows tự động chuyển hướng phím PrtSc sang Snipping Tool (`ms-screenclip:`).
+  - [ ] Đảm bảo cơ chế an toàn cho Low-Level Hook: xử lý tối ưu trong microsecond, chỉ filter đúng `VK_SNAPSHOT`, lập tức gọi `UnhookWindowsHookEx` khi thoát ứng dụng để không ảnh hưởng hiệu năng gõ phím của OS.
+  - [ ] Bổ sung unit tests cho logic nhận diện key event và kiểm tra hook state.
+  - [ ] Verify runtime: gõ phím `PrtSc` trên bàn phím vật lý trên Windows 11; xác nhận FShot chiếm quyền chụp thành công thay vì mở Windows Snipping Tool.
 - [ ] **P2.06** Cho phép cấu hình và thay đổi các phím tắt toàn cục (`FR-SH-028`–`FR-SH-030`).
+  - [ ] Mở rộng mô hình cấu hình phím nóng trong `src/FShot.Core/Domain/Config.fs`:
+    - [ ] Định nghĩa kiểu `HotkeyConfig`: `{ Action: HotkeyAction; Key: string; Modifiers: string list; Enabled: bool }`.
+    - [ ] Các hành động toàn cục hỗ trợ: `CaptureGui` (mặc định `Win+Shift+X`), `CaptureFullScreen` (mặc định `Ctrl+PrintScreen`), `CaptureScreenAtCursor` (mặc định `Shift+PrintScreen`).
+  - [ ] Triển khai bộ phân giải phím tắt `HotkeyParser` trong `src/FShot.Platform.Win32/Hotkeys/HotkeyParser.fs`:
+    - [ ] Phân giải chuỗi thân thiện người dùng (ví dụ `"Win+Shift+X"`, `"Ctrl+Alt+S"`, `"PrintScreen"`, `"F11"`) thành Virtual Key và Win32 Modifiers.
+    - [ ] Chuyển đổi ngược từ mã phím thành chuỗi hiển thị chuẩn hóa.
+  - [ ] Triển khai cơ chế nạp lại động (Dynamic Rebinding):
+    - [ ] Lắng nghe sự kiện thay đổi cấu hình từ `ConfigStore`.
+    - [ ] Tự động hủy đăng ký (unregister) các phím nóng cũ và đăng ký bộ phím nóng mới vào hệ thống mà không cần khởi động lại F-Shot.
+  - [ ] Kiểm tra tính hợp lệ và cảnh báo xung đột (Validation):
+    - [ ] Chặn người dùng gán vào các phím tắt nguy hiểm của hệ điều hành (`Ctrl+Alt+Delete`, `Win+L`, `Alt+Tab`, `Win+D`).
+    - [ ] Phát hiện và ngăn chặn trùng lặp giữa các hành động trong chính F-Shot.
+  - [ ] Viết unit tests toàn diện cho `HotkeyParser` (parse hợp lệ, phím không hợp lệ, phân biệt hoa thường, modifiers đa dạng).
+  - [ ] Verify runtime: thay đổi cấu hình phím nóng trong `config.json` (hoặc qua giao diện), xác nhận phím mới có hiệu lực ngay lập tức.
 
 ### Epic 8: Real Capture Backend & Mixed DPI
 - [ ] **P2.07** Triển khai backend `Windows.Graphics.Capture` cho chụp đa màn hình đúng mixed-DPI (`FR-WIN-001`).
@@ -358,7 +432,7 @@
 
 ---
 
-*Cập nhật gần nhất: 2026-09-16*
+*Cập nhật gần nhất: 2026-09-24*
 
 ---
 
