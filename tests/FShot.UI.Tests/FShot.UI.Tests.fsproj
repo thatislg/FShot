@@ -13,9 +13,13 @@
     <Compile Include="ToolbarIconsTests.fs" />
     <Compile Include="CliTests.fs" />
     <Compile Include="ConfigStoreTests.fs" />
+    <Compile Include="MigrationTests.fs" />
+    <Compile Include="CaptureBackendTests.fs" />
     <Compile Include="TrayIconTests.fs" />
     <Compile Include="SingleInstanceTests.fs" />
     <Compile Include="StartupRegistrationTests.fs" />
+    <Compile Include="GlobalHotkeyTests.fs" />
+    <Compile Include="HotkeyParserTests.fs" />
     <Compile Include="NotificationServiceTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

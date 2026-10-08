@@ -104,3 +104,21 @@ let ``parse gui with allow-multiple``() =
     Assert.True(request.AllowMultiple)
     Assert.False(request.RunAsDaemon)
     Assert.Equal(GuiInteractive, request.Mode)
+
+[<Fact>]
+let ``parse config subcommand mở cửa sổ cài đặt``() =
+    let request = CliParser.parse [| "config" |]
+    Assert.True(request.OpenSettings)
+    Assert.False(request.RunAsDaemon)
+    Assert.True(request.ImportFlameshotPath.IsNone)
+
+[<Fact>]
+let ``parse config import-flameshot có đường dẫn``() =
+    let request = CliParser.parse [| "config"; "--import-flameshot"; "D:\\flameshot.ini" |]
+    Assert.True(request.OpenSettings)
+    Assert.Equal(Some "D:\\flameshot.ini", request.ImportFlameshotPath)
+
+[<Fact>]
+let ``parse config import-flameshot không đường dẫn``() =
+    let request = CliParser.parse [| "config"; "--import-flameshot" |]
+    Assert.True(request.ImportFlameshotPath.IsNone)

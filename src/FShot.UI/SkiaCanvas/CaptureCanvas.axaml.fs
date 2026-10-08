@@ -1248,8 +1248,16 @@ type CaptureCanvas() as this =
     /// Xem 11_09_OverlayStateIntegration.md, mục 5.2.
     member private this.RenderDimming(context: DrawingContext, selectionOption: Selection option) =
         let fullBounds = this.Bounds
-        // Nền tối Flameshot: đen với alpha 180 (khoảng 70.5%).
-        let outerBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(180uy, 0uy, 0uy, 0uy))
+
+        // Độ mờ lớp phủ ngoài vùng chọn: đọc từ Config.ContrastOpacity (0–255).
+        // Mặc định 190 (~74%).
+        let opacity =
+            overlayState
+            |> Option.map (fun s -> s.Config.ContrastOpacity)
+            |> Option.defaultValue 190uy
+
+        let dimColor = overlayState |> Option.map (fun s -> s.Config.ContrastUiColor) |> Option.defaultValue { R = 0uy; G = 0uy; B = 0uy; A = 255uy }
+        let outerBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(opacity, dimColor.R, dimColor.G, dimColor.B))
 
         match selectionOption with
         | Some selection when selection.State <> SelectionState.Idle ->
@@ -1311,8 +1319,32 @@ type CaptureCanvas() as this =
             let innerBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(0uy, 0uy, 150uy, 255uy))
             context.FillRectangle(innerBrush, selectionRect)
 
-            // Viền ngoài nét liền màu xanh pastel #5FA8D3, độ dày 2.0px.
-            let borderColor = Avalonia.Media.Color.FromRgb(95uy, 168uy, 211uy) // #5fa8d3
+            // Viền ngoài nét liền theo màu accent chính (FR-CFG-100), độ dày 2.0px.
+            // Mặc định pastel #5FA8D3.
+            let uiColor =
+                overlayState
+                |> Option.map (fun s -> s.Config.UiColor)
+                |> Option.defaultValue { R = 95uy; G = 168uy; B = 211uy; A = 255uy }
+
+            // Pha màu với trắng (t > 0) hoặc đen (t < 0) để tạo các sắc độ cho knob.
+            let lerpByte (a: byte) (b: byte) (t: float) =
+                byte (Math.Round(float a + (float b - float a) * t))
+
+            let shade (c: FShot.Core.Geometry.Color) (t: float) : FShot.Core.Geometry.Color =
+                let target =
+                    if t >= 0.0 then { c with R = 255uy; G = 255uy; B = 255uy }
+                    else { c with R = 0uy; G = 0uy; B = 0uy }
+                let amt = abs t
+                { R = lerpByte c.R target.R amt; G = lerpByte c.G target.G amt; B = lerpByte c.B target.B amt; A = 255uy }
+
+            let toAv (c: FShot.Core.Geometry.Color) =
+                Avalonia.Media.Color.FromArgb(c.A, c.R, c.G, c.B)
+
+            let borderColor = toAv uiColor
+            let knobLight = toAv (shade uiColor 0.5)
+            let knobDark = toAv (shade uiColor -0.15)
+            let shadowColor = toAv (shade uiColor -0.35)
+
             let outerPen = new Pen(new SolidColorBrush(borderColor), 2.0)
             context.DrawRectangle(null, outerPen, selectionRect)
 
@@ -1333,13 +1365,13 @@ type CaptureCanvas() as this =
 
             if shouldDrawHandles then
                 let knobRadius = 6.5
-                let shadowBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(90uy, 43uy, 109uy, 153uy)) // #2b6d99 alpha 35%
+                let shadowBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(90uy, shadowColor.R, shadowColor.G, shadowColor.B))
                 let knobBrush =
                     let b = new LinearGradientBrush()
                     b.StartPoint <- RelativePoint(0.2, 0.2, RelativeUnit.Relative)
                     b.EndPoint <- RelativePoint(0.8, 0.8, RelativeUnit.Relative)
-                    b.GradientStops.Add(GradientStop(Avalonia.Media.Color.FromRgb(191uy, 227uy, 245uy), 0.0)) // #bfe3f5
-                    b.GradientStops.Add(GradientStop(Avalonia.Media.Color.FromRgb(107uy, 183uy, 222uy), 1.0)) // #6bb7de
+                    b.GradientStops.Add(GradientStop(knobLight, 0.0))
+                    b.GradientStops.Add(GradientStop(knobDark, 1.0))
                     b
                 let knobPen = new Pen(Brushes.White, 2.5)
                 let highlightBrush = Brushes.White

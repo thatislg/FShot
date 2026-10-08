@@ -16,6 +16,7 @@ open FShot.Core.Geometry
 open FShot.Platform.Win32.Capture
 open FShot.Platform.Win32.Clipboard
 open FShot.Platform.Win32.Config
+open FShot.Platform.Win32.Hotkeys
 open FShot.Platform.Win32.Lifecycle
 open FShot.Platform.Win32.Screen
 open FShot.Platform.Win32.Startup
@@ -73,10 +74,20 @@ type App() as this =
         with get() = App._ipcCancellation
         and set(value) = App._ipcCancellation <- value
 
+    [<DefaultValue>]
+    static val mutable private _openSettingsOnStartup: bool
+
+    /// Khi true, app mở cửa sổ cài đặt thay vì overlay/daemon (lệnh `fshot config`).
+    static member OpenSettingsOnStartup
+        with get() = App._openSettingsOnStartup
+        and set(value) = App._openSettingsOnStartup <- value
+
     let mutable currentOverlay: CaptureOverlayWindow option = None
     let mutable trayService: TrayIconService option = None
     let mutable desktopLifetime: IClassicDesktopStyleApplicationLifetime option = None
     let mutable notificationService: NotificationService option = None
+    let mutable hotkeyService: GlobalHotkeyService option = None
+    let mutable configWatcher: FileSystemWatcher option = None
     let mutable abortSubscription: obj option = None
     let mutable exportSubscription: obj option = None
 
@@ -101,6 +112,11 @@ type App() as this =
         exportSubscription <- None
         trayService |> Option.iter (fun t -> t.Dispose())
         trayService <- None
+        hotkeyService |> Option.iter (fun h -> h.Dispose())
+        hotkeyService <- None
+        configWatcher |> Option.iter (fun w ->
+            try w.Dispose() with _ -> ())
+        configWatcher <- None
         notificationService |> Option.iter (fun n -> n.Dispose())
         notificationService <- None
         match App.IpcCancellation with
@@ -116,16 +132,16 @@ type App() as this =
             try m.Dispose() with _ -> ()
             App.SingleInstanceMutex <- null
 
-    /// Mở file cấu hình bằng ứng dụng mặc định của hệ thống (FR-SYS-006).
-    let openSettingsFile () =
-        try
-            let path = ConfigStore.defaultConfigFile
-            let psi = ProcessStartInfo(path)
-            psi.UseShellExecute <- true
-            Process.Start(psi) |> ignore
-            FShotLog.write (sprintf "[Tray] Opened settings file: %s" path)
-        with ex ->
-            FShotLog.writeEx "[Tray] Open settings failed" ex
+    /// Mở cửa sổ cài đặt (Config Editor) — FR-SYS-006.
+    let showSettingsWindow () =
+        Dispatcher.UIThread.InvokeAsync(fun () ->
+            try
+                let settings = SettingsWindow()
+                settings.Show()
+                FShotLog.write "[Tray] Settings window opened"
+            with ex ->
+                FShotLog.writeEx "[Tray] Show settings window failed" ex
+        ) |> ignore
 
     /// Mở thư mục lưu ảnh chụp trong Windows Explorer (FR-SYS-007).
     let openSaveFolder () =
@@ -225,56 +241,87 @@ type App() as this =
                 FShotLog.writeEx "[Tray] Interactive screen capture failed" ex
         ) |> ignore
 
-    /// Chụp headless toàn màn hình (không qua overlay) từ tray menu.
-    /// Nếu có `savePath` thì lưu file, ngược lại copy vào clipboard.
+    /// Render và xuất captureResult (lưu file hoặc copy clipboard) kèm thông báo.
+    let deliverCaptureResult (config: ConfigSnapshot) (captureResult: CaptureResult) (label: string) =
+        let selection =
+            { Selection.Empty with
+                State = Selected
+                Bounds = captureResult.VirtualBounds }
+        use exportBitmap = SceneComposer.renderExport captureResult selection []
+        let format =
+            match config.SaveOptions.Format with
+            | Png -> SKEncodedImageFormat.Png
+            | Jpg -> SKEncodedImageFormat.Jpeg
+        let quality = config.SaveOptions.NormalizedJpegQuality
+
+        match config.SaveOptions.Path with
+        | Some savePath ->
+            if not (Directory.Exists savePath) then
+                Directory.CreateDirectory(savePath) |> ignore
+            let fileName = config.SaveOptions.ResolveFileName(DateTime.Now)
+            let fullPath = Path.Combine(savePath, fileName)
+            use data = exportBitmap.Encode(format, quality)
+            use stream = File.Create(fullPath)
+            data.SaveTo(stream)
+            stream.Flush()
+            FShotLog.write (sprintf "[Capture] %s saved to %s" label fullPath)
+            notificationService |> Option.iter (fun n ->
+                n.ShowNotification(CaptureSuccess (Some fullPath), config.ShowDesktopNotification) |> ignore)
+        | None ->
+            use data = exportBitmap.Encode(SKEncodedImageFormat.Png, 100)
+            let pngBytes = data.ToArray()
+            let pixelBytes = Array.zeroCreate<byte> (exportBitmap.Width * exportBitmap.Height * 4)
+            let ptr = exportBitmap.GetPixels()
+            if ptr <> IntPtr.Zero then
+                Marshal.Copy(ptr, pixelBytes, 0, pixelBytes.Length)
+            let ok = ClipboardService.copyImageToClipboard exportBitmap.Width exportBitmap.Height pngBytes pixelBytes
+            FShotLog.write (sprintf "[Capture] %s copied to clipboard: %b" label ok)
+            notificationService |> Option.iter (fun n ->
+                n.ShowNotification(CopySuccess, config.ShowDesktopNotification) |> ignore)
+
+    /// Chụp headless một màn hình (không qua overlay) từ tray menu.
     let captureScreenHeadless (screenIndex: int) =
         async {
             try
                 FShotLog.write (sprintf "[Tray] Starting headless capture for screen %d" screenIndex)
                 let config = ConfigStore.loadSnapshot()
-                let captureService = WindowsCaptureService() :> ICaptureService
+                let captureService = CompositeCaptureService() :> ICaptureService
                 let! result = captureService.CaptureScreenAsync screenIndex
                 match result with
-                | Ok captureResult ->
-                    let selection =
-                        { Selection.Empty with
-                            State = Selected
-                            Bounds = captureResult.VirtualBounds }
-                    use exportBitmap = SceneComposer.renderExport captureResult selection []
-                    let format =
-                        match config.SaveOptions.Format with
-                        | Png -> SKEncodedImageFormat.Png
-                        | Jpg -> SKEncodedImageFormat.Jpeg
-                    let quality = config.SaveOptions.NormalizedJpegQuality
-
-                    match config.SaveOptions.Path with
-                    | Some savePath ->
-                        if not (Directory.Exists savePath) then
-                            Directory.CreateDirectory(savePath) |> ignore
-                        let fileName = config.SaveOptions.ResolveFileName(DateTime.Now)
-                        let fullPath = Path.Combine(savePath, fileName)
-                        use data = exportBitmap.Encode(format, quality)
-                        use stream = File.Create(fullPath)
-                        data.SaveTo(stream)
-                        stream.Flush()
-                        FShotLog.write (sprintf "[Tray] Screen %d saved to %s" screenIndex fullPath)
-                        notificationService |> Option.iter (fun n ->
-                            n.ShowNotification(CaptureSuccess (Some fullPath), config.ShowDesktopNotification) |> ignore)
-                    | None ->
-                        use data = exportBitmap.Encode(SKEncodedImageFormat.Png, 100)
-                        let pngBytes = data.ToArray()
-                        let pixelBytes = Array.zeroCreate<byte> (exportBitmap.Width * exportBitmap.Height * 4)
-                        let ptr = exportBitmap.GetPixels()
-                        if ptr <> IntPtr.Zero then
-                            Marshal.Copy(ptr, pixelBytes, 0, pixelBytes.Length)
-                        let ok = ClipboardService.copyImageToClipboard exportBitmap.Width exportBitmap.Height pngBytes pixelBytes
-                        FShotLog.write (sprintf "[Tray] Screen %d copied to clipboard: %b" screenIndex ok)
-                        notificationService |> Option.iter (fun n ->
-                            n.ShowNotification(CopySuccess, config.ShowDesktopNotification) |> ignore)
-                | Error err ->
-                    FShotLog.write (sprintf "[Tray] Screen %d headless capture failed: %A" screenIndex err)
+                | Ok captureResult -> deliverCaptureResult config captureResult (sprintf "Screen %d" screenIndex)
+                | Error err -> FShotLog.write (sprintf "[Tray] Screen %d headless capture failed: %A" screenIndex err)
             with ex ->
                 FShotLog.writeEx "[Tray] Screen capture failed" ex
+        } |> Async.Start
+
+    /// Chụp headless toàn bộ Virtual Screen (mọi màn hình).
+    let captureFullScreenHeadless () =
+        async {
+            try
+                FShotLog.write "[Hotkey] Starting headless full-screen capture"
+                let config = ConfigStore.loadSnapshot()
+                let captureService = CompositeCaptureService() :> ICaptureService
+                let! result = captureService.CaptureVirtualScreenAsync()
+                match result with
+                | Ok captureResult -> deliverCaptureResult config captureResult "Full screen"
+                | Error err -> FShotLog.write (sprintf "[Hotkey] Full-screen capture failed: %A" err)
+            with ex ->
+                FShotLog.writeEx "[Hotkey] Full-screen capture failed" ex
+        } |> Async.Start
+
+    /// Chụp headless màn hình đang chứa con trỏ chuột.
+    let captureCursorScreenHeadless () =
+        async {
+            try
+                FShotLog.write "[Hotkey] Starting headless cursor-screen capture"
+                let config = ConfigStore.loadSnapshot()
+                let captureService = CompositeCaptureService() :> ICaptureService
+                let! result = captureService.CaptureCursorScreenAsync()
+                match result with
+                | Ok captureResult -> deliverCaptureResult config captureResult "Cursor screen"
+                | Error err -> FShotLog.write (sprintf "[Hotkey] Cursor-screen capture failed: %A" err)
+            with ex ->
+                FShotLog.writeEx "[Hotkey] Cursor-screen capture failed" ex
         } |> Async.Start
 
     /// Hiển thị thông báo hủy thao tác chụp (FR-CFG-008).
@@ -282,6 +329,106 @@ type App() as this =
         let config = ConfigStore.loadSnapshot()
         notificationService |> Option.iter (fun n ->
             n.ShowNotification(CaptureAborted, config.ShowAbortNotification) |> ignore)
+
+    /// Dispatcher cho phím nóng toàn cục: map hành động sang overlay / headless capture.
+    /// Được gọi trên UI Thread (đã dispatch qua Dispatcher.UIThread trong GlobalHotkeyService).
+    member private this.DispatchHotkeyAction (action: HotkeyAction) =
+        match action with
+        | HotkeyAction.CaptureGui ->
+            FShotLog.write "[Hotkey] CaptureGui requested"
+            match desktopLifetime with
+            | Some desktop -> showCaptureOverlay desktop { CaptureRequest.Default with Mode = GuiInteractive } None
+            | None -> FShotLog.write "[Hotkey] No desktop lifetime available for capture"
+        | HotkeyAction.CaptureFullScreen ->
+            FShotLog.write "[Hotkey] CaptureFullScreen requested"
+            captureFullScreenHeadless()
+        | HotkeyAction.CaptureScreenAtCursor ->
+            FShotLog.write "[Hotkey] CaptureScreenAtCursor requested"
+            captureCursorScreenHeadless()
+
+    /// Xây dựng danh sách HotkeyBinding từ cấu hình; bỏ qua phím rỗng/tắt,
+    /// cảnh báo phím nguy hiểm hoặc không hợp lệ.
+    let buildHotkeyBindings (config: AppConfig) : HotkeyBinding list =
+        config.Hotkeys
+        |> List.choose (fun h ->
+            if not h.Enabled || String.IsNullOrWhiteSpace h.Key then
+                None
+            else
+                match HotkeyParser.parse h.Key with
+                | Ok parsed when not (HotkeyParser.isDangerous h.Key) ->
+                    Some { Action = h.Action; Modifiers = parsed.Modifiers; VirtualKey = parsed.VirtualKey }
+                | Ok _ ->
+                    FShotLog.write (sprintf "[Hotkey] Skipped dangerous hotkey '%s' for %A" h.Key h.Action)
+                    None
+                | Error err ->
+                    FShotLog.write (sprintf "[Hotkey] Skipped invalid hotkey '%s' for %A: %s" h.Key h.Action err)
+                    None)
+
+    /// Đọc cấu hình và cập nhật danh sách phím nóng đang đăng ký (dynamic rebinding).
+    let applyHotkeyConfig () =
+        let config = ConfigStore.loadConfig()
+        let bindings = buildHotkeyBindings config
+        hotkeyService |> Option.iter (fun service ->
+            service.Rebind bindings |> ignore)
+        FShotLog.write (sprintf "[Hotkey] Applied %d hotkey(s)" (List.length bindings))
+
+    /// Theo dõi thay đổi của config.json để tự động cập nhật phím nóng (không cần restart).
+    let startConfigWatcher () =
+        try
+            let dir = ConfigStore.defaultConfigDir
+            let watcher = new FileSystemWatcher(dir, "config.json")
+            watcher.NotifyFilter <- NotifyFilters.LastWrite ||| NotifyFilters.FileName
+            watcher.EnableRaisingEvents <- true
+            watcher.Changed.Add(fun _ ->
+                FShotLog.write "[Hotkey] config.json changed; rebinding hotkeys"
+                async {
+                    do! Async.Sleep 300
+                    applyHotkeyConfig()
+                } |> Async.Start)
+            configWatcher <- Some watcher
+            FShotLog.write "[Hotkey] Config file watcher started"
+        with ex ->
+            FShotLog.writeEx "[Hotkey] Failed to start config watcher" ex
+
+    /// Áp dụng lại cấu hình runtime sau khi lưu từ cửa sổ Settings (FR-SYS-011).
+    /// Refresh snapshot cache, rebind hotkey toàn cục và đồng bộ khởi động cùng Windows.
+    /// Trả về Ok khi thành công, Error kèm lý do khi thất bại (để hiển thị thông báo).
+    member this.ApplyConfigAfterSave() : Result<unit, string> =
+        try
+            // Refresh snapshot để overlay/capture dùng giá trị mới ngay lập tức, không cần restart.
+            let snapshot = ConfigStore.loadSnapshot()
+            App.ConfigSnapshot <- snapshot
+
+            // Rebind phím nóng toàn cục theo cấu hình mới.
+            applyHotkeyConfig()
+
+            // Đồng bộ khởi động cùng Windows (StartupLaunch).
+            let appConfig = ConfigStore.loadConfig()
+            match StartupRegistration.syncStartup appConfig.StartupLaunch with
+            | Ok () -> FShotLog.write "[Settings] Startup registration synced"
+            | Error err -> FShotLog.write (sprintf "[Settings] Startup sync warning: %s" err)
+
+            FShotLog.write "[Settings] Runtime config applied"
+            Ok ()
+        with ex ->
+            FShotLog.writeEx "[Settings] Apply runtime config failed" ex
+            Error ex.Message
+
+    /// Đăng ký phím nóng toàn cục và tắt Snipping Tool chiếm phím (P2.04–P2.06).
+    member private this.RegisterGlobalHotkey () =
+        // Vô hiệu hóa Windows 11 tự chuyển PrintScreen sang Snipping Tool (FR-SYS-020, FR-WIN-003).
+        match SnippingTool.setPrintScreenRedirect false with
+        | Ok () -> FShotLog.write "[Hotkey] Snipping Tool PrintScreen redirect disabled"
+        | Error err -> FShotLog.write (sprintf "[Hotkey] %s" err)
+
+        let service = new GlobalHotkeyService(this.DispatchHotkeyAction)
+        hotkeyService <- Some service
+        match service.Start() with
+        | Ok () ->
+            FShotLog.write "[Hotkey] Global hotkey service started"
+            applyHotkeyConfig()
+            startConfigWatcher()
+        | Error err -> FShotLog.write (sprintf "[Hotkey] %s" err)
 
     /// Dispatcher cho các lệnh phát sinh từ tray.
     member private this.DispatchTrayCommand (desktop: IClassicDesktopStyleApplicationLifetime) (cmd: TrayCommand) =
@@ -304,7 +451,7 @@ type App() as this =
             showAboutWindow()
         | OpenSettings ->
             FShotLog.write "[Tray] OpenSettings requested"
-            openSettingsFile()
+            showSettingsWindow()
         | OpenSaveFolder ->
             FShotLog.write "[Tray] OpenSaveFolder requested"
             openSaveFolder()
@@ -352,6 +499,10 @@ type App() as this =
         // Nạp cấu hình từ %APPDATA%\FShot\config.json
         let configSnapshot = ConfigStore.loadSnapshot()
         App.ConfigSnapshot <- configSnapshot
+
+        // Đăng ký cầu nối để SettingsWindow có thể yêu cầu áp dụng lại cấu hình khi bấm Apply.
+        ConfigRuntime.applyCallback <- Some (fun () -> this.ApplyConfigAfterSave())
+
         FShotLog.write (sprintf "Config loaded: Tool=%A, Color=%s, Thickness=%.1f, SavePath=%A"
             configSnapshot.DefaultTool
             (configSnapshot.DefaultColor.ToHex())
@@ -422,27 +573,44 @@ type App() as this =
 
             exportSubscription <- Some exportSub
 
-            // Đăng ký tray icon nếu không bị tắt trong cấu hình (FR-CFG-007).
-            let appConfig = ConfigStore.loadConfig()
-            if appConfig.DisabledTrayIcon then
-                FShotLog.write "[App] Tray icon disabled by configuration"
-                if App.IsDaemon then
-                    FShotLog.write "[App] WARNING: daemon mode without tray icon; use global hotkeys or edit config.json to restore"
-                    desktop.ShutdownMode <- ShutdownMode.OnExplicitShutdown
-                    desktop.MainWindow <- null
-                else
-                    showCaptureOverlay desktop App.CaptureRequest None
+            // Mở cửa sổ cài đặt nếu chạy `fshot config` (FR-CLI-05).
+            if App.OpenSettingsOnStartup then
+                desktop.ShutdownMode <- ShutdownMode.OnExplicitShutdown
+                Dispatcher.UIThread.Post(fun () ->
+                    try
+                        let settings = SettingsWindow()
+                        settings.Closed.Add(fun _ ->
+                            this.DisposeResources()
+                            desktop.Shutdown())
+                        settings.Show()
+                    with ex ->
+                        FShotLog.writeEx "[App] Open settings on startup failed" ex)
             else
-                let service = TrayIconService.Create(this, this.DispatchTrayCommand desktop)
-                trayService <- Some service
-
-                if App.IsDaemon then
-                    desktop.ShutdownMode <- ShutdownMode.OnExplicitShutdown
-                    desktop.MainWindow <- null
-                    FShotLog.write "[App] Daemon mode active: tray icon only"
+                // Đăng ký tray icon nếu không bị tắt trong cấu hình (FR-CFG-007).
+                let appConfig = ConfigStore.loadConfig()
+                if appConfig.DisabledTrayIcon then
+                    FShotLog.write "[App] Tray icon disabled by configuration"
+                    if App.IsDaemon then
+                        FShotLog.write "[App] WARNING: daemon mode without tray icon; use global hotkeys or edit config.json to restore"
+                        desktop.ShutdownMode <- ShutdownMode.OnExplicitShutdown
+                        desktop.MainWindow <- null
+                    else
+                        showCaptureOverlay desktop App.CaptureRequest None
                 else
-                    let request = App.CaptureRequest
-                    showCaptureOverlay desktop request None
+                    let service = TrayIconService.Create(this, this.DispatchTrayCommand desktop)
+                    trayService <- Some service
+
+                    if App.IsDaemon then
+                        desktop.ShutdownMode <- ShutdownMode.OnExplicitShutdown
+                        desktop.MainWindow <- null
+                        FShotLog.write "[App] Daemon mode active: tray icon only"
+                    else
+                        let request = App.CaptureRequest
+                        showCaptureOverlay desktop request None
+
+                // Đăng ký phím nóng toàn cục PrintScreen ở chế độ nền (P2.04, P2.05).
+                if App.IsDaemon then
+                    this.RegisterGlobalHotkey()
 
         | _ ->
             FShotLog.write "Unknown application lifetime"

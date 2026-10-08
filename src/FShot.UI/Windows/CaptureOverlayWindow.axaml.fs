@@ -102,7 +102,7 @@ type CaptureOverlayWindow() as this =
             // 1. Chụp màn hình thật TRƯỚC KHI hiển thị cửa sổ overlay để có ảnh sạch
             let! captureResultOpt =
                 async {
-                    let realService = WindowsCaptureService() :> ICaptureService
+                    let realService = CompositeCaptureService() :> ICaptureService
                     let screens = ScreenEnumeration.getScreens()
                     let screenOpt =
                         match captureBounds with

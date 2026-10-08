@@ -47,6 +47,35 @@ module FileNamePattern =
                 .Replace("%M", time.ToString("mm"))
                 .Replace("%S", time.ToString("ss"))
 
+/// Bộ kiểm tra tính hợp lệ của mẫu tên file (FR-CFG-003).
+/// Phát hiện các ký tự bị cấm trên hệ thống tập tin Windows.
+[<RequireQualifiedAccess>]
+module FileNamePatternValidator =
+
+    /// Các ký tự bị cấm trên hệ thống tập tin Windows.
+    let forbiddenChars = [ '\\'; '/'; ':'; '*'; '?'; '"'; '<'; '>'; '|' ]
+
+    /// Mẫu an toàn mặc định khi người dùng nhập mẫu không hợp lệ.
+    let safeFallbackPattern = "fshot_%Y-%m-%d-%H%M%S"
+
+    /// Trả về danh sách ký tự cấm có mặt trong mẫu (không trùng lặp).
+    let findForbiddenChars (pattern: string) : char list =
+        if String.IsNullOrWhiteSpace pattern then []
+        else
+            pattern
+            |> Seq.filter (fun c -> List.contains c forbiddenChars)
+            |> Seq.distinct
+            |> Seq.toList
+
+    /// Kiểm tra mẫu có hợp lệ hay không (không rỗng và không chứa ký tự cấm).
+    let isValid (pattern: string) : bool =
+        not (String.IsNullOrWhiteSpace pattern) && List.isEmpty (findForbiddenChars pattern)
+
+    /// Trả về mẫu hợp lệ; nếu mẫu không hợp lệ, trả về mẫu an toàn mặc định.
+    let normalized (pattern: string) : string =
+        if isValid pattern then pattern.Trim()
+        else safeFallbackPattern
+
 /// Tùy chọn lưu file.
 /// Xem tài liệu 06_03_SaveOptions.md.
 type SaveOptions =

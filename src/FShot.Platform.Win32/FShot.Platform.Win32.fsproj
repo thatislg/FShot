@@ -8,21 +8,29 @@
   <ItemGroup>
     <Compile Include="Screen\ScreenInfo.fs" />
     <Compile Include="Screen\ScreenEnumeration.fs" />
+    <Compile Include="Config\ConfigStore.fs" />
+    <Compile Include="Config\FlameshotIniParser.fs" />
+    <Compile Include="Config\FlameshotConfigMigrator.fs" />
     <Compile Include="Capture\BitmapAdapter.fs" />
     <Compile Include="Capture\GraphicsCapture.fs" />
+    <Compile Include="Capture\Direct3DInterop.fs" />
+    <Compile Include="Capture\WgcCaptureService.fs" />
+    <Compile Include="Capture\CompositeCaptureService.fs" />
     <Compile Include="Hotkeys\GlobalHotkey.fs" />
+    <Compile Include="Hotkeys\HotkeyParser.fs" />
     <Compile Include="Lifecycle\SingleInstance.fs" />
     <Compile Include="Tray\TrayIcon.fs" />
     <Compile Include="Notifications\NotificationService.fs" />
     <Compile Include="Clipboard\ClipboardService.fs" />
     <Compile Include="FileSystem\SaveDialog.fs" />
-    <Compile Include="Config\ConfigStore.fs" />
     <Compile Include="Startup\StartupRegistration.fs" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.1.2" />
     <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
+    <PackageReference Include="Vortice.Direct3D11" Version="3.6.2" />
+    <PackageReference Include="Vortice.DXGI" Version="3.6.2" />
   </ItemGroup>
 
   <ItemGroup>

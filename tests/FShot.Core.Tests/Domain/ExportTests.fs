@@ -127,3 +127,33 @@ let ``FileFormat FromExtension nhận diện đúng định dạng`` () =
     Assert.Equal(Jpg, FileFormat.FromExtension(".jpg"))
     Assert.Equal(Jpg, FileFormat.FromExtension(".jpeg"))
     Assert.Equal(Png, FileFormat.FromExtension(".bmp")) // fallback Png
+
+/// Kiểm tra FileNamePatternValidator phát hiện ký tự cấm.
+[<Fact>]
+let ``FileNamePatternValidator phát hiện ký tự cấm`` () =
+    Assert.True(FileNamePatternValidator.isValid "fshot_%Y-%m-%d_%H%M%S")
+    Assert.False(FileNamePatternValidator.isValid "shot/a")
+    Assert.False(FileNamePatternValidator.isValid "shot:a")
+    Assert.False(FileNamePatternValidator.isValid "shot*")
+    Assert.False(FileNamePatternValidator.isValid "shot?a")
+    Assert.False(FileNamePatternValidator.isValid "shot\"a")
+    Assert.False(FileNamePatternValidator.isValid "shot<a")
+    Assert.False(FileNamePatternValidator.isValid "shot>a")
+    Assert.False(FileNamePatternValidator.isValid "shot|a")
+    Assert.False(FileNamePatternValidator.isValid "") // rỗng không hợp lệ
+    Assert.False(FileNamePatternValidator.isValid "   ") // chỉ khoảng trắng không hợp lệ
+
+/// Kiểm tra FileNamePatternValidator.findForbiddenChars trả đúng danh sách.
+[<Fact>]
+let ``FileNamePatternValidator tìm đúng ký tự cấm`` () =
+    let forbidden = FileNamePatternValidator.findForbiddenChars "a/b:c"
+    Assert.Contains('/', forbidden)
+    Assert.Contains(':', forbidden)
+    Assert.DoesNotContain('\\', forbidden)
+
+/// Kiểm tra FileNamePatternValidator.normalized fallback an toàn.
+[<Fact>]
+let ``FileNamePatternValidator normalized fallback an toàn`` () =
+    Assert.Equal("fshot_%Y-%m-%d-%H%M%S", FileNamePatternValidator.normalized "bad/pattern")
+    Assert.Equal("fshot_%Y-%m-%d-%H%M%S", FileNamePatternValidator.normalized "")
+    Assert.Equal("good_%Y", FileNamePatternValidator.normalized "good_%Y")

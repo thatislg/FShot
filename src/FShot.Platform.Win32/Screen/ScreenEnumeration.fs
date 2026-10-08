@@ -111,6 +111,12 @@ module ScreenEnumeration =
         getScreens ()
         |> List.tryFind (fun s -> s.Contains point)
 
+    /// Lấy HMONITOR (native handle) theo chỉ số màn hình, dùng cho WinRT GraphicsCaptureItem.
+    let getMonitorHandle (index: int) : IntPtr option =
+        enumerateMonitors ()
+        |> List.mapi (fun i (hMonitor, _) -> (i, hMonitor))
+        |> List.tryPick (fun (i, h) -> if i = index then Some h else None)
+
     /// Lấy Virtual Screen bounds từ danh sách màn hình.
     /// Công thức: min(left), min(top), max(right), max(bottom).
     let getVirtualScreenBounds () : Rect =

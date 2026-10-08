@@ -1,0 +1,159 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:windows="clr-namespace:FShot.UI.Windows"
+        x:Class="FShot.UI.Windows.SettingsWindow"
+        Title="Cài đặt F-Shot"
+        Width="720"
+        Height="540"
+        MinWidth="640"
+        MinHeight="480"
+        WindowStartupLocation="CenterScreen">
+    <DockPanel>
+        <Border DockPanel.Dock="Bottom" Padding="12" BorderThickness="0,1,0,0" BorderBrush="#20000000">
+            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+                <Button Grid.Column="0" x:Name="ResetButton" Content="Khôi phục mặc định" Click="OnResetClick" />
+                <TextBlock Grid.Column="1" x:Name="StatusText" VerticalAlignment="Center" Margin="12,0,0,0" TextWrapping="Wrap" />
+                <Button Grid.Column="2" x:Name="CancelButton" Content="Hủy" Click="OnCancelClick" />
+                <Button Grid.Column="3" x:Name="ApplyButton" Content="Áp dụng" Click="OnApplyClick" Margin="8,0,0,0" />
+                <Button Grid.Column="4" x:Name="SaveCloseButton" Content="Lưu &amp; Đóng" Click="OnSaveCloseClick" Margin="8,0,0,0" />
+            </Grid>
+        </Border>
+
+        <TabControl>
+            <!-- Tab 1: Cài đặt chung -->
+            <TabItem Header="Cài đặt chung">
+                <ScrollViewer>
+                    <StackPanel Margin="16" Spacing="10">
+                        <TextBlock Text="Thư mục lưu ảnh" FontWeight="SemiBold" />
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBox Grid.Column="0" x:Name="SavePathBox" PlaceholderText="Để trống để hỏi khi lưu" />
+                            <Button Grid.Column="1" x:Name="BrowseButton" Content="Duyệt..." Click="OnBrowseClick" Margin="8,0,0,0" />
+                        </Grid>
+
+                        <ToggleSwitch x:Name="SavePathFixedToggle" OnContent="Lưu tức thì không hỏi lại" OffContent="Hỏi đường dẫn khi lưu" />
+
+                        <windows:FileNameEditor x:Name="FileNameEditorControl" Margin="0,8,0,0" />
+
+                        <TextBlock Text="Định dạng lưu mặc định" FontWeight="SemiBold" />
+                        <ComboBox x:Name="ExtensionCombo" />
+
+                        <TextBlock Text="Chất lượng ảnh JPG" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Slider x:Name="JpegQualitySlider" Minimum="1" Maximum="100" Width="300" />
+                            <TextBlock x:Name="JpegQualityLabel" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <ToggleSwitch x:Name="StartupToggle" OnContent="Khởi động cùng Windows" OffContent="Không khởi động cùng Windows" />
+                        <ToggleSwitch x:Name="TrayIconToggle" OnContent="Hiển thị icon khay hệ thống" OffContent="Ẩn icon khay hệ thống" />
+                        <ToggleSwitch x:Name="ShowDesktopNotificationToggle" OnContent="Thông báo khi chụp/lưu thành công" OffContent="Không thông báo khi thành công" />
+                        <ToggleSwitch x:Name="ShowAbortToggle" OnContent="Thông báo khi hủy thao tác" OffContent="Không thông báo khi hủy" />
+                        <ToggleSwitch x:Name="CopyOnDoubleClickToggle" OnContent="Sao chép khi double-click" OffContent="Không sao chép khi double-click" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Tab 2: Giao diện & Hiển thị -->
+            <TabItem Header="Giao diện">
+                <ScrollViewer>
+                    <StackPanel Margin="16" Spacing="10">
+                        <TextBlock Text="Màu accent chính" FontWeight="SemiBold" />
+                        <windows:ColorWheel x:Name="UiColorPicker" />
+
+                        <TextBlock Text="Màu tương phản phụ" FontWeight="SemiBold" />
+                        <windows:ColorWheel x:Name="ContrastUiColorPicker" />
+
+                        <TextBlock Text="Độ mờ vùng tối ngoài vùng chọn" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Slider x:Name="ContrastOpacitySlider" Minimum="0" Maximum="255" Width="300" />
+                            <TextBlock x:Name="ContrastOpacityLabel" VerticalAlignment="Center" />
+                        </StackPanel>
+
+                        <TextBlock Text="Ngôn ngữ giao diện" FontWeight="SemiBold" />
+                        <ComboBox x:Name="LanguageCombo" />
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Tab 3: Công cụ mặc định -->
+            <TabItem Header="Công cụ mặc định">
+                <ScrollViewer>
+                    <StackPanel Margin="16" Spacing="12">
+                        <StackPanel>
+                            <TextBlock Text="Bảng màu tự chọn" FontWeight="SemiBold" />
+                            <WrapPanel x:Name="UserColorsPanel" />
+                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
+                                <TextBox x:Name="NewUserColorBox" PlaceholderText="#RRGGBB" Width="140" />
+                                <Button x:Name="AddUserColorButton" Content="Thêm màu" Click="OnAddUserColorClick" />
+                            </StackPanel>
+                            <TextBlock Text="(bấm vào một màu để xóa)" FontSize="12" Foreground="Gray" />
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="Độ dày nét vẽ chung" FontWeight="SemiBold" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Slider x:Name="DrawThicknessSlider" Minimum="1" Maximum="50" Width="300" />
+                                <TextBlock x:Name="DrawThicknessLabel" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="Cỡ chữ Text mặc định" FontWeight="SemiBold" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Slider x:Name="DrawFontSizeSlider" Minimum="8" Maximum="72" Width="300" />
+                                <TextBlock x:Name="DrawFontSizeLabel" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="Kích thước huy hiệu đếm số" FontWeight="SemiBold" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Slider x:Name="CircleCounterSlider" Minimum="16" Maximum="64" Width="300" />
+                                <TextBlock x:Name="CircleCounterLabel" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="Kích thước khối Mosaic (Pixelate)" FontWeight="SemiBold" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Slider x:Name="PixelateSlider" Minimum="4" Maximum="32" Width="300" />
+                                <TextBlock x:Name="PixelateLabel" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="Bán kính bo góc Rectangle" FontWeight="SemiBold" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Slider x:Name="RectangleRadiusSlider" Minimum="0" Maximum="40" Width="300" />
+                                <TextBlock x:Name="RectangleRadiusLabel" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="Kích thước Marker" FontWeight="SemiBold" />
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <Slider x:Name="MarkerSizeSlider" Minimum="1" Maximum="100" Width="300" />
+                                <TextBlock x:Name="MarkerSizeLabel" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- Tab 4: Phím tắt -->
+            <TabItem Header="Phím tắt">
+                <ScrollViewer>
+                    <StackPanel Margin="16" Spacing="12">
+                        <TextBlock Text="Phím tắt toàn cục (để trống để tắt)" TextWrapping="Wrap" Foreground="Gray" />
+                        <TextBlock Text="Click vào ô rồi bấm tổ hợp phím để ghi (nhấn phím để ghi đè)" TextWrapping="Wrap" FontSize="12" Foreground="Gray" />
+                        <StackPanel>
+                            <TextBlock Text="Chụp tương tác GUI" FontWeight="SemiBold" />
+                            <TextBox x:Name="CaptureGuiKeyBox" PlaceholderText="PrintScreen" KeyDown="OnShortcutKeyDown" />
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="Chụp toàn màn hình" FontWeight="SemiBold" />
+                            <TextBox x:Name="CaptureFullScreenKeyBox" PlaceholderText="(tắt)" KeyDown="OnShortcutKeyDown" />
+                        </StackPanel>
+                        <StackPanel>
+                            <TextBlock Text="Chụp màn hình tại con trỏ" FontWeight="SemiBold" />
+                            <TextBox x:Name="CaptureCursorKeyBox" PlaceholderText="(tắt)" KeyDown="OnShortcutKeyDown" />
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

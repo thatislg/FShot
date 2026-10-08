@@ -1,0 +1,29 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="FShot.UI.Windows.FileNameEditor">
+    <StackPanel Spacing="8">
+        <TextBlock Text="Mẫu định dạng tên tệp"
+                   FontWeight="SemiBold" />
+        <TextBox x:Name="PatternBox"
+                 PlaceholderText="fshot_%Y-%m-%d-%H%M%S"
+                 TextChanged="OnPatternChanged" />
+
+        <WrapPanel>
+            <Button Content="+ %Y (Năm)"    Tag="%Y" Click="OnTokenClick" Margin="0,0,6,6" />
+            <Button Content="+ %m (Tháng)"  Tag="%m" Click="OnTokenClick" Margin="0,0,6,6" />
+            <Button Content="+ %d (Ngày)"   Tag="%d" Click="OnTokenClick" Margin="0,0,6,6" />
+            <Button Content="+ %H (Giờ)"    Tag="%H" Click="OnTokenClick" Margin="0,0,6,6" />
+            <Button Content="+ %M (Phút)"   Tag="%M" Click="OnTokenClick" Margin="0,0,6,6" />
+            <Button Content="+ %S (Giây)"   Tag="%S" Click="OnTokenClick" Margin="0,0,6,6" />
+        </WrapPanel>
+
+        <TextBlock x:Name="PreviewText"
+                   Foreground="{DynamicResource ThemeControlHighlightBrush}"
+                   Text="Xem trước: " />
+
+        <TextBlock x:Name="ErrorText"
+                   Foreground="Red"
+                   TextWrapping="Wrap"
+                   IsVisible="False" />
+    </StackPanel>
+</UserControl>

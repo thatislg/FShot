@@ -46,6 +46,29 @@ let ``ConfigStore saveConfigTo va loadConfigFrom doc ghi dung du lieu`` () =
             ShowDesktopNotification = false
             ShowAbortNotification = true
             DisabledTrayIcon = true
+            Hotkeys = [
+                { Action = HotkeyAction.CaptureGui; Key = "Ctrl+Shift+X"; Enabled = true }
+            ]
+            SavePathFixed = true
+            SaveAsFileExtension = "jpg"
+            JpegQuality = 82
+            CopyOnDoubleClick = true
+            SaveLastRegion = true
+            AllowMultipleGuiInstances = false
+            CaptureBackend = "Gdi"
+            UiColor = "#38BDF8"
+            ContrastUiColor = "#0F172A"
+            ContrastOpacity = 200uy
+            PredefinedColorPaletteLarge = true
+            UserColors = [ "#FF0000"; "#00FF00" ]
+            Buttons = [ "SelectionTool" ]
+            UiLanguage = "en"
+            FontFamily = "Segoe UI"
+            DrawFontSize = 20.0
+            DrawCircleCounterSize = 30.0
+            DrawPixelateSize = 12
+            DrawRectangleRadius = 5.0
+            DrawMarkerSize = 12.0
         }
 
         ConfigStore.saveConfigTo testConfigFile customConfig
@@ -62,6 +85,14 @@ let ``ConfigStore saveConfigTo va loadConfigFrom doc ghi dung du lieu`` () =
         Assert.Equal(customConfig.ShowDesktopNotification, loaded.ShowDesktopNotification)
         Assert.Equal(customConfig.ShowAbortNotification, loaded.ShowAbortNotification)
         Assert.Equal(customConfig.DisabledTrayIcon, loaded.DisabledTrayIcon)
+
+        // Hotkey round-trip (chuẩn hóa thành đủ 3 hành động).
+        let gui = loaded.Hotkeys |> List.find (fun h -> h.Action = HotkeyAction.CaptureGui)
+        Assert.Equal("Ctrl+Shift+X", gui.Key)
+        Assert.True(gui.Enabled)
+        let full = loaded.Hotkeys |> List.find (fun h -> h.Action = HotkeyAction.CaptureFullScreen)
+        Assert.Equal("", full.Key)
+        Assert.False(full.Enabled)
 
         // Kiểm tra loadSnapshotFrom
         let snapshot = ConfigStore.loadSnapshotFrom testConfigFile

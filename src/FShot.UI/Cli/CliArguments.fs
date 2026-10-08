@@ -42,11 +42,21 @@ type ScreenArgs =
             | Clipboard -> "Sao chép ảnh vào clipboard thay vì lưu file."
             | Delay_Ms _ -> "Độ trễ trước khi chụp (mili-giây)."
 
+/// Subcommand "config": mở cửa sổ cài đặt hoặc nhập cấu hình Flameshot.
+type ConfigArgs =
+    | Import_Flameshot
+
+    interface IArgParserTemplate with
+        member this.Usage =
+            match this with
+            | Import_Flameshot -> "Nhập cấu hình từ file flameshot.ini (đường dẫn tùy chọn)."
+
 /// Cây tham số dòng lệnh gốc.
 type CliArguments =
     | [<CliPrefix(CliPrefix.None)>] Gui of ParseResults<GuiArgs>
     | [<CliPrefix(CliPrefix.None)>] Full of ParseResults<FullArgs>
     | [<CliPrefix(CliPrefix.None)>] Screen of ParseResults<ScreenArgs>
+    | [<CliPrefix(CliPrefix.None)>] Config of ParseResults<ConfigArgs>
     | Version
 
     interface IArgParserTemplate with
@@ -55,6 +65,7 @@ type CliArguments =
             | Gui _ -> "Mở overlay tương tác."
             | Full _ -> "Chụp toàn bộ màn hình hiện tại và xuất ra file hoặc clipboard."
             | Screen _ -> "Chụp màn hình chỉ định theo chỉ số và xuất ra file hoặc clipboard."
+            | Config _ -> "Mở cửa sổ cài đặt."
             | Version -> "Hiển thị phiên bản."
 
 /// Kết quả parse dòng lệnh.
@@ -65,6 +76,8 @@ type ParsedCliRequest =
       OutputTarget: OutputTarget
       RunAsDaemon: bool
       AllowMultiple: bool
+      OpenSettings: bool
+      ImportFlameshotPath: string option
     }
 
 module CliParser =
@@ -127,6 +140,8 @@ module CliParser =
                   OutputTarget = OpenGui
                   RunAsDaemon = false
                   AllowMultiple = allowMultiple
+                  OpenSettings = false
+                  ImportFlameshotPath = None
                 }
             elif results.Contains Full then
                 let full = results.GetResult Full
@@ -144,6 +159,8 @@ module CliParser =
                   OutputTarget = outputTarget
                   RunAsDaemon = false
                   AllowMultiple = allowMultiple
+                  OpenSettings = false
+                  ImportFlameshotPath = None
                 }
             elif results.Contains Screen then
                 let screen = results.GetResult Screen
@@ -162,6 +179,29 @@ module CliParser =
                   OutputTarget = outputTarget
                   RunAsDaemon = false
                   AllowMultiple = allowMultiple
+                  OpenSettings = false
+                  ImportFlameshotPath = None
+                }
+            elif results.Contains Config then
+                let config = results.GetResult Config
+                let importPath =
+                    if config.Contains <@ ConfigArgs.Import_Flameshot @> then
+                        // Tìm đường dẫn tùy chọn ngay sau --import-flameshot.
+                        match filteredArgs |> Array.tryFindIndex (fun a -> a.Equals("--import-flameshot", StringComparison.OrdinalIgnoreCase)) with
+                        | Some i when i + 1 < filteredArgs.Length ->
+                            let next = filteredArgs[i + 1]
+                            if next.StartsWith("-") then None else Some next
+                        | _ -> None
+                    else
+                        None
+                {
+                  Mode = GuiInteractive
+                  DelayMs = 0
+                  OutputTarget = OpenGui
+                  RunAsDaemon = false
+                  AllowMultiple = allowMultiple
+                  OpenSettings = true
+                  ImportFlameshotPath = importPath
                 }
             else
                 // Mặc định: chạy nền với tray icon.
@@ -171,14 +211,16 @@ module CliParser =
                   OutputTarget = OpenGui
                   RunAsDaemon = true
                   AllowMultiple = allowMultiple
+                  OpenSettings = false
+                  ImportFlameshotPath = None
                 }
         with
         | :? ArguParseException as ex ->
             printfn "%s" ex.Message
             System.Environment.Exit(1)
             // never reached
-            { Mode = GuiInteractive; DelayMs = 0; OutputTarget = OpenGui; RunAsDaemon = true; AllowMultiple = allowMultiple }
+            { Mode = GuiInteractive; DelayMs = 0; OutputTarget = OpenGui; RunAsDaemon = true; AllowMultiple = allowMultiple; OpenSettings = false; ImportFlameshotPath = None }
         | ex ->
             printfn "Lỗi khi phân tích tham số dòng lệnh: %s" ex.Message
             System.Environment.Exit(1)
-            { Mode = GuiInteractive; DelayMs = 0; OutputTarget = OpenGui; RunAsDaemon = true; AllowMultiple = allowMultiple }
+            { Mode = GuiInteractive; DelayMs = 0; OutputTarget = OpenGui; RunAsDaemon = true; AllowMultiple = allowMultiple; OpenSettings = false; ImportFlameshotPath = None }

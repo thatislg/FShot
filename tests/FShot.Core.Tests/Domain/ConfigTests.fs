@@ -39,6 +39,9 @@ let ``ConfigSnapshot tùy chỉnh lưu đúng giá trị`` () =
         SaveOptions = customSave
         ShowDesktopNotification = false
         ShowAbortNotification = true
+        UiColor = Color.Blue
+        ContrastUiColor = Color.Black
+        ContrastOpacity = 128uy
     }
     Assert.Equal(LineTool, config.DefaultTool)
     Assert.Equal(Color.Blue, config.DefaultColor)
@@ -75,6 +78,9 @@ let ``ConfigSnapshot khởi tạo OverlayState tạo đúng CurrentStyle`` () =
         SaveOptions = SaveOptions.Default
         ShowDesktopNotification = true
         ShowAbortNotification = false
+        UiColor = Color.Green
+        ContrastUiColor = Color.Black
+        ContrastOpacity = 200uy
     }
     let state = FShot.Core.State.OverlayStateLogic.init capture config
     Assert.Equal(ArrowTool, state.CurrentTool)
@@ -108,6 +114,27 @@ let ``AppConfig ToSnapshot chuyển đổi đúng`` () =
         ShowDesktopNotification = true
         ShowAbortNotification = false
         DisabledTrayIcon = false
+        Hotkeys = HotkeyConfig.Defaults
+        SavePathFixed = false
+        SaveAsFileExtension = "jpg"
+        JpegQuality = 85
+        CopyOnDoubleClick = false
+        SaveLastRegion = false
+        AllowMultipleGuiInstances = false
+        CaptureBackend = "Auto"
+        UiColor = "#38BDF8"
+        ContrastUiColor = "#0F172A"
+        ContrastOpacity = 190uy
+        PredefinedColorPaletteLarge = false
+        UserColors = []
+        Buttons = []
+        UiLanguage = "vi"
+        FontFamily = ""
+        DrawFontSize = 18.0
+        DrawCircleCounterSize = 28.0
+        DrawPixelateSize = 10
+        DrawRectangleRadius = 0.0
+        DrawMarkerSize = 10.0
     }
     let snapshot = appConfig.ToSnapshot()
     Assert.Equal(ArrowTool, snapshot.DefaultTool)
@@ -180,6 +207,27 @@ let ``AppConfig Normalized làm sạch dữ liệu bất thường`` () =
         ShowDesktopNotification = false
         ShowAbortNotification = false
         DisabledTrayIcon = false
+        Hotkeys = []
+        SavePathFixed = false
+        SaveAsFileExtension = "jpeg"
+        JpegQuality = 999
+        CopyOnDoubleClick = false
+        SaveLastRegion = false
+        AllowMultipleGuiInstances = false
+        CaptureBackend = "invalid"
+        UiColor = "not-a-color"
+        ContrastUiColor = "bad"
+        ContrastOpacity = 255uy
+        PredefinedColorPaletteLarge = false
+        UserColors = [ "bad"; "#00FF00" ]
+        Buttons = [ ""; "  " ]
+        UiLanguage = ""
+        FontFamily = "   "
+        DrawFontSize = 1000.0
+        DrawCircleCounterSize = -5.0
+        DrawPixelateSize = 999
+        DrawRectangleRadius = -10.0
+        DrawMarkerSize = 0.0
     }
     let clean = dirty.Normalized()
     Assert.Equal("", clean.SavePath)
@@ -188,6 +236,7 @@ let ``AppConfig Normalized làm sạch dữ liệu bất thường`` () =
     Assert.Equal(2.0, clean.DrawThickness)
     Assert.Equal("SelectionTool", clean.DefaultTool)
     Assert.False(clean.StartupLaunch)
+    Assert.False(List.isEmpty clean.Hotkeys)
 
 /// Kiểm tra tuần tự hóa JSON bằng ConfigJson.serialize.
 [<Fact>]
@@ -203,6 +252,27 @@ let ``ConfigJson serialize tạo chuỗi JSON đúng định dạng`` () =
         ShowDesktopNotification = true
         ShowAbortNotification = false
         DisabledTrayIcon = false
+        Hotkeys = HotkeyConfig.Defaults
+        SavePathFixed = true
+        SaveAsFileExtension = "png"
+        JpegQuality = 90
+        CopyOnDoubleClick = true
+        SaveLastRegion = true
+        AllowMultipleGuiInstances = false
+        CaptureBackend = "Wgc"
+        UiColor = "#38BDF8"
+        ContrastUiColor = "#0F172A"
+        ContrastOpacity = 190uy
+        PredefinedColorPaletteLarge = false
+        UserColors = [ "#FF0000"; "#00FF00" ]
+        Buttons = [ "SelectionTool"; "PencilTool" ]
+        UiLanguage = "en"
+        FontFamily = ""
+        DrawFontSize = 18.0
+        DrawCircleCounterSize = 28.0
+        DrawPixelateSize = 10
+        DrawRectangleRadius = 0.0
+        DrawMarkerSize = 10.0
     }
     let json = ConfigJson.serialize cfg
     Assert.Contains("\"savePath\": \"C:\\\\Captures\"", json)

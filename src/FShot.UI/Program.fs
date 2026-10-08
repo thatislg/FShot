@@ -38,7 +38,7 @@ module Program =
                 if request.DelayMs > 0 then
                     do! Async.Sleep request.DelayMs
 
-                let captureService = WindowsCaptureService() :> ICaptureService
+                let captureService = CompositeCaptureService() :> ICaptureService
                 let! captureResultOpt =
                     async {
                         let! res =
@@ -141,6 +141,7 @@ module Program =
         async {
             let app = buildAvaloniaApp()
             // Truyền request vào App thông qua static field đơn giản.
+            App.OpenSettingsOnStartup <- request.OpenSettings
             App.CaptureRequest <-
                 {
                   CaptureRequest.Default with
@@ -167,6 +168,33 @@ module Program =
             appConfig.ShowAbortNotification
             appConfig.DisabledTrayIcon)
         let request = CliParser.parse argv
+
+        // Ép backend chụp qua cờ CLI (FR-WIN-001, P2.09): --force-gdi hoặc --backend gdi/wgc.
+        let forceGdi =
+            argv |> Array.exists (fun a -> a.Equals("--force-gdi", StringComparison.OrdinalIgnoreCase))
+        if forceGdi then
+            CompositeCaptureService.ForceGdi <- true
+        else
+            match argv |> Array.tryFindIndex (fun a -> a.Equals("--backend", StringComparison.OrdinalIgnoreCase)) with
+            | Some i when i + 1 < argv.Length ->
+                let v = argv[i + 1].ToLowerInvariant()
+                if v = "gdi" then CompositeCaptureService.ForceGdi <- true
+                elif v = "wgc" || v = "auto" then CompositeCaptureService.ForceGdi <- false
+            | _ -> ()
+
+        // Nhập cấu hình Flameshot (headless) — FR-WIN-006, FR-SYS-013.
+        match request.ImportFlameshotPath with
+        | Some path ->
+            match FlameshotConfigMigrator.migrateFromFile path with
+            | Some cfg ->
+                ConfigStore.saveConfig cfg
+                FShotLog.write (sprintf "[Config] Imported Flameshot config from %s" path)
+                printfn "Đã nhập cấu hình Flameshot từ %s" path
+            | None ->
+                FShotLog.write (sprintf "[Config] Flameshot config not found at %s" path)
+                printfn "Không tìm thấy file flameshot.ini tại %s" path
+            System.Environment.Exit(0)
+        | None -> ()
 
         use cts = new CancellationTokenSource()
         let instanceResult = SingleInstance.enforce argv request.AllowMultiple cts.Token App.HandleIpcCommand

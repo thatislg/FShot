@@ -1,117 +1,90 @@
-# FallbackBitBlt — Thiết kế chi tiết
+# FallbackBitBlt — Thiết kế chi tiết Cơ chế Dự phòng GDI BitBlt
 
-> Tài liệu này mô tả phương án dự phòng khi Windows.Graphics.Capture không khả dụng.
-> Fallback này dùng GDI BitBlt, một API Win32 cũ nhưng ổn định trên hầu hết Windows.
-
----
-
-## 1. BitBlt là gì?
-
-`BitBlt` là hàm GDI (Graphics Device Interface) của Windows để sao chép pixel từ một device context sang device context khác. Trong F-Shot, nó dùng để sao chép nội dung màn hình vào một bitmap trong bộ nhớ.
-
-Ưu điểm:
-
-- Chạy trên hầu hết mọi phiên bản Windows.
-- Đơn giản, ít phụ thuộc hơn Windows.Graphics.Capture.
-
-Nhược điểm:
-
-- Không xử lý tốt Mixed DPI và cửa sổ hiện đại.
-- Có thể bị các ứng dụng bảo vệ màn hình chặn.
-- Hiệu năng thấp hơn API mới.
+> Tài liệu này thiết kế chi tiết cơ chế dự phòng an toàn bằng Win32 GDI `BitBlt` khi backend chính `Windows.Graphics.Capture` không khả dụng hoặc bị từ chối quyền trên Windows (`FR-WIN-001`, `FR-SYS-017`).  
+> **Nguyên tắc tài liệu:** Thiết kế thuần kiến trúc, ma trận quyết định tự động chuyển đổi, xử lý phiên Desktop không tương tác — **hoàn toàn không sử dụng code mẫu**.
 
 ---
 
-## 2. Luồng hoạt động
+## 1. Vai trò của Phương án Dự phòng
 
-Luồng chụp bằng BitBlt:
-
-1. Lấy device context của màn hình desktop (`GetDC(NULL)`).
-2. Tạo một bitmap tương thích trong bộ nhớ (`CreateCompatibleBitmap`).
-3. Tạo memory device context (`CreateCompatibleDC`).
-4. Chọn bitmap vào memory DC (`SelectObject`).
-5. Sao chép pixel từ screen DC sang memory DC (`BitBlt`).
-6. Giải phóng các DC và đối tượng GDI.
-7. Trích xuất mảng byte từ bitmap.
-8. Trả về `CaptureResult`.
+Mặc dù `Windows.Graphics.Capture` (WGC) là backend chính hiện đại, F-Shot vẫn bắt buộc phải duy trì cơ chế dự phòng `BitBlt` vì các lý do thực tế sau:
+1. **Khả năng tương thích môi trường đặc thù:** Các môi trường máy ảo (Virtual Machines không có GPU Passthrough), phiên kết nối từ xa (Remote Desktop RDP / Citrix), hoặc máy trạm sử dụng Windows 10 phiên bản cũ thường không hỗ trợ DirectX Desktop Duplication/WGC.
+2. **Quyền riêng tư và bảo mật Windows:** Một số bản dựng Windows Enterprise hoặc người dùng kích hoạt chính sách chặn ứng dụng ghi màn hình sẽ khiến WinRT từ chối cấp surface.
+3. **Độ ổn định tối thượng:** GDI `BitBlt` là API cơ bản nhất của nhân Windows tồn tại qua nhiều thập kỷ, đảm bảo F-Shot **luôn chụp được màn hình** trong mọi tình huống thay vì bị crash hoặc hiện màn hình đen.
 
 ---
 
-## 3. Tính toán kích thước và vị trí chụp
+## 2. Ma trận Quyết định Tự động Điều phối (Auto-Fallback Decision Matrix)
 
-### 3.1 Chụp một màn hình
+Bộ điều phối tổng hợp `CompositeCaptureService` sử dụng bảng quyết định sau để lựa chọn backend chụp phù hợp:
 
-Cho một màn hình có Virtual Bounds logical `(left, top, right, bottom)`. Khi dùng BitBlt, cần xác định vị trí và kích thước để sao chép.
-
-Nếu dùng logical pixel:
-
-`x = left`
-`y = top`
-`width = right - left`
-`height = bottom - top`
-
-Nếu dùng physical pixel, nhân với scale factor:
-
-`physicalWidth = round(width * s)`
-`physicalHeight = round(height * s)`
-
-Ví dụ: màn hình logical `(0, 0, 1920, 1080)`, scale `1.5`.
-
-- Logical: width = 1920, height = 1080.
-- Physical: width = 2880, height = 1620.
-
-BitBlt sao chép theo logical coordinate của screen DC. Tuy nhiên, trên màn hình High-DPI, screen DC có thể đã được Windows scale tự động tùy cách ứng dụng được đánh dấu DPI aware. Đây là lý do BitBlt dễ gặp lỗi Mixed DPI.
-
-### 3.2 Chụp toàn bộ Virtual Screen
-
-Virtual Screen bounds được tính từ tất cả các màn hình:
-
-`virtualLeft = min(left của mọi màn hình)`
-`virtualTop = min(top của mọi màn hình)`
-`virtualRight = max(right của mọi màn hình)`
-`virtualBottom = max(bottom của mọi màn hình)`
-
-`virtualWidth = virtualRight - virtualLeft`
-`virtualHeight = virtualBottom - virtualTop`
-
-BitBlt toàn bộ Virtual Screen có thể cho ra ảnh bị lệch trên Mixed DPI vì mỗi màn hình có scale khác nhau. Do đó, fallback BitBlt phù hợp hơn cho chế độ chụp một màn hình hoặc khi Mixed DPI không quan trọng.
+| Điều kiện Hệ thống / Cấu hình | Backend được chọn | Lý do quyết định |
+| :--- | :---: | :--- |
+| Cấu hình người dùng ép dùng GDI (`captureBackend = "Gdi"` hoặc cờ CLI `--force-gdi`) | **GDI BitBlt** | Tôn trọng lựa chọn rõ ràng của người dùng khi gặp sự cố driver GPU. |
+| Hệ điều hành Windows Build < 18362 (trước Windows 10 1903) | **GDI BitBlt** | WinRT API WGC chưa tồn tại trên phiên bản hệ điều hành này. |
+| Cấu hình `Auto` + Windows Build $\ge$ 18362 + WGC hỗ trợ | **WGC (DirectX)** | Tận dụng tối đa ưu thế hiệu năng phần cứng và độ chuẩn xác Mixed DPI. |
+| WGC ném ngoại lệ phân quyền (`UnauthorizedAccessException`) | **GDI BitBlt** | Người dùng từ chối quyền WGC; fallback sang GDI để tiếp tục phục vụ thao tác chụp. |
+| WGC ném lỗi Direct3D Device Removed / GPU Hang | **GDI BitBlt** | Card đồ họa bị treo; chuyển sang CPU GDI để tránh crash ứng dụng. |
+| Phiên làm việc từ xa Remote Desktop (RDP) không có 3D Acceleration | **GDI BitBlt** | GDI hoạt động ổn định nhất trên kênh ảo RDP Desktop. |
 
 ---
 
-## 4. Vấn đề với Mixed DPI
+## 3. Kiến trúc Chụp GDI và Đảm bảo Phiên Màn hình Tương tác
 
-Khi hai màn hình có scale khác nhau, BitBlt sao chép theo coordinate space của desktop DC. Kết quả có thể:
+Để `BitBlt` chụp thành công nội dung màn hình Windows từ một tiến trình chạy nền (daemon), hệ thống phải giải quyết bài toán phân quyền Window Station và Desktop:
 
-- Một màn hình bị co hoặc giãn.
-- Một phần màn hình bị cắt hoặc thừa.
-- Ảnh bị mờ nếu Windows tự động scale.
-
-Cách giảm thiệt hại:
-
-- Chụp từng màn hình riêng lẻ thay vì toàn Virtual Screen.
-- Ghi rõ `ScaleFactor` cho từng màn hình.
-- Khuyến cáo người dùng dùng Windows.Graphics.Capture nếu có Mixed DPI.
+```
+┌────────────────────────────────────────────────────────┐
+│ 1. Xác thực Phiên Màn hình (Desktop Station Security)  │
+│ - Mở Window Station tương tác "winsta0"               │
+│ - Thiết lập Desktop tương tác mặc định "default"       │
+│ - Ngăn ngừa lỗi chụp ra màn hình đen khi chạy nền      │
+└───────────────────────────┬────────────────────────────┘
+                            │
+┌───────────────────────────▼────────────────────────────┐
+│ 2. Khởi tạo Ngữ cảnh Thiết bị (Device Context Pipeline)│
+│ - GetDC(IntPtr.Zero) lấy Screen DC của toàn Desktop   │
+│ - CreateCompatibleDC tạo Memory DC trong bộ nhớ        │
+│ - CreateCompatibleBitmap tạo vùng đệm bitmap           │
+│ - SelectObject gán bitmap vào Memory DC                │
+└───────────────────────────┬────────────────────────────┘
+                            │
+┌───────────────────────────▼────────────────────────────┐
+│ 3. Sao chép Khối Pixel (Raster Transfer)               │
+│ - Gọi BitBlt với cờ kết hợp:                           │
+│   SRCCOPY | CAPTUREBLT (0x00CC0020 | 0x40000000)      │
+│   (CAPTUREBLT bắt buộc để chụp được các cửa sổ bán     │
+│    trong suốt, menu đổ bóng và popup chuột)            │
+└───────────────────────────┬────────────────────────────┘
+                            │
+┌───────────────────────────▼────────────────────────────┐
+│ 4. Trích xuất Dữ liệu Pixel sang Mảng Byte Quản lý     │
+│ - Cấu hình BITMAPINFOHEADER với chiều cao âm (-H)      │
+│   để thu được thứ tự quét từ trên xuống (Top-down)     │
+│ - Đặt biBitCount = 32us, biCompression = BI_RGB       │
+│ - GetDIBits sao chép pixel trực tiếp sang byte[]       │
+└───────────────────────────┬────────────────────────────┘
+                            │
+┌───────────────────────────▼────────────────────────────┐
+│ 5. Thu hồi Tuyệt đối Tài nguyên Unmanaged (GDI Leak)   │
+│ - Khôi phục Object ban đầu của DC                      │
+│ - DeleteObject(hBitmap), DeleteDC(hdcMem)              │
+│ - ReleaseDC(IntPtr.Zero, hdcSrc)                       │
+│ - Bảo vệ bằng các khối finally nghiêm ngặt             │
+└────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 5. Các câu hỏi cần quyết định
+## 4. Giải pháp Giảm thiểu Sai lệch Mixed DPI trong GDI Fallback
 
-| Câu hỏi | Tác động |
-|---------|----------|
-| Có thực sự cần fallback BitBlt trong MVP? | Tăng độ phức tạp, nhưng mở rộng compatibility |
-| Fallback này hỗ trợ chế độ nào? | Có thể chỉ `FullScreen` và `SingleScreen`, không hỗ trợ overlay chính xác |
-| Có dùng BitBlt cho chụp toàn Virtual Screen không? | Rủi ro Mixed DPI cao |
-| Làm thế nào phát hiện Windows.Graphics.Capture không khả dụng? | Kiểm tra OS version hoặc bắt lỗi khi tạo GraphicsCaptureSession |
+GDI `BitBlt` sao chép theo không gian tọa độ desktop do hệ điều hành quản lý. Khi tồn tại Mixed DPI (các màn hình có tỉ lệ phóng to khác nhau), Windows GDI dễ bị kéo giãn bitmap.
 
----
-
-## 6. Kết nối với phần triển khai
-
-Những quyết định trong tài liệu này sẽ được đưa vào:
-
-- `src/FShot.Platform.Win32/Capture/FallbackBitBlt.fs` (hoặc `.cs`): triển khai BitBlt.
-- `src/FShot.Platform.Win32/Capture/CaptureService.fs`: chọn backend chính hoặc fallback.
-
----
-
-*FallbackBitBlt là phương án dự phòng. Sau khi xem xét, chúng ta chuyển sang ScreenEnumeration — cách liệt kê màn hình và lấy thông tin DPI.*
+Để hạn chế tối đa nhược điểm này khi phải dùng GDI Fallback:
+1. **Chụp Từng Màn hình Riêng biệt:**
+   - Thay vì gọi `BitBlt` một lần bao trọn toàn bộ Virtual Screen (rất dễ bị Windows tự động nội suy làm mờ toàn bộ ảnh), hệ thống duyệt qua danh sách màn hình từ `ScreenEnumeration`.
+   - Với mỗi màn hình, tính toán vị trí vật lý chính xác dựa trên `LogicalBounds` nhân với `ScaleFactor` của riêng màn hình đó và gọi `BitBlt` trên phạm vi đơn lẻ.
+2. **Cờ DPI Awareness Cấp Tiến trình:**
+   - Đảm bảo tiến trình F-Shot đã được đánh dấu `PerMonitorV2` trong tệp cấu hình ứng dụng (`app.manifest`), giúp GDI không bị Windows ảo hóa độ phân giải (DPI Virtualization).
+3. **Cảnh báo Thông minh:**
+   - Khi phát hiện hệ thống có cấu hình Mixed DPI nhưng người dùng đang chạy ở chế độ fallback GDI, ứng dụng ghi log khuyến nghị và hiển thị thông báo một lần gợi ý bật tính năng tăng tốc đồ họa WGC để có chất lượng hình ảnh sắc nét nhất.
