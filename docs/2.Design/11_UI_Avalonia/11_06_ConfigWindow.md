@@ -79,7 +79,8 @@ Tab này cấu hình các giá trị khởi tạo sẵn mỗi khi người dùng
 
 | Thuộc tính | Kiểu điều khiển | Khoảng giá trị | Giá trị mặc định | Mô tả |
 | :--- | :--- | :--- | :--- | :--- |
-| **Bảng màu vẽ tùy chọn** | Color Palette Grid | Bảng lưới các ô màu tròn | 8 ô màu có sẵn | Cho phép bấm vào từng ô để đổi màu, có nút (+) thêm màu mới và nút xóa màu. |
+| **Màu vẽ mặc định** | Component `ColorSelector` | Mã màu hex `#RRGGBB` | `#FF0000` | Màu chú thích mặc định (`drawColor`, `FR-CFG-200`) áp dụng cho mọi công cụ vẽ (Line, Rect, Text…). Chọn qua ô nhập hex, nút bánh xe màu hoặc 8 ô màu sẵn. |
+| **Bảng màu vẽ tùy chọn** | Component `ColorSelector` | Bảng 8 ô màu tròn | 8 ô màu có sẵn | Cho phép bấm vào từng ô để đổi màu, gõ hex hoặc chọn trên bánh xe màu rồi bấm "Thêm màu" để thêm màu mới (thay màu cũ nhất khi đủ 8 ô). |
 | **Độ dày nét vẽ chung** | Slider kèm số hiển thị | 1.0 – 50.0 px | 2.0 px | Áp dụng cho Bút vẽ (Pencil), Đường thẳng (Line), Mũi tên (Arrow), Hình chữ nhật và Hình tròn. |
 | **Cỡ chữ Text mặc định** | Slider kèm số hiển thị | 10.0 – 72.0 pt | 18.0 pt | Cỡ chữ ban đầu khi gõ hộp văn bản Text. |
 | **Kích thước huy hiệu số** | Slider kèm số hiển thị | 16.0 – 64.0 px | 28.0 px | Đường kính vòng tròn đếm số tự động tăng (Circle Counter). |
@@ -103,6 +104,24 @@ Tab này cho phép xem và tùy biến toàn bộ phím tắt trong ứng dụng
      - Nếu phím thuộc danh mục cấm của hệ thống (`Ctrl+Alt+Del`, `Win+L`, `Alt+Tab`): Báo đỏ cảnh báo "Phím tắt bị hệ điều hành bảo vệ".
      - Nếu phím bị trùng với một hành động khác trong F-Shot: Hiển thị cảnh báo xung đột kèm tùy chọn hoán đổi phím.
   4. Người dùng bấm ra ngoài hoặc nhấn Enter để xác nhận phím mới.
+
+---
+
+## 3.5. Thành phần `ColorSelector` (dùng lại)
+
+`ColorSelector` là UserControl chọn màu dùng chung cho Tab 2 (màu accent chính / màu tương phản phụ) và Tab 3 (màu vẽ mặc định / bảng màu tự chọn). Gồm đúng 3 thành phần, không được phép bỏ bất kỳ thành phần nào:
+
+```
+[ ColorPicker (mở bánh xe màu) ] [ ô nhập hex #RRGGBB ] [ Thêm màu ]
+[ 8 ô màu tròn (swatch) ]
+```
+
+1. **Nút "ColorPicker":** mở Flyout chứa `ColorView` (bánh xe màu RGB + slider) để chọn màu trực quan, trả về mã hex.
+2. **Ô nhập hex:** nhập mã `#RRGGBB` trực tiếp; placeholder `#RRGGBB`, mặc định trống.
+3. **Nút "Thêm màu":** thêm màu hiện tại (từ bánh xe/ô hex) vào bảng 8 ô; màu mới chèn lên đầu và thay màu cũ nhất khi đủ 8 ô.
+4. **Bảng 8 ô màu:** 8 màu cơ bản mặc định (Đỏ, Cam đậm, Vàng, Xanh lá, Ngọc lam, Xanh lam, Tím, Hồng). **Ô màu đang được chọn** có viền accent `#38BDF8` dày 2px để phân biệt với các ô khác (viền mảnh mờ 1px).
+
+Mã nguồn: `src/FShot.UI/Windows/ColorSelector.axaml(.fs)` (`FR-CFG-100/101/104/200`).
 
 ---
 
