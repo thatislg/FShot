@@ -218,18 +218,169 @@
   - [ ] Verify runtime: gõ thử các mẫu tên file trong Settings Window, bấm chèn token, kiểm tra live preview và thử chụp ảnh xác nhận file lưu đúng tên đã đặt.
 
 ### Epic 10: Pin Widget
-- [ ] **P2.15** Cửa sổ ghim ảnh Topmost không viền (`FR-PIN-01`).
-- [ ] **P2.16** Di chuyển, thu phóng, điều chỉnh độ trong suốt và xoay ảnh ghim (`FR-PIN-02`–`FR-PIN-05`).
+
+> **Tài liệu thiết kế & Tham khảo:**
+> - [11_07_PinWindow.md](file:///d:/Kojin/FShot/docs/2.Design/11_UI_Avalonia/11_07_PinWindow.md): Thiết kế chi tiết cửa sổ ghim ảnh nổi PinWidget, tương tác drag/zoom/rotate/opacity, quản lý vòng đời bộ nhớ và menu ngữ cảnh.
+> - [12_01_DesignTokens.md](file:///d:/Kojin/FShot/docs/2.Design/12_UIUX_Mock_Penpot/12_01_DesignTokens.md): Chuẩn thiết kế Kawaii Claymorphism cho viền bo góc và hiệu ứng đổ bóng `FR-PIN-10`.
+> - [003_SRS.md](file:///d:/Kojin/FShot/docs/1.Investigation/003_SRS.md): Yêu cầu kỹ thuật `FR-PIN-01`–`FR-PIN-10`.
+
+- [ ] **P2.15** Cửa sổ ghim ảnh Topmost không viền (`FR-PIN-01`, `FR-PIN-10`).
+  - [ ] Hoàn thiện tài liệu thiết kế [11_07_PinWindow.md](file:///d:/Kojin/FShot/docs/2.Design/11_UI_Avalonia/11_07_PinWindow.md) (kiến trúc Window không viền, Topmost, quản lý vòng đời multi-instance và giải phóng SKBitmap).
+  - [ ] Tạo cửa sổ `PinWindow.axaml` và `PinWindow.axaml.fs` trong `src/FShot.UI/Windows/`:
+    - [ ] Cấu hình thuộc tính: `SystemDecorations = None`, `Topmost = true`, `TransparencyLevelHint = Transparent`, `Background = Transparent`, `ShowInTaskbar = false`.
+    - [ ] Áp dụng style Kawaii Claymorphism (`FR-PIN-10`): Khung `Border` bo góc (`CornerRadius="8"`), viền mờ cao cấp (`BorderBrush="#40FFFFFF"`), hiệu ứng đổ bóng sâu tách nền (`BoxShadow="0 8 24 0 #40000000"`).
+    - [ ] Nhúng control vẽ ảnh Skia (`SKBitmapCanvas` hoặc Avalonia `Image`) chứa ảnh bitmap crop từ vùng chọn kèm chú thích đã render phẳng.
+  - [ ] Tích hợp nút Pin vào thanh công cụ Overlay:
+    - [ ] Khai báo `PinAction` trong `ToolbarAction` (`src/FShot.Core/Domain/Annotation.fs`).
+    - [ ] Thêm icon Pin Kawaii vào `src/FShot.UI/SkiaCanvas/ToolbarIcons.fs` và nút Pin vào `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`.
+    - [ ] Bắt sự kiện click Pin: tạo mới instance `PinWindow`, khởi tạo vị trí xuất hiện trùng khớp tọa độ vùng chọn, hiển thị cửa sổ ghim và đóng `CaptureOverlayWindow`.
+  - [ ] Quản lý tài nguyên và đa cửa sổ (Multi-instance):
+    - [ ] Cho phép mở đồng thời nhiều cửa sổ ghim độc lập trên màn hình.
+    - [ ] Bắt sự kiện `Closed`: giải phóng an toàn `SKBitmap.Dispose()` để chống rò rỉ bộ nhớ đồ họa.
+  - [ ] Viết unit tests kiểm thử khởi tạo Window, truyền tải bitmap và tính toán kích thước trong `tests/FShot.UI.Tests/Windows/PinWindowTests.fs`.
+  - [ ] Verify runtime trên Windows 10/11: chụp vùng chọn bất kỳ, bấm nút Pin, xác nhận cửa sổ ghim nổi trên các cửa sổ khác, không có viền hệ thống, có đổ bóng mờ rõ ràng và overlay chụp đóng sạch sẽ.
+- [ ] **P2.16** Di chuyển, thu phóng, điều chỉnh độ trong suốt và xoay ảnh ghim (`FR-PIN-02`–`FR-PIN-05`, `FR-PIN-09`).
+  - [ ] Di chuyển tự do trên desktop (`FR-PIN-02`):
+    - [ ] Xử lý sự kiện `PointerPressed` trên `PinWindow`: kích hoạt `BeginMoveDrag(e)` cho phép người dùng click giữ chuột trái kéo cửa sổ ghim tới bất kỳ đâu trên Virtual Screen (kể cả giữa các màn hình khác nhau).
+    - [ ] Đổi con trỏ chuột sang hình bàn tay (`SizeAll` / `Hand`) khi rê chuột lên ảnh.
+  - [ ] Thu phóng tỉ lệ động với khử răng cưa (`FR-PIN-03`, `FR-PIN-09`):
+    - [ ] Xử lý `PointerWheelChanged` (khi không giữ `Ctrl`): cuộn lên tăng tỉ lệ (`scale *= 1.1`), cuộn xuống giảm tỉ lệ (`scale /= 1.1`).
+    - [ ] Ràng buộc giới hạn tỉ lệ an toàn: $0.1 \le \text{scale} \le 5.0$ (10% đến 500%).
+    - [ ] Thu phóng hướng tâm con trỏ chuột (`Zoom toward cursor`): tính toán lại `Position` để điểm dưới con trỏ chuột giữ nguyên vị trí trên màn hình.
+    - [ ] Cấu hình Skia `SKFilterQuality.High` / `SKPaint.IsAntialias = true` để ảnh khi phóng to không bị vỡ hạt (`antialiasingPinZoom`).
+  - [ ] Điều chỉnh độ trong suốt mờ đục (`FR-PIN-04`):
+    - [ ] Xử lý `Ctrl + PointerWheelChanged` hoặc phím tắt `[` / `]`: thay đổi giá trị `Window.Opacity` mỗi bước 5% ($0.05$).
+    - [ ] Ràng buộc giới hạn: $0.1 \le \text{Opacity} \le 1.0$ (không cho phép giảm dưới 10% để tránh mất dấu cửa sổ).
+  - [ ] Xoay ảnh ghim 90° (`FR-PIN-05`):
+    - [ ] Phím tắt `R` (xoay phải 90° cùng chiều kim đồng hồ) và `Shift + R` (xoay trái 90° ngược chiều kim đồng hồ).
+    - [ ] Cập nhật góc xoay `angle = (angle + 90) % 360`, áp dụng biến đổi ma trận xoay Skia.
+    - [ ] Tự động hoán đổi kích thước cửa sổ (`Width` $\leftrightarrow$ `Height`) khi góc xoay là $90^\circ$ hoặc $270^\circ$.
+  - [ ] Viết unit tests kiểm thử ma trận thu phóng, tính toán tọa độ hướng tâm, giới hạn opacity và thuật toán xoay 90°.
+  - [ ] Verify runtime: kéo di chuyển cửa sổ qua lại giữa 2 màn hình; lăn chuột phóng to/thu nhỏ kiểm tra độ sắc nét; giữ Ctrl lăn chuột kiểm tra nhìn xuyên thấu xuống cửa sổ bên dưới; nhấn `R` xoay ảnh 4 hướng không bị méo.
 - [ ] **P2.17** Menu ngữ cảnh của cửa sổ ghim: copy, save, close (`FR-PIN-06`–`FR-PIN-08`).
+  - [ ] Thiết kế `ContextMenu` Kawaii bo góc xuất hiện khi nhấp chuột phải (`PointerReleased` với RightButton):
+    - [ ] Mục "Sao chép ảnh" (`Ctrl+C`): gọi `ClipboardService.copyToClipboardNative` đẩy bitmap đã xoay/scale vào clipboard với 2 định dạng `CF_DIB` và `PNG` (`FR-PIN-06`), phát âm thanh `MessageBeep` và thông báo desktop ngắn.
+    - [ ] Mục "Lưu ảnh ra tệp..." (`Ctrl+S`): mở hộp thoại `StorageProvider.SaveFilePickerAsync` cho phép lưu file PNG/JPG (`FR-PIN-07`), hoặc lưu nhanh vào `savePath` nếu đã cấu hình `SavePathFixed`.
+    - [ ] Mục "Xoay 90° phải" (`R`) và "Khôi phục kích thước 100%" (`Ctrl+0`).
+    - [ ] Submenu "Độ mờ đục": các mức nhanh 100%, 75%, 50%, 25%.
+    - [ ] Mục "Đóng ghim" (`Esc` / Double-click) (`FR-PIN-08`).
+  - [ ] Các cơ chế đóng cửa sổ ghim nhanh (`FR-PIN-08`):
+    - [ ] Nhấp đúp chuột trái (Double-click) vào bất kỳ vị trí nào trên ảnh ghim $\to$ đóng cửa sổ ngay lập tức.
+    - [ ] Nhấn phím `Escape` khi cửa sổ đang active $\to$ đóng cửa sổ ngay lập tức.
+    - [ ] Đảm bảo dọn dẹp giải phóng tài nguyên unmanaged và hủy tham chiếu instance khi đóng.
+  - [ ] Viết unit tests kiểm thử các lệnh ContextMenu, dispatch action copy/save và xử lý đóng cửa sổ an toàn.
+  - [ ] Verify runtime: click phải mở menu mượt mà, copy rồi paste vào Paint/Discord xác nhận ảnh đúng góc xoay; lưu ra file PNG xác nhận ảnh nét; double click hoặc nhấn Esc xác nhận cửa sổ biến mất sạch sẽ.
 
 ### Epic 11: Annotation Tools Advanced
+
+> **Tài liệu thiết kế & Tham khảo:**
+> - [04_09_InvertAndCounter.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_09_InvertAndCounter.md): Thiết kế chi tiết công cụ Đảo màu (Invert) bằng blend mode Difference và Bong bóng số tự động tăng (Circle Counter) kèm khôi phục chỉ số khi Undo/Redo.
+> - [04_10_ConstraintsAndSizing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_10_ConstraintsAndSizing.md): Thiết kế giải thuật ràng buộc góc lượng giác 45°/90°, khóa tỉ lệ 1:1, điều chỉnh kích thước công cụ bằng bàn phím số, con lăn chuột và chỉ báo SizeIndicatorBox.
+> - [04_11_ObjectSelectionAndEditing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_11_ObjectSelectionAndEditing.md): Thiết kế chế độ chọn đối tượng, giải thuật Hit-Testing dung sai hình học, di chuyển nét vẽ, xóa đối tượng và commit văn bản nhanh.
+> - [04_05_RectangleAndCircle.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_05_RectangleAndCircle.md): Ràng buộc hình học cơ bản hình chữ nhật bo góc và elip.
+> - [003_SRS.md](file:///d:/Kojin/FShot/docs/1.Investigation/003_SRS.md): Yêu cầu kỹ thuật `FR-ANN-09`–`FR-ANN-21`, `FR-UNDO-005`, `FR-TB-07`, `FR-CFG-203`.
+
 - [ ] **P2.20** Công cụ đảo ngược màu (Invert) trong vùng chỉ định (`FR-ANN-09`).
-- [ ] **P2.21** Bong bóng đếm số tự động tăng (Circle Counter) (`FR-ANN-10`, `FR-UNDO-005`).
+  - [ ] Hoàn thiện tài liệu thiết kế [04_09_InvertAndCounter.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_09_InvertAndCounter.md).
+  - [ ] Mở rộng domain model trong `src/FShot.Core/Domain/Annotation.fs`:
+    - [ ] Thêm case `Invert of start: Point * endPoint: Point` vào `Tool` DU.
+    - [ ] Thêm `InvertTool` vào `ToolKind`.
+    - [ ] Cập nhật tính toán `BoundingBox` cho `Invert(a, b)`: $X = \min(a.X, b.X), Y = \min(a.Y, b.Y), W = |b.X - a.X|, H = |b.Y - a.Y|$.
+  - [ ] Triển khai Skia render trong `src/FShot.Rendering.Skia/Renderers/AnnotationRenderer.fs`:
+    - [ ] Áp dụng `SKPaint` với màu `#FFFFFFFF` và `SKBlendMode.Difference` để đảo ngược bit màu sắc pixel ($255 - C$) trực tiếp bằng phần cứng GPU shader mà không tốn chi phí copy CPU.
+    - [ ] Vẽ preview viền đứt nét kết hợp hiệu ứng Difference tức thời khi đang kéo chuột trong `CaptureCanvas`.
+  - [ ] Bổ sung icon Kawaii Invert vào `src/FShot.UI/SkiaCanvas/ToolbarIcons.fs` và phím tắt chuyển nhanh (phím `I`).
+  - [ ] Viết unit tests kiểm thử khởi tạo Invert, tính toán BoundingBox và serialization trong `tests/FShot.Core.Tests/Domain/AnnotationTests.fs`.
+  - [ ] Verify runtime: kéo vùng chọn đảo màu lên văn bản đen/trắng và hình ảnh nhiều màu, xác nhận màu sắc đảo ngược tức thì, xuất ảnh ra file giữ đúng hiệu ứng.
+- [ ] **P2.21** Bong bóng đếm số tự động tăng (Circle Counter) (`FR-ANN-10`, `FR-UNDO-005`, `FR-CFG-203`).
+  - [ ] Hoàn thiện tài liệu thiết kế [04_09_InvertAndCounter.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_09_InvertAndCounter.md).
+  - [ ] Mở rộng domain model trong `src/FShot.Core/Domain/Annotation.fs` và `src/FShot.Core/Domain/History.fs`:
+    - [ ] Thêm case `CircleCounter of center: Point * index: int * radius: float` vào `Tool` DU.
+    - [ ] Thêm `CircleCounterTool` vào `ToolKind`.
+    - [ ] Bổ sung trường `CounterIndex: int` vào `Snapshot` trong `History.fs` để hỗ trợ khôi phục chỉ số khi Undo/Redo (`FR-UNDO-005`).
+  - [ ] Triển khai logic auto-increment trong `src/FShot.Core/State/OverlayState.fs`:
+    - [ ] Quản lý trạng thái `CurrentCounterIndex: int` (khởi tạo = 1).
+    - [ ] Khi click chuột đặt huy hiệu: sinh annotation với index hiện tại rồi tự động tăng `CurrentCounterIndex = index + 1`.
+    - [ ] Khi Undo (`Ctrl+Z`): khôi phục `CurrentCounterIndex` từ snapshot trước đó (xóa số 3 thì click tiếp theo sẽ đánh lại số 3).
+    - [ ] Khi Redo (`Ctrl+Y`): khôi phục `CurrentCounterIndex` tương ứng.
+    - [ ] Click phải vào nút CircleCounter trên toolbar: reset chỉ số đếm về 1.
+  - [ ] Triển khai render Skia Kawaii Claymorphism trong `src/FShot.Rendering.Skia/Renderers/AnnotationRenderer.fs`:
+    - [ ] Vẽ vòng tròn nền tô đặc với màu vẽ `style.Color`, viền mờ bóng bẩy.
+    - [ ] Tính toán độ tương phản độ sáng Luminance ($L = 0.299R + 0.587G + 0.114B$): tự động chọn chữ đen trên nền sáng và chữ trắng trên nền tối.
+    - [ ] Căn giữa tuyệt đối số thứ tự bên trong vòng tròn, cỡ chữ tỉ lệ theo bán kính (`radius * 1.1`).
+    - [ ] Bán kính lấy từ cấu hình `DrawCircleCounterSize: float` (`FR-CFG-203`, mặc định 28.0 px $\to$ bán kính 14.0 px).
+  - [ ] Bổ sung icon Kawaii Circle Counter vào `src/FShot.UI/SkiaCanvas/ToolbarIcons.fs` và phím tắt chuyển tool.
+  - [ ] Viết unit tests kiểm thử auto-increment, thuật toán tính màu chữ tương phản và khôi phục chỉ số đếm khi Undo/Redo (`tests/FShot.Core.Tests/State/OverlayStateTests.fs`).
+  - [ ] Verify runtime: click 5 điểm liên tiếp trên màn hình xác nhận xuất hiện huy hiệu 1, 2, 3, 4, 5; nhấn Ctrl+Z 2 lần rồi click tiếp xác nhận ra số 4; thử đổi màu nền sáng (vàng) và tối (xanh đậm) kiểm tra màu số đọc rõ ràng.
 - [ ] **P2.22** Ràng buộc góc 45°/90° khi vẽ line/arrow/marker bằng `Ctrl` (`FR-ANN-11`).
+  - [ ] Hoàn thiện tài liệu thiết kế [04_10_ConstraintsAndSizing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_10_ConstraintsAndSizing.md).
+  - [ ] Xây dựng module hình học `src/FShot.Core/Geometry/AngleSnapping.fs`:
+    - [ ] Hàm `snapAngle45 (start: Point) (current: Point) : Point`.
+    - [ ] Tính vector dịch chuyển $\Delta x, \Delta y$, độ dài khoảng cách $L = \sqrt{\Delta x^2 + \Delta y^2}$, góc $\theta = \operatorname{atan2}(\Delta y, \Delta x)$.
+    - [ ] Làm tròn góc tới bội số gần nhất của $\pi/4$ ($45^\circ$): $\theta_{\text{snap}} = \operatorname{round}(\theta / (\pi/4)) \times (\pi/4)$.
+    - [ ] Tính tọa độ đích mới: $x' = x_1 + L \cos(\theta_{\text{snap}}), y' = y_1 + L \sin(\theta_{\text{snap}})$.
+  - [ ] Tích hợp vào `src/FShot.Core/State/OverlayState.fs` và `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`:
+    - [ ] Bắt cờ `KeyModifiers.Control` trong sự kiện `PointerMoved`.
+    - [ ] Khi giữ `Ctrl` trong lúc vẽ `Line`, `Arrow`, `Marker`: tự động áp dụng `snapAngle45` cho điểm kết thúc trong preview.
+    - [ ] Nhả phím `Ctrl`: trả lại tọa độ tự do theo con trỏ chuột trong thời gian thực.
+  - [ ] Viết unit tests kiểm thử các góc $0^\circ, 45^\circ, 90^\circ, 135^\circ, 180^\circ, -45^\circ, -90^\circ, -135^\circ$ trong `tests/FShot.Core.Tests/Geometry/AngleSnappingTests.fs`.
+  - [ ] Verify runtime: giữ `Ctrl` kéo đường thẳng và mũi tên, xác nhận nét vẽ hít chuẩn xác vào các trục ngang, thẳng đứng và đường chéo 45 độ.
 - [ ] **P2.23** Giữ tỉ lệ 1:1 khi vẽ rectangle/circle bằng `Ctrl` (`FR-ANN-12`).
-- [ ] **P2.24** Nhập số để đặt chính xác kích thước công cụ (`FR-ANN-13`).
-- [ ] **P2.25** Lăn chuột để tăng/giảm độ dày nét vẽ (`FR-ANN-14`).
-- [ ] **P2.26** Chọn, di chuyển hoặc sửa chú thích cũ (`FR-ANN-18`, `FR-ANN-19`, `FR-ANN-20`, `FR-ANN-21`).
+  - [ ] Rà soát tài liệu thiết kế [04_10_ConstraintsAndSizing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_10_ConstraintsAndSizing.md) và [04_05_RectangleAndCircle.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_05_RectangleAndCircle.md).
+  - [ ] Bổ sung hàm ràng buộc hình vuông / hình tròn trong `src/FShot.Core/Geometry/AngleSnapping.fs`:
+    - [ ] Hàm `snapSquare (start: Point) (current: Point) : Point`.
+    - [ ] Tính độ lệch cạnh lớn nhất $\text{side} = \max(|x_2 - x_1|, |y_2 - y_1|)$, bảo toàn dấu hướng kéo theo 4 góc phần tư.
+    - [ ] Tính tọa độ kết thúc: $x' = x_1 + \operatorname{sign}(x_2 - x_1) \times \text{side}, y' = y_1 + \operatorname{sign}(y_2 - y_1) \times \text{side}$.
+  - [ ] Tích hợp vào preview và commit của `Rectangle` và `Circle` trong `OverlayState.fs` và `CaptureCanvas.axaml.fs`:
+    - [ ] Khi giữ `Ctrl`: hình chữ nhật ép thành hình vuông hoàn hảo ($\text{Width} = \text{Height}$).
+    - [ ] Khi giữ `Ctrl`: hình elip ép thành hình tròn hoàn hảo ($R_x = R_y$).
+    - [ ] Commit annotation với trường `aspectLocked = true` cho `Circle`.
+  - [ ] Viết unit tests kiểm thử kéo hình chữ nhật / elip theo 4 hướng khi có và không có cờ `Ctrl`.
+  - [ ] Verify runtime: kéo vẽ khung chữ nhật và elip kèm phím `Ctrl`, xác nhận hình vuông và tròn đều tuyệt đối; nhả `Ctrl` giữa chừng hình trở lại tỉ lệ tự do.
+- [ ] **P2.24** Nhập số để đặt chính xác kích thước công cụ (`FR-ANN-13`, `FR-TB-07`).
+  - [ ] Hoàn thiện tài liệu thiết kế [04_10_ConstraintsAndSizing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_10_ConstraintsAndSizing.md).
+  - [ ] Triển khai bộ đệm số `NumericInputBuffer` trong `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`:
+    - [ ] Lắng nghe sự kiện `KeyDown`: khi người dùng gõ ký tự số `0`–`9` (không đi kèm `Ctrl`/`Alt`):
+      - [ ] Tích lũy chuỗi số (ví dụ gõ liên tiếp `1` rồi `6` $\to$ `"16"`).
+      - [ ] Cơ chế debounce timer 800ms hoặc kết thúc khi bấm `Enter`.
+      - [ ] Phân giải thành số nguyên, clamp trong phạm vi hợp lệ $[1.0 .. 50.0]\text{ px}$.
+      - [ ] Dispatch event cập nhật kích thước công cụ hiện tại (`StrokeWidth` hoặc `FontSize`).
+  - [ ] Thiết kế và hiển thị chỉ báo nổi `SizeIndicatorBox` (`FR-TB-07`):
+    - [ ] Huy hiệu Kawaii Claymorphism nổi ở góc hoặc cạnh con trỏ chuột, hiển thị số pixel kèm chấm tròn mô phỏng độ dày thực tế.
+    - [ ] Tự động mờ dần (Fade out) sau 1.2 giây không có thao tác nhập mới.
+  - [ ] Viết unit tests kiểm thử bộ đệm số, xử lý debounce timeout, giới hạn min/max và dispatch event kích thước.
+  - [ ] Verify runtime: gõ phím số `1`, `4` trên bàn phím xác nhận nét vẽ đổi ngay sang 14px, chỉ báo nổi xuất hiện và biến mất mượt mà.
+- [ ] **P2.25** Lăn chuột để tăng/giảm độ dày nét vẽ (`FR-ANN-14`, `FR-TB-07`).
+  - [ ] Hoàn thiện tài liệu thiết kế [04_10_ConstraintsAndSizing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_10_ConstraintsAndSizing.md).
+  - [ ] Bắt sự kiện `PointerWheelChanged` trong `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs` khi đang ở chế độ vẽ:
+    - [ ] Cuộn lên ($\Delta > 0$): tăng kích thước; Cuộn xuống ($\Delta < 0$): giảm kích thước.
+    - [ ] Bước nhảy thích ứng (Adaptive step): thay đổi $\pm 1.0\text{ px}$ khi kích thước $< 10$, thay đổi $\pm 2.0\text{ px}$ khi kích thước $\ge 10$.
+    - [ ] Clamp giá trị nét vẽ trong khoảng $[1.0 .. 50.0]\text{ px}$.
+    - [ ] Áp dụng linh hoạt theo tool hiện tại: `StrokeWidth` cho bút vẽ/hình khối, `FontSize` cho Text, `BlockSize` cho Pixelate, đường kính cho CircleCounter.
+    - [ ] Kích hoạt hiển thị chỉ báo nổi `SizeIndicatorBox` hiển thị độ dày nét vẽ tức thời.
+  - [ ] Viết unit tests kiểm thử hàm tính delta cuộn chuột, clamping và cập nhật state nét vẽ trong `OverlayStateTests.fs`.
+  - [ ] Verify runtime: chọn công cụ Pencil, lăn chuột lên/xuống, xác nhận độ dày nét vẽ thay đổi tức thì và chỉ báo hiển thị đúng số pixel.
+- [ ] **P2.26** Chọn, di chuyển hoặc sửa chú thích cũ (`FR-ANN-18`–`FR-ANN-21`).
+  - [ ] Hoàn thiện tài liệu thiết kế [04_11_ObjectSelectionAndEditing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_11_ObjectSelectionAndEditing.md).
+  - [ ] Triển khai module kiểm tra va chạm hình học `src/FShot.Core/Geometry/HitTesting.fs` (`FR-ANN-19`):
+    - [ ] Bán kính dung sai $\text{tolerance} = 6.0\text{ px}$.
+    - [ ] Hàm khoảng cách từ điểm tới đoạn thẳng `distancePointToSegment` (cho Line, Arrow, Marker, Pencil).
+    - [ ] Hàm kiểm tra va chạm chu vi hình chữ nhật và đường tròn (cho Rectangle, Circle).
+    - [ ] Hàm kiểm tra va chạm BoundingBox (cho Text, Invert, Pixelate, CircleCounter, Icon).
+    - [ ] Quét theo thứ tự Z-order từ mới nhất đến cũ nhất để ưu tiên chọn đối tượng ở lớp trên cùng.
+  - [ ] Quản lý trạng thái chọn và di chuyển trong `src/FShot.Core/State/OverlayState.fs` (`FR-ANN-18`):
+    - [ ] Bổ sung trường `SelectedAnnotation: Annotation option` trong state.
+    - [ ] Khi click vào nét vẽ cũ: chọn đối tượng, hiển thị khung bao đứt nét và 4 điểm neo tròn ở các góc.
+    - [ ] Kéo chuột khi đang chọn: tịnh tiến toàn bộ tọa độ đối tượng theo vector $(\Delta x, \Delta y)$, hiển thị preview di chuyển mượt mà.
+    - [ ] Thả chuột: commit tọa độ mới và đẩy snapshot vào `HistoryStack` (hỗ trợ hoàn tác di chuyển bằng `Ctrl+Z`).
+  - [ ] Xóa đối tượng chú thích đang chọn (`FR-ANN-20`):
+    - [ ] Nhấn phím `Delete` hoặc `Backspace`: loại bỏ đối tượng đang chọn khỏi danh sách `Annotations`.
+    - [ ] Đẩy snapshot mới vào `HistoryStack` để có thể hoàn tác khôi phục lại nét vẽ.
+  - [ ] Kết thúc chỉnh sửa văn bản tại chỗ (`FR-ANN-21`):
+    - [ ] Nhấn `Ctrl + Enter` (hoặc `Ctrl + Return`): kết thúc nhập văn bản ngay lập tức, phẳng hóa TextBox thành `Annotation.Text` và commit snapshot.
+    - [ ] Nhấn `Esc`: hủy bỏ thay đổi văn bản đang gõ.
+  - [ ] Viết unit tests kiểm thử khoảng cách va chạm cho từng loại tool, chọn theo Z-order, di chuyển tịnh tiến tọa độ và xóa đối tượng trong `tests/FShot.Core.Tests/Geometry/HitTestingTests.fs`.
+  - [ ] Verify runtime: vẽ 3 hình chữ nhật và mũi tên, click chuột chọn mũi tên xác nhận hiện khung viền chọn; kéo mũi tên sang vị trí mới; nhấn Delete xác nhận nét vẽ biến mất; nhấn Ctrl+Z xác nhận nét vẽ khôi phục lại.
 
 ### Epic 12: Selection Engine Advanced
 - [ ] **P2.27** Co giãn đối xứng 2 px bằng `Ctrl+Shift+Arrow` (`FR-SEL-07`).
@@ -261,3 +412,5 @@
 - **Epic 7 (P2.04–P2.06):** `docs/3.Progress/Phase2/03_21_Epic7_Global_Hotkeys_Report.md` (global hotkeys PrintScreen, Snipping Tool, cấu hình phím tắt + nợ test)
 - **Epic 8 (P2.07–P2.10):** `docs/3.Progress/Phase2/03_22_Epic8_Capture_Backend_Report.md` (backend WinRT WGC, CompositeCaptureService, fallback GDI, Per-Monitor V2 + nợ test)
 - **Epic 9 (P2.11–P2.14):** `docs/3.Progress/Phase2/03_23_Epic9_Config_Editor_Report.md` (mở rộng AppConfig v1.0, migrate flameshot.ini, SettingsWindow, FileNameEditor + nợ test)
+- **Epic 10 (P2.15–P2.17):** `docs/3.Progress/Phase2/03_24_Epic10_Pin_Widget_Report.md` (cửa sổ ghim Topmost không viền, tương tác drag/zoom/rotate/opacity, context menu copy/save/close)
+- **Epic 11 (P2.20–P2.26):** `docs/3.Progress/Phase2/03_25_Epic11_Annotation_Tools_Advanced_Report.md` (công cụ Invert, Circle Counter auto-increment, ràng buộc góc/tỉ lệ, chỉnh kích thước phím/wheel, chọn và sửa chú thích)

@@ -117,6 +117,10 @@ Trong Phase 1, Annotation cần hỗ trợ đầy đủ 8 công cụ:
 | `04_06_MarkerAndPixelate.md` | Marker alpha blend, Pixelate |
 | `04_07_TextTool.md` | Text tool và commit |
 | `04_08_CommitAndPreview.md` | Preview vs commit, tích hợp History |
+| `04_08_IconTool.md` | Icon sticker tool |
+| `04_09_InvertAndCounter.md` | Invert colors và Circle Counter tự động tăng (v1.0) |
+| `04_10_ConstraintsAndSizing.md` | Ràng buộc góc 45°/90°, tỉ lệ 1:1, chỉnh kích thước công cụ (v1.0) |
+| `04_11_ObjectSelectionAndEditing.md` | Object selection, hit-testing tolerance, di chuyển và xóa chú thích (v1.0) |
 
 ---
 
