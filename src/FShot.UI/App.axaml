@@ -6,5 +6,8 @@
 
     <Application.Styles>
         <FluentTheme />
+        <!-- Theme cho các control chọn màu (ColorView/ColorSpectrum/ColorPicker).
+             Không include thì ColorView render trắng tinh vì thiếu ControlTheme. -->
+        <StyleInclude Source="avares://Avalonia.Controls.ColorPicker/Themes/Fluent/Fluent.xaml" />
     </Application.Styles>
 </Application>

@@ -20,18 +20,6 @@ open FShot.Core.State.OverlayStateLogic
 open FShot.UI.SkiaCanvas
 open Xunit
 
-/// Stub Application dùng để khởi tạo Avalonia headless session.
-type private HeadlessApp() =
-    inherit Application()
-
-    static member BuildAvaloniaApp() : AppBuilder =
-        AppBuilder.Configure<HeadlessApp>().UseSkia()
-
-module private HeadlessPlatform =
-    let session = lazy (
-        HeadlessUnitTestSession.StartNew(typeof<HeadlessApp>, AvaloniaTestIsolationLevel.PerAssembly)
-    )
-
 let private makeCaptureResult (width: int) (height: int) (scale: float) : CaptureResult =
     let stride = width * 4
     {
@@ -99,7 +87,7 @@ let private runSmokeTest () : bool * string =
 
 [<Fact>]
 let ``CaptureCanvas headless smoke test tạo RenderModel đầy đủ`` () =
-    let task = HeadlessPlatform.session.Value.Dispatch(runSmokeTest, CancellationToken.None)
+    let task = HeadlessTestSession.session.Value.Dispatch(runSmokeTest, CancellationToken.None)
     let result, diag = task.GetAwaiter().GetResult()
     Assert.True(
         result,

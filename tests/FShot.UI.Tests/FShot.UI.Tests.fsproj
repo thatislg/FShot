@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="HeadlessTestSession.fs" />
     <Compile Include="CaptureCanvasRegressionTests.fs" />
     <Compile Include="ToolbarIconsTests.fs" />
     <Compile Include="CliTests.fs" />
@@ -21,6 +22,7 @@
     <Compile Include="GlobalHotkeyTests.fs" />
     <Compile Include="HotkeyParserTests.fs" />
     <Compile Include="NotificationServiceTests.fs" />
+    <Compile Include="ColorSelectorTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

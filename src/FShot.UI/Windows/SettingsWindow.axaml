@@ -57,10 +57,10 @@
                 <ScrollViewer>
                     <StackPanel Margin="16" Spacing="10">
                         <TextBlock Text="Màu accent chính" FontWeight="SemiBold" />
-                        <windows:ColorWheel x:Name="UiColorPicker" />
+                        <windows:ColorSelector x:Name="UiColorSelector" />
 
                         <TextBlock Text="Màu tương phản phụ" FontWeight="SemiBold" />
-                        <windows:ColorWheel x:Name="ContrastUiColorPicker" />
+                        <windows:ColorSelector x:Name="ContrastUiColorSelector" />
 
                         <TextBlock Text="Độ mờ vùng tối ngoài vùng chọn" FontWeight="SemiBold" />
                         <StackPanel Orientation="Horizontal" Spacing="8">
@@ -80,12 +80,8 @@
                     <StackPanel Margin="16" Spacing="12">
                         <StackPanel>
                             <TextBlock Text="Bảng màu tự chọn" FontWeight="SemiBold" />
-                            <WrapPanel x:Name="UserColorsPanel" />
-                            <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,4,0,0">
-                                <TextBox x:Name="NewUserColorBox" PlaceholderText="#RRGGBB" Width="140" />
-                                <Button x:Name="AddUserColorButton" Content="Thêm màu" Click="OnAddUserColorClick" />
-                            </StackPanel>
-                            <TextBlock Text="(bấm vào một màu để xóa)" FontSize="12" Foreground="Gray" />
+                            <windows:ColorSelector x:Name="UserColorsSelector" />
+                            <TextBlock Text="(bấm vào một ô màu để chọn; gõ hex hoặc chọn trên bánh xe rồi bấm '+ Thêm màu')" FontSize="12" Foreground="Gray" />
                         </StackPanel>
                         <StackPanel>
                             <TextBlock Text="Độ dày nét vẽ chung" FontWeight="SemiBold" />

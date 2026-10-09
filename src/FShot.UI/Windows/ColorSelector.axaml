@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="FShot.UI.Windows.ColorSelector">
+    <StackPanel Spacing="8">
+        <StackPanel Orientation="Horizontal" Spacing="8">
+            <Button x:Name="ColorPickerButton" Content="ColorPicker">
+                <Button.Flyout>
+                    <Flyout Placement="Bottom">
+                        <ColorView x:Name="ColorViewControl"
+                                   ColorSpectrumShape="Ring"
+                                   IsColorSpectrumVisible="True"
+                                   IsColorComponentsVisible="True"
+                                   IsHexInputVisible="False"
+                                   IsColorPaletteVisible="False"
+                                   Width="280"
+                                   Margin="12" />
+                    </Flyout>
+                </Button.Flyout>
+            </Button>
+            <TextBox x:Name="HexBox" PlaceholderText="#RRGGBB" Width="120" VerticalAlignment="Center" />
+            <Button x:Name="AddButton" Content="Thêm màu" Click="OnAddClick" />
+        </StackPanel>
+        <WrapPanel x:Name="SwatchPanel" />
+    </StackPanel>
+</UserControl>

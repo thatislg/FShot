@@ -14,7 +14,7 @@
     <Compile Include="Windows\AboutWindow.axaml.fs" />
     <Compile Include="Windows\CaptureOverlayWindow.axaml.fs" />
     <Compile Include="Windows\FileNameEditor.axaml.fs" />
-    <Compile Include="Windows\ColorWheel.axaml.fs" />
+    <Compile Include="Windows\ColorSelector.axaml.fs" />
     <Compile Include="ConfigRuntime.fs" />
     <Compile Include="Windows\SettingsWindow.axaml.fs" />
     <Compile Include="ViewModels\PlaceholderViewModel.fs" />
@@ -27,7 +27,7 @@
     <EmbeddedResource Include="Windows\AboutWindow.axaml" />
     <EmbeddedResource Include="Windows\CaptureOverlayWindow.axaml" />
     <EmbeddedResource Include="Windows\FileNameEditor.axaml" />
-    <EmbeddedResource Include="Windows\ColorWheel.axaml" />
+    <EmbeddedResource Include="Windows\ColorSelector.axaml" />
     <EmbeddedResource Include="Windows\SettingsWindow.axaml" />
   </ItemGroup>
 

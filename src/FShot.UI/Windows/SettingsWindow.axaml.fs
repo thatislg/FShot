@@ -18,7 +18,6 @@ type SettingsWindow() as this =
     inherit Window()
 
     let mutable originalConfig: AppConfig = AppConfig.Default
-    let mutable userColors: string list = []
 
     do this.InitializeComponent()
 
@@ -100,8 +99,8 @@ type SettingsWindow() as this =
         this.SetToggle "ShowAbortToggle" c.ShowAbortNotification
         this.SetToggle "CopyOnDoubleClickToggle" c.CopyOnDoubleClick
 
-        (this.FindControl<ColorWheel>("UiColorPicker")).Color <- c.UiColor
-        (this.FindControl<ColorWheel>("ContrastUiColorPicker")).Color <- c.ContrastUiColor
+        (this.FindControl<ColorSelector>("UiColorSelector")).Color <- c.UiColor
+        (this.FindControl<ColorSelector>("ContrastUiColorSelector")).Color <- c.ContrastUiColor
         this.SetSlider "ContrastOpacitySlider" "ContrastOpacityLabel" (float (int c.ContrastOpacity)) ""
         this.SetComboItems "LanguageCombo" [ ("auto", "Tự động"); ("vi", "Tiếng Việt"); ("en", "English") ] c.UiLanguage
 
@@ -117,8 +116,7 @@ type SettingsWindow() as this =
         this.Text("CaptureFullScreenKeyBox").Text <- keyFor HotkeyAction.CaptureFullScreen
         this.Text("CaptureCursorKeyBox").Text <- keyFor HotkeyAction.CaptureScreenAtCursor
 
-        userColors <- c.UserColors
-        this.RenderUserColors()
+        (this.FindControl<ColorSelector>("UserColorsSelector")).Palette <- c.UserColors
 
         FShotLog.write "[Settings] Config loaded into settings window"
 
@@ -149,8 +147,8 @@ type SettingsWindow() as this =
                 ShowDesktopNotification = this.ToggleValue "ShowDesktopNotificationToggle"
                 ShowAbortNotification = this.ToggleValue "ShowAbortToggle"
                 CopyOnDoubleClick = this.ToggleValue "CopyOnDoubleClickToggle"
-                UiColor = (this.FindControl<ColorWheel>("UiColorPicker")).Color
-                ContrastUiColor = (this.FindControl<ColorWheel>("ContrastUiColorPicker")).Color
+                UiColor = (this.FindControl<ColorSelector>("UiColorSelector")).Color
+                ContrastUiColor = (this.FindControl<ColorSelector>("ContrastUiColorSelector")).Color
                 ContrastOpacity = byte (int (this.SliderValue "ContrastOpacitySlider"))
                 UiLanguage = this.ComboValue "LanguageCombo"
                 DrawThickness = this.SliderValue "DrawThicknessSlider"
@@ -160,7 +158,7 @@ type SettingsWindow() as this =
                 DrawRectangleRadius = this.SliderValue "RectangleRadiusSlider"
                 DrawMarkerSize = this.SliderValue "MarkerSizeSlider"
                 Hotkeys = hotkeys
-                UserColors = userColors
+                UserColors = (this.FindControl<ColorSelector>("UserColorsSelector")).Palette
         }
 
     // ---------- Thông báo trạng thái Apply ----------
@@ -236,41 +234,6 @@ type SettingsWindow() as this =
                 // Nuốt phím modifier đơn lẻ để tránh chèn ký tự vào ô.
                 e.Handled <- true
         | _ -> ()
-
-    // ---------- Bảng màu tự chọn (UserColors) ----------
-    member private this.RenderUserColors() =
-        let panel = this.FindControl<WrapPanel>("UserColorsPanel")
-        if not (isNull panel) then
-            panel.Children.Clear()
-            for hex in userColors do
-                let btn = Button()
-                btn.Width <- 24.0
-                btn.Height <- 24.0
-                btn.Padding <- Avalonia.Thickness(0.0)
-                btn.Margin <- Avalonia.Thickness(0.0, 0.0, 6.0, 6.0)
-                match ColorWheel.tryParseHex hex with
-                | Some c -> btn.Background <- SolidColorBrush(c)
-                | None -> btn.Background <- Brushes.Gray
-                ToolTip.SetTip(btn, hex + " (bấm để xóa)")
-                btn.Click.Add(fun _ -> this.RemoveUserColor hex)
-                panel.Children.Add(btn) |> ignore
-
-    member private this.RemoveUserColor(hex: string) =
-        userColors <- userColors |> List.filter (fun c -> not (String.Equals(c, hex, StringComparison.OrdinalIgnoreCase)))
-        this.RenderUserColors()
-
-    member private this.OnAddUserColorClick(_: obj, _: RoutedEventArgs) =
-        let box = this.Text("NewUserColorBox")
-        let raw = if isNull box || isNull box.Text then "" else box.Text.Trim()
-        match ColorWheel.tryParseHex raw with
-        | Some c ->
-            let normalized = ColorWheel.toHex c
-            if not (userColors |> List.exists (fun x -> String.Equals(x, normalized, StringComparison.OrdinalIgnoreCase))) then
-                userColors <- userColors @ [ normalized ]
-                this.RenderUserColors()
-            if not (isNull box) then box.Text <- ""
-        | None ->
-            if not (isNull box) then box.Text <- ""
 
     // ---------- Event handlers ----------
     member private this.OnBrowseClick(_: obj, _: RoutedEventArgs) =
