@@ -102,6 +102,8 @@ type ColorSelector() as this =
                     | None -> ()
             finally
                 syncing <- false
+            // Cập nhật highlight ô màu đang được chọn trên bảng 8 ô.
+            this.RenderSwatches()
 
     /// Danh sách màu swatch (tối đa 8). Nếu rỗng sẽ nạp 8 màu cơ bản.
     member this.Palette
@@ -115,16 +117,22 @@ type ColorSelector() as this =
     member private this.RenderSwatches() =
         let panel = this.SwatchPanel
         if not (isNull panel) then
+            let current = this.Color
             panel.Children.Clear()
             for hex in palette do
                 let btn = Button()
+                let isCurrent = String.Equals(hex, current, StringComparison.OrdinalIgnoreCase)
                 btn.Width <- 24.0
                 btn.Height <- 24.0
                 btn.CornerRadius <- Avalonia.CornerRadius(12.0)
                 btn.Padding <- Avalonia.Thickness(0.0)
                 btn.Margin <- Avalonia.Thickness(0.0, 0.0, 6.0, 6.0)
-                btn.BorderThickness <- Avalonia.Thickness(1.0)
-                btn.BorderBrush <- SolidColorBrush(Color.FromArgb(80uy, 0uy, 0uy, 0uy))
+                // Ô màu đang được chọn có viền accent dày nổi bật; các ô khác viền mảnh mờ.
+                btn.BorderThickness <-
+                    if isCurrent then Avalonia.Thickness(2.0) else Avalonia.Thickness(1.0)
+                btn.BorderBrush <-
+                    if isCurrent then SolidColorBrush(Color.FromArgb(255uy, 56uy, 189uy, 248uy))  // accent #38BDF8
+                    else SolidColorBrush(Color.FromArgb(80uy, 0uy, 0uy, 0uy))
                 match ColorSelector.tryParseHex hex with
                 | Some c -> btn.Background <- SolidColorBrush(c)
                 | None -> btn.Background <- Brushes.Gray
@@ -144,7 +152,9 @@ type ColorSelector() as this =
                     try
                         if not (isNull box) then box.Text <- ColorSelector.toHex view.Color
                     finally
-                        syncing <- false)
+                        syncing <- false
+                    // Bánh xe màu đổi -> cập nhật highlight ô màu đang chọn.
+                    this.RenderSwatches())
             |> ignore
 
         if not (isNull box) then

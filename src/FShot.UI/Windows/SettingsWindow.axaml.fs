@@ -106,6 +106,7 @@ type SettingsWindow() as this =
 
         this.SetSlider "DrawThicknessSlider" "DrawThicknessLabel" c.DrawThickness " px"
         this.SetSlider "DrawFontSizeSlider" "DrawFontSizeLabel" c.DrawFontSize " pt"
+        (this.FindControl<ColorSelector>("DrawColorSelector")).Color <- c.DrawColor
         this.SetSlider "CircleCounterSlider" "CircleCounterLabel" c.DrawCircleCounterSize " px"
         this.SetSlider "PixelateSlider" "PixelateLabel" (float c.DrawPixelateSize) " px"
         this.SetSlider "RectangleRadiusSlider" "RectangleRadiusLabel" c.DrawRectangleRadius " px"
@@ -153,6 +154,7 @@ type SettingsWindow() as this =
                 UiLanguage = this.ComboValue "LanguageCombo"
                 DrawThickness = this.SliderValue "DrawThicknessSlider"
                 DrawFontSize = this.SliderValue "DrawFontSizeSlider"
+                DrawColor = (this.FindControl<ColorSelector>("DrawColorSelector")).Color
                 DrawCircleCounterSize = this.SliderValue "CircleCounterSlider"
                 DrawPixelateSize = int (this.SliderValue "PixelateSlider")
                 DrawRectangleRadius = this.SliderValue "RectangleRadiusSlider"

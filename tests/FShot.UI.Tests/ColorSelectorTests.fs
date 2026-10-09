@@ -273,3 +273,40 @@ let ``Template ColorView chứa bánh xe màu ColorSpectrum`` () =
             let spectrum = v.FindDescendantOfType<ColorSpectrum>()
             not (isNull (box spectrum)), sprintf "tìm thấy ColorSpectrum=%b" (not (isNull (box spectrum))))
     assertCheck ok diag
+
+// ==========================================================================
+// 6. Highlight ô màu đang chọn trên bảng 8 ô màu
+// ==========================================================================
+
+/// Lấy danh sách các nút swatch (Button) trong bảng ô màu của ColorSelector.
+let private swatches (s: ColorSelector) : Button list =
+    let panel = s.FindControl<WrapPanel>("SwatchPanel")
+    if isNull panel then []
+    else
+        panel.Children
+        |> Seq.choose (fun c -> match c with :? Button as b -> Some b | _ -> None)
+        |> List.ofSeq
+
+[<Fact>]
+let ``Ô màu đang chọn được highlight bằng viền dày (2px)`` () =
+    let ok, diag =
+        withSelector (fun s ->
+            s.Color <- "#FF0000" // màu đầu tiên của PresetColors
+            let btns = swatches s
+            match btns with
+            | first :: _ ->
+                let highlighted = btns |> List.filter (fun b -> b.BorderThickness.Left >= 2.0)
+                let isFirstHighlighted = first.BorderThickness.Left >= 2.0
+                (List.length highlighted) = 1 && isFirstHighlighted,
+                sprintf "highlighted=%d, first=%b" (List.length highlighted) isFirstHighlighted
+            | [] -> false, "không có swatch nào")
+    assertCheck ok diag
+
+[<Fact>]
+let ``Chỉ duy nhất một ô màu được highlight tại một thời điểm`` () =
+    let ok, diag =
+        withSelector (fun s ->
+            s.Color <- "#0000FF" // màu thứ 6 (Xanh lam)
+            let highlighted = swatches s |> List.filter (fun b -> b.BorderThickness.Left >= 2.0)
+            (List.length highlighted) = 1, sprintf "highlighted=%d" (List.length highlighted))
+    assertCheck ok diag

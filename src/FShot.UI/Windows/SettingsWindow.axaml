@@ -79,6 +79,10 @@
                 <ScrollViewer>
                     <StackPanel Margin="16" Spacing="12">
                         <StackPanel>
+                            <TextBlock Text="Màu vẽ mặc định" FontWeight="SemiBold" />
+                            <windows:ColorSelector x:Name="DrawColorSelector" />
+                        </StackPanel>
+                        <StackPanel>
                             <TextBlock Text="Bảng màu tự chọn" FontWeight="SemiBold" />
                             <windows:ColorSelector x:Name="UserColorsSelector" />
                             <TextBlock Text="(bấm vào một ô màu để chọn; gõ hex hoặc chọn trên bánh xe rồi bấm '+ Thêm màu')" FontSize="12" Foreground="Gray" />
