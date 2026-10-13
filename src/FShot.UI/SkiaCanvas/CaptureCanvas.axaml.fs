@@ -963,10 +963,13 @@ type CaptureCanvas() as this =
         let run =
             async {
                 do! Async.Sleep 1200
-                if sizeIndicatorGeneration = gen then
-                    sizeIndicatorText <- None
-                    sizeIndicatorPosition <- None
-                    Dispatcher.UIThread.Post(fun () -> this.InvalidateVisual())
+                // Marshal về UI thread để tránh race và InvalidateVisual off-thread.
+                Dispatcher.UIThread.Post(fun () ->
+                    if sizeIndicatorGeneration = gen then
+                        sizeIndicatorText <- None
+                        sizeIndicatorPosition <- None
+                        this.InvalidateVisual()
+                )
             }
         Async.Start run
 
@@ -980,15 +983,19 @@ type CaptureCanvas() as this =
         let run =
             async {
                 do! Async.Sleep 800
-                if numericBufferGeneration = gen then
-                    let buffer = numericBuffer
-                    numericBuffer <- ""
-                    match System.Int32.TryParse buffer with
-                    | true, value ->
-                        let size = float value
-                        this.Dispatch(SetToolSize size)
-                        this.ShowSizeIndicator(sprintf "%.0f px" size, pos)
-                    | _ -> ()
+                // Sau khi sleep, async chạy trên thread pool; phải marshal về UI thread
+                // trước khi đụng vào state/buffer và gọi InvalidateVisual (tránh crash Avalonia).
+                Dispatcher.UIThread.Post(fun () ->
+                    if numericBufferGeneration = gen then
+                        let buffer = numericBuffer
+                        numericBuffer <- ""
+                        match System.Int32.TryParse buffer with
+                        | true, value ->
+                            let size = float value
+                            this.Dispatch(SetToolSize size)
+                            this.ShowSizeIndicator(sprintf "%.0f px" size, pos)
+                        | _ -> ()
+                )
             }
         Async.Start run
 
@@ -1275,58 +1282,64 @@ type CaptureCanvas() as this =
         let isFocused = this.IsFocused
         FShotLog.write (sprintf "[CaptureCanvas] KeyDown: %s | Key: %A | Focused: %b" keyString e.Key isFocused)
 
-        // Phím tắt chuyển nhanh công cụ annotation và thao tác xuất ảnh.
-        // Dùng e.Key (phím vật lý) thay vì chuỗi IME để tránh bị bộ gõ tiếng Việt bắt mất.
-        match e.Key with
-        | Key.C when e.KeyModifiers.HasFlag(KeyModifiers.Control) ->
-            this.Dispatch(Copy)
-        | Key.S when e.KeyModifiers.HasFlag(KeyModifiers.Control) ->
-            this.Dispatch(Save)
-        | Key.P -> this.Dispatch(SelectTool PencilTool)
-        | Key.L -> this.Dispatch(SelectTool LineTool)
-        | Key.A -> this.Dispatch(SelectTool ArrowTool)
-        | Key.R -> this.Dispatch(SelectTool RectangleTool)
-        | Key.C -> this.Dispatch(SelectTool CircleTool)
-        | Key.M -> this.Dispatch(SelectTool MarkerTool)
-        | Key.T -> this.Dispatch(SelectTool TextTool)
-        | Key.B -> this.Dispatch(SelectTool PixelateTool)
-        | Key.I -> this.Dispatch(SelectTool InvertTool)
-        | Key.S -> this.Dispatch(SelectTool SelectionTool)
-        | Key.Z when e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.KeyModifiers.HasFlag(KeyModifiers.Shift) ->
-            this.Dispatch(Redo)
-        | Key.Z when e.KeyModifiers.HasFlag(KeyModifiers.Control) ->
-            this.Dispatch(Undo)
-        | Key.Y when e.KeyModifiers.HasFlag(KeyModifiers.Control) ->
-            this.Dispatch(Redo)
-        // Ctrl modifier được gửi riêng để state machine biết khi nào đang khóa tỉ lệ.
-        // Sử dụng e.Key thay vì modifier string để tránh IME nuốt mất sự kiện Ctrl khi đang gõ tiếng Việt.
-        | Key.LeftCtrl
-        | Key.RightCtrl -> this.Dispatch(CtrlModifier true)
-        // Xóa chú thích đang chọn bằng Delete/Backspace (FR-ANN-20).
-        // Backspace giữ Ctrl được giữ nguyên để đi qua KeyDown → isCancelKey (Ctrl+Backspace hủy).
-        | Key.Delete -> this.Dispatch(DeleteSelectedAnnotation)
-        | Key.Back when not (e.KeyModifiers.HasFlag(KeyModifiers.Control)) ->
-            this.Dispatch(DeleteSelectedAnnotation)
-        | Key.D0 | Key.D1 | Key.D2 | Key.D3 | Key.D4 | Key.D5 | Key.D6 | Key.D7 | Key.D8 | Key.D9
-        | Key.NumPad0 | Key.NumPad1 | Key.NumPad2 | Key.NumPad3 | Key.NumPad4
-        | Key.NumPad5 | Key.NumPad6 | Key.NumPad7 | Key.NumPad8 | Key.NumPad9 ->
-            if e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Alt) then
-                this.Dispatch(KeyDown(keyString))
-            else
-                let digit =
-                    match e.Key with
-                    | Key.D0 | Key.NumPad0 -> '0'
-                    | Key.D1 | Key.NumPad1 -> '1'
-                    | Key.D2 | Key.NumPad2 -> '2'
-                    | Key.D3 | Key.NumPad3 -> '3'
-                    | Key.D4 | Key.NumPad4 -> '4'
-                    | Key.D5 | Key.NumPad5 -> '5'
-                    | Key.D6 | Key.NumPad6 -> '6'
-                    | Key.D7 | Key.NumPad7 -> '7'
-                    | Key.D8 | Key.NumPad8 -> '8'
-                    | _ -> '9'
-                this.HandleNumericInput(digit)
-        | _ -> this.Dispatch(KeyDown(keyString))
+        // Khi đang nhập text (TextBox hiển thị), không chặn phím: để TextBox và IME xử lý.
+        // Nếu không, phím tắt công cụ (A/R/S...) và phím số sẽ nuốt mất ký tự tiếng Việt
+        // (Telex dùng s/r/a, VNI dùng số). Tiếng Nhật đi qua composition nên không bị ảnh hưởng.
+        if textBox.IsSome then
+            ()
+        else
+            // Phím tắt chuyển nhanh công cụ annotation và thao tác xuất ảnh.
+            // Dùng e.Key (phím vật lý) thay vì chuỗi IME để tránh bị bộ gõ tiếng Việt bắt mất.
+            match e.Key with
+            | Key.C when e.KeyModifiers.HasFlag(KeyModifiers.Control) ->
+                this.Dispatch(Copy)
+            | Key.S when e.KeyModifiers.HasFlag(KeyModifiers.Control) ->
+                this.Dispatch(Save)
+            | Key.P -> this.Dispatch(SelectTool PencilTool)
+            | Key.L -> this.Dispatch(SelectTool LineTool)
+            | Key.A -> this.Dispatch(SelectTool ArrowTool)
+            | Key.R -> this.Dispatch(SelectTool RectangleTool)
+            | Key.C -> this.Dispatch(SelectTool CircleTool)
+            | Key.M -> this.Dispatch(SelectTool MarkerTool)
+            | Key.T -> this.Dispatch(SelectTool TextTool)
+            | Key.B -> this.Dispatch(SelectTool PixelateTool)
+            | Key.I -> this.Dispatch(SelectTool InvertTool)
+            | Key.S -> this.Dispatch(SelectTool SelectionTool)
+            | Key.Z when e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.KeyModifiers.HasFlag(KeyModifiers.Shift) ->
+                this.Dispatch(Redo)
+            | Key.Z when e.KeyModifiers.HasFlag(KeyModifiers.Control) ->
+                this.Dispatch(Undo)
+            | Key.Y when e.KeyModifiers.HasFlag(KeyModifiers.Control) ->
+                this.Dispatch(Redo)
+            // Ctrl modifier được gửi riêng để state machine biết khi nào đang khóa tỉ lệ.
+            // Sử dụng e.Key thay vì modifier string để tránh IME nuốt mất sự kiện Ctrl khi đang gõ tiếng Việt.
+            | Key.LeftCtrl
+            | Key.RightCtrl -> this.Dispatch(CtrlModifier true)
+            // Xóa chú thích đang chọn bằng Delete/Backspace (FR-ANN-20).
+            // Backspace giữ Ctrl được giữ nguyên để đi qua KeyDown → isCancelKey (Ctrl+Backspace hủy).
+            | Key.Delete -> this.Dispatch(DeleteSelectedAnnotation)
+            | Key.Back when not (e.KeyModifiers.HasFlag(KeyModifiers.Control)) ->
+                this.Dispatch(DeleteSelectedAnnotation)
+            | Key.D0 | Key.D1 | Key.D2 | Key.D3 | Key.D4 | Key.D5 | Key.D6 | Key.D7 | Key.D8 | Key.D9
+            | Key.NumPad0 | Key.NumPad1 | Key.NumPad2 | Key.NumPad3 | Key.NumPad4
+            | Key.NumPad5 | Key.NumPad6 | Key.NumPad7 | Key.NumPad8 | Key.NumPad9 ->
+                if e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Alt) then
+                    this.Dispatch(KeyDown(keyString))
+                else
+                    let digit =
+                        match e.Key with
+                        | Key.D0 | Key.NumPad0 -> '0'
+                        | Key.D1 | Key.NumPad1 -> '1'
+                        | Key.D2 | Key.NumPad2 -> '2'
+                        | Key.D3 | Key.NumPad3 -> '3'
+                        | Key.D4 | Key.NumPad4 -> '4'
+                        | Key.D5 | Key.NumPad5 -> '5'
+                        | Key.D6 | Key.NumPad6 -> '6'
+                        | Key.D7 | Key.NumPad7 -> '7'
+                        | Key.D8 | Key.NumPad8 -> '8'
+                        | _ -> '9'
+                    this.HandleNumericInput(digit)
+            | _ -> this.Dispatch(KeyDown(keyString))
 
     override this.OnKeyUp(e: KeyEventArgs) =
         base.OnKeyUp(e)
@@ -1824,8 +1837,9 @@ type CaptureCanvas() as this =
                     context.DrawText(ft, Avalonia.Point(textX, textY))
 
             | Tool.Invert (startPoint, endPoint) ->
-                // Invert preview: viền đứt nét + phủ trắng mờ chỉ vùng đảo màu.
-                // Hiệu ứng đảo bit thực tế được áp dụng trong Skia export renderer (Difference blend).
+                // Invert preview: checkerboard (ô trắng/đen xen kẽ) báo hiệu vùng sẽ bị đảo màu,
+                // phân biệt rõ với Pixelate (nền đen mờ). Hiệu ứng đảo bit thực tế được áp dụng
+                // trong Skia export renderer bằng SKBlendMode.Difference.
                 let x = Math.Min(startPoint.X, endPoint.X) * scale
                 let y = Math.Min(startPoint.Y, endPoint.Y) * scale
                 let w = Math.Abs(endPoint.X - startPoint.X) * scale
@@ -1833,8 +1847,20 @@ type CaptureCanvas() as this =
                 let rect = Avalonia.Rect(x, y, w, h)
                 let mediaColor = avaloniaColor annotation.Style.Color
                 let dashPen = new Pen(new SolidColorBrush(mediaColor), 1.5, DashStyle = new DashStyle([| 6.0; 4.0 |], 0.0))
-                let overlayBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(0x80uy, 0xFFuy, 0xFFuy, 0xFFuy))
-                context.DrawRectangle(overlayBrush, null, rect)
+
+                let cell = 8.0
+                let cols = max 1 (int (Math.Ceiling(w / cell)))
+                let rows = max 1 (int (Math.Ceiling(h / cell)))
+                let lightBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(0x66uy, 0xFFuy, 0xFFuy, 0xFFuy))
+                let darkBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(0x66uy, 0x00uy, 0x00uy, 0x00uy))
+                for r in 0 .. rows - 1 do
+                    for c in 0 .. cols - 1 do
+                        let brush = if (r + c) % 2 = 0 then lightBrush else darkBrush
+                        let cx = x + float c * cell
+                        let cy = y + float r * cell
+                        let cw = Math.Min(cell, x + w - cx)
+                        let ch = Math.Min(cell, y + h - cy)
+                        context.FillRectangle(brush, Avalonia.Rect(cx, cy, cw, ch))
                 context.DrawRectangle(null, dashPen, rect)
 
             | Tool.CircleCounter (center, index, radius) ->
