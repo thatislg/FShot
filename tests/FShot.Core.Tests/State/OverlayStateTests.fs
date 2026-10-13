@@ -1547,6 +1547,56 @@ let ``Rectangle giữ Ctrl ép hình vuông`` () =
         Assert.Equal(point 300.0 300.0, b)
     | _ -> Assert.True(false, "Expected Tool.Rectangle")
 
+/// Kiểm tra SetToolSize cập nhật StrokeWidth.
+[<Fact>]
+let ``SetToolSize cập nhật StrokeWidth`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    let result = state |> update (SetToolSize 14.0)
+    Assert.Equal(14.0, result.State.CurrentStyle.StrokeWidth.Value)
+
+/// Kiểm tra AdjustToolSize tăng/giảm độ dày và clamp.
+[<Fact>]
+let ``AdjustToolSize tăng giảm độ dày`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    let increased = state |> update (AdjustToolSize 2.0)
+    Assert.Equal(4.0, increased.State.CurrentStyle.StrokeWidth.Value)
+
+    let decreased = increased.State |> update (AdjustToolSize -3.0)
+    Assert.Equal(1.0, decreased.State.CurrentStyle.StrokeWidth.Value)
+
+/// Kiểm tra SetToolSize cho Text cập nhật FontSize.
+[<Fact>]
+let ``SetToolSize cập nhật FontSize cho Text`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool TextTool)
+        |> (fun r -> r.State)
+
+    let result = state |> update (SetToolSize 30.0)
+    Assert.Equal(30.0, result.State.CurrentStyle.FontSize)
+
 // --- Regression tests cho P1.21 Undo ---
 
 /// Kiểm tra Undo khi chưa có annotation nào thì giữ nguyên state, không crash.

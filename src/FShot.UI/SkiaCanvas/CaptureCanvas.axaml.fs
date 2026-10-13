@@ -564,6 +564,13 @@ type CaptureCanvas() as this =
     let mutable lastFrameTimeMs = 0.0
     let mutable averageFrameTimeMs = 0.0
 
+    // Bộ đệm phím số và chỉ báo kích thước (FR-ANN-13/14, FR-TB-07).
+    let mutable numericBuffer = ""
+    let mutable numericBufferGeneration = 0
+    let mutable sizeIndicatorText: string option = None
+    let mutable sizeIndicatorGeneration = 0
+    let mutable sizeIndicatorPosition: Avalonia.Point option = None
+
     /// Sự kiện khi state thay đổi.
     let stateChanged = Event<unit>()
     member this.StateChanged = stateChanged.Publish
@@ -936,6 +943,55 @@ type CaptureCanvas() as this =
         | None ->
             FShotLog.write "[CaptureCanvas] OverlayState not set; event ignored"
 
+    /// Vị trí tâm vùng chọn hiện tại (dùng cho chỉ báo kích thước nổi).
+    member private this.SelectionCenterPoint() : Avalonia.Point =
+        let sel = this.Selection
+        let scale =
+            match captureResult with
+            | Some r -> r.ScaleFactor.Value
+            | None -> 1.0
+        let local = this.ToControlPoint sel.Bounds.Center
+        Avalonia.Point(local.X * scale, local.Y * scale)
+
+    /// Hiển thị chỉ báo kích thước nổi tạm thời, tự mờ sau 1.2 giây (FR-TB-07).
+    member private this.ShowSizeIndicator(text: string, position: Avalonia.Point) =
+        sizeIndicatorText <- Some text
+        sizeIndicatorPosition <- Some position
+        sizeIndicatorGeneration <- sizeIndicatorGeneration + 1
+        let gen = sizeIndicatorGeneration
+        this.InvalidateVisual()
+        let run =
+            async {
+                do! Async.Sleep 1200
+                if sizeIndicatorGeneration = gen then
+                    sizeIndicatorText <- None
+                    sizeIndicatorPosition <- None
+                    Dispatcher.UIThread.Post(fun () -> this.InvalidateVisual())
+            }
+        Async.Start run
+
+    /// Xử lý một chữ số nhập vào bộ đệm kích thước (FR-ANN-13).
+    member private this.HandleNumericInput(digit: char) =
+        numericBuffer <- numericBuffer + string digit
+        numericBufferGeneration <- numericBufferGeneration + 1
+        let gen = numericBufferGeneration
+        let pos = this.SelectionCenterPoint()
+        this.ShowSizeIndicator(numericBuffer + " px", pos)
+        let run =
+            async {
+                do! Async.Sleep 800
+                if numericBufferGeneration = gen then
+                    let buffer = numericBuffer
+                    numericBuffer <- ""
+                    match System.Int32.TryParse buffer with
+                    | true, value ->
+                        let size = float value
+                        this.Dispatch(SetToolSize size)
+                        this.ShowSizeIndicator(sprintf "%.0f px" size, pos)
+                    | _ -> ()
+            }
+        Async.Start run
+
     /// Hiển thị TextBox tạm tại vị trí (virtual screen space) để nhập text.
     member private this.ShowTextInput(position: FShot.Core.Geometry.Point) =
         this.HideTextInput()
@@ -1243,6 +1299,25 @@ type CaptureCanvas() as this =
         // Sử dụng e.Key thay vì modifier string để tránh IME nuốt mất sự kiện Ctrl khi đang gõ tiếng Việt.
         | Key.LeftCtrl
         | Key.RightCtrl -> this.Dispatch(CtrlModifier true)
+        | Key.D0 | Key.D1 | Key.D2 | Key.D3 | Key.D4 | Key.D5 | Key.D6 | Key.D7 | Key.D8 | Key.D9
+        | Key.NumPad0 | Key.NumPad1 | Key.NumPad2 | Key.NumPad3 | Key.NumPad4
+        | Key.NumPad5 | Key.NumPad6 | Key.NumPad7 | Key.NumPad8 | Key.NumPad9 ->
+            if e.KeyModifiers.HasFlag(KeyModifiers.Control) || e.KeyModifiers.HasFlag(KeyModifiers.Alt) then
+                this.Dispatch(KeyDown(keyString))
+            else
+                let digit =
+                    match e.Key with
+                    | Key.D0 | Key.NumPad0 -> '0'
+                    | Key.D1 | Key.NumPad1 -> '1'
+                    | Key.D2 | Key.NumPad2 -> '2'
+                    | Key.D3 | Key.NumPad3 -> '3'
+                    | Key.D4 | Key.NumPad4 -> '4'
+                    | Key.D5 | Key.NumPad5 -> '5'
+                    | Key.D6 | Key.NumPad6 -> '6'
+                    | Key.D7 | Key.NumPad7 -> '7'
+                    | Key.D8 | Key.NumPad8 -> '8'
+                    | _ -> '9'
+                this.HandleNumericInput(digit)
         | _ -> this.Dispatch(KeyDown(keyString))
 
     override this.OnKeyUp(e: KeyEventArgs) =
@@ -1252,6 +1327,35 @@ type CaptureCanvas() as this =
         | Key.LeftCtrl
         | Key.RightCtrl -> this.Dispatch(CtrlModifier false)
         | _ -> ()
+
+    override this.OnPointerWheelChanged(e: PointerWheelEventArgs) =
+        base.OnPointerWheelChanged(e)
+        let deltaY = e.Delta.Y
+        // Bỏ qua khi giữ Ctrl (Ctrl + wheel dùng cho thu phóng vùng chọn ở tương lai).
+        if deltaY <> 0.0 && not (e.KeyModifiers.HasFlag(KeyModifiers.Control)) then
+            let currentSize =
+                match overlayState with
+                | Some s ->
+                    match s.CurrentTool with
+                    | TextTool -> s.CurrentStyle.FontSize
+                    | _ -> s.CurrentStyle.StrokeWidth.Value
+                | None -> 2.0
+
+            // Bước nhảy thích ứng: < 10px thay đổi ±1, >= 10px thay đổi ±2 (FR-ANN-14).
+            let step = if currentSize < 10.0 then 1.0 else 2.0
+            let delta = if deltaY > 0.0 then step else -step
+            this.Dispatch(AdjustToolSize delta)
+
+            // Hiển thị chỉ báo kích thước mới.
+            match overlayState with
+            | Some s ->
+                let size =
+                    match s.CurrentTool with
+                    | TextTool -> s.CurrentStyle.FontSize
+                    | _ -> s.CurrentStyle.StrokeWidth.Value
+                let pos = this.SelectionCenterPoint()
+                this.ShowSizeIndicator(sprintf "%.0f px" size, pos)
+            | None -> ()
 
     /// Tạo WriteableBitmap từ CaptureResult.
     member private this.CreateBitmap(result: CaptureResult) : WriteableBitmap =
@@ -1735,6 +1839,32 @@ type CaptureCanvas() as this =
 
         // Vẽ toolbar.
         this.RenderToolbar(context, renderModel)
+
+        // Vẽ chỉ báo kích thước nổi tạm thời (FR-TB-07).
+        match sizeIndicatorText, sizeIndicatorPosition with
+        | Some text, Some pos ->
+            let badgeText =
+                new FormattedText(
+                    text,
+                    System.Globalization.CultureInfo.CurrentCulture,
+                    FlowDirection.LeftToRight,
+                    new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Bold),
+                    14.0,
+                    new SolidColorBrush(Avalonia.Media.Color.FromArgb(0xFFuy, 0xFFuy, 0xFFuy, 0xFFuy))
+                )
+            let paddingX = 8.0
+            let paddingY = 4.0
+            let badgeRect =
+                Avalonia.Rect(
+                    pos.X + 12.0,
+                    pos.Y + 12.0,
+                    badgeText.Width + paddingX * 2.0,
+                    badgeText.Height + paddingY * 2.0
+                )
+            let bgBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(0xE0uy, 0x1Euy, 0x29uy, 0x3Buy))
+            context.FillRectangle(bgBrush, badgeRect, 8.0f)
+            context.DrawText(badgeText, Avalonia.Point(badgeRect.X + paddingX, badgeRect.Y + paddingY))
+        | _ -> ()
 
         // Tính toán và cập nhật FPS.
         let frameEnd = Stopwatch.GetTimestamp()

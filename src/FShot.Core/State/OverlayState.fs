@@ -70,6 +70,8 @@ type OverlayEvent =
     | ToolbarAction of ToolbarAction
     | SetColor of Color
     | SetStrokeWidth of StrokeWidth
+    | SetToolSize of float
+    | AdjustToolSize of float
     | Undo
     | Redo
     | Copy
@@ -148,6 +150,26 @@ module OverlayStateLogic =
             Selection = Selection.Empty
             AnnotationInteraction = NoAnnotation
             History = clearedHistory }
+
+    /// Độ dày nét vẽ tối đa khi điều chỉnh bằng phím/lăn chuột.
+    let private minFontSize = 10.0
+    let private maxFontSize = 96.0
+
+    /// Lấy kích thước hiện tại của công cụ đang chọn (FontSize cho Text, StrokeWidth cho còn lại).
+    let private currentToolSize (state: OverlayState) : float =
+        match state.CurrentTool with
+        | TextTool -> state.CurrentStyle.FontSize
+        | _ -> state.CurrentStyle.StrokeWidth.Value
+
+    /// Cập nhật kích thước công cụ hiện tại, clamp theo loại công cụ (FR-ANN-13/14).
+    let private setToolSize (size: float) (state: OverlayState) : OverlayState =
+        match state.CurrentTool with
+        | TextTool ->
+            let clamped = Math.Max(minFontSize, Math.Min(maxFontSize, size))
+            { state with CurrentStyle = { state.CurrentStyle with FontSize = clamped } }
+        | _ ->
+            let sw = StrokeWidth.Create size
+            { state with CurrentStyle = { state.CurrentStyle with StrokeWidth = sw } }
 
     /// Tạo annotation style từ trạng thái hiện tại.
     let private currentAnnotationStyle (state: OverlayState) = {
@@ -515,6 +537,13 @@ module OverlayStateLogic =
         | SelectionState.Selected, NoAnnotation, SetStrokeWidth width ->
             let newStyle = { state.CurrentStyle with StrokeWidth = width }
             emptyResult { state with CurrentStyle = newStyle }
+
+        | SelectionState.Selected, NoAnnotation, SetToolSize size ->
+            emptyResult (setToolSize size state)
+
+        | SelectionState.Selected, NoAnnotation, AdjustToolSize delta ->
+            let newSize = currentToolSize state + delta
+            emptyResult (setToolSize newSize state)
 
         | SelectionState.Selected, _, ToolbarAction UndoAction ->
             emptyResult (performUndo state)
