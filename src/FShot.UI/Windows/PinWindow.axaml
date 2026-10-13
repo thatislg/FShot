@@ -1,0 +1,27 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="FShot.UI.Windows.PinWindow"
+        Title="F-Shot Pin"
+        WindowDecorations="None"
+        Topmost="True"
+        CanResize="False"
+        Background="Transparent"
+        ShowInTaskbar="False"
+        Focusable="True"
+        IsVisible="False">
+    <!--
+        Cửa sổ ghim ảnh nổi (Pin Widget). FR-PIN-01, FR-PIN-10.
+        Border bo góc Kawaii Claymorphism + đổ bóng tách nền. Margin tạo không gian
+        cho đổ bóng (BoxShadow) lan ra ngoài ảnh; giá trị khớp với `shadowPadding`
+        trong PinWindow.axaml.fs.
+    -->
+    <Border x:Name="PinBorder"
+            CornerRadius="8"
+            BorderThickness="1.5"
+            BorderBrush="#40FFFFFF"
+            Background="Transparent"
+            BoxShadow="0 8 24 0 #40000000"
+            Margin="20">
+        <Image x:Name="PinImage" Stretch="Uniform" />
+    </Border>
+</Window>

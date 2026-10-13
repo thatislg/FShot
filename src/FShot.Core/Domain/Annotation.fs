@@ -57,6 +57,7 @@ type ToolbarAction =
     | RedoAction
     | CopyAction
     | SaveAction
+    | PinAction
     | CancelAction
 
 /// Tập hợp các thuộc tính hình ảnh chung cho một Annotation.

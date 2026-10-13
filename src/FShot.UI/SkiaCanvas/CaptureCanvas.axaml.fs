@@ -22,6 +22,7 @@ open Avalonia.Controls.ApplicationLifetimes
 open FShot.UI
 open FShot.UI.Logging
 open FShot.UI.SkiaCanvas
+open FShot.UI.Windows
 open FShot.Platform.Win32.Clipboard
 
 open FShot.Rendering.Skia.Renderers
@@ -80,6 +81,7 @@ module Toolbar =
         RedoAction
         CopyAction
         SaveAction
+        PinAction
         CancelAction
     ]
 
@@ -442,6 +444,22 @@ module Toolbar =
                     context.DrawLine(decoPen, Avalonia.Point(12.0, 19.0), Avalonia.Point(20.0, 19.0))
                     context.DrawLine(decoPen, Avalonia.Point(12.0, 22.0), Avalonia.Point(20.0, 22.0))
 
+                | "PinAction" ->
+                    // Ghim giấy Kawaii: thân ghim xanh da trời (#7BD5F5), đầu kim loại xám (#94A3B8),
+                    // viền nâu (#3D2B1F), mắt chibi + miệng cười (pin.svg).
+                    let headBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0x7Buy, 0xD5uy, 0xF5uy))
+                    context.DrawGeometry(headBrush, darkWalnutPen 1.8, geometry)
+
+                    let tipBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0x94uy, 0xA3uy, 0xB8uy))
+                    let tipGeom = StreamGeometry.Parse(ToolbarIcons.pinTip)
+                    context.DrawGeometry(tipBrush, darkWalnutPen 1.4, tipGeom)
+
+                    let darkBrush = new SolidColorBrush(darkWalnut)
+                    context.DrawEllipse(darkBrush, null, Avalonia.Point(14.0, 17.0), 0.9, 0.9)
+                    context.DrawEllipse(darkBrush, null, Avalonia.Point(18.0, 17.0), 0.9, 0.9)
+                    let mouthGeom = StreamGeometry.Parse(ToolbarIcons.pinMouth)
+                    context.DrawGeometry(null, darkWalnutPen 0.8, mouthGeom)
+
                 | "CancelAction" ->
                     // Dấu X phồng béo đỏ dâu tây (#FB7185), viền nâu (#3D2B1F), highlight trắng
                     let xBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFBuy, 0x71uy, 0x85uy))
@@ -652,43 +670,51 @@ type CaptureCanvas() as this =
         else
             String.Join("+", modifiers) + "+" + keyName
 
+    /// Đóng cửa sổ overlay (dùng chung cho CloseOverlay và RequestPin).
+    member private this.CloseOverlayWindow() =
+        FShotLog.write "[CaptureCanvas] closing overlay window"
+        this.HideTextInput()
+
+        let winOpt =
+            match TopLevel.GetTopLevel(this) with
+            | :? Window as w -> Some w
+            | _ ->
+                match this.VisualRoot with
+                | :? Window as w -> Some w
+                | _ ->
+                    match Application.Current.ApplicationLifetime with
+                    | :? IClassicDesktopStyleApplicationLifetime as desktop ->
+                        Option.ofObj desktop.MainWindow
+                    | _ -> None
+
+        match winOpt with
+        | Some w ->
+            FShotLog.write (sprintf "[CaptureCanvas] Found window (%s), invoking Close()..." (w.GetType().Name))
+            Dispatcher.UIThread.Post(fun () ->
+                try
+                    // Thông báo hủy nếu đang ở chế độ daemon trước khi đóng overlay.
+                    CaptureCanvasEvents.TriggerAbortRequested()
+                    w.Close()
+                with ex ->
+                    FShotLog.writeEx "Failed to close overlay window" ex
+            )
+        | None ->
+            FShotLog.write "[CaptureCanvas] Could not find Window to close! Invoking desktop shutdown."
+            match Application.Current.ApplicationLifetime with
+            | :? IClassicDesktopStyleApplicationLifetime as desktop ->
+                Dispatcher.UIThread.Post(fun () -> desktop.Shutdown())
+            | _ -> ()
+
     /// Thực thi các commands trả về từ OverlayState.
     member private this.ExecuteCommands(commands: OverlayCommand list) =
         for cmd in commands do
             match cmd with
             | CloseOverlay ->
                 FShotLog.write "[CaptureCanvas] CloseOverlay command: closing overlay window"
-                this.HideTextInput()
-
-                let winOpt =
-                    match TopLevel.GetTopLevel(this) with
-                    | :? Window as w -> Some w
-                    | _ ->
-                        match this.VisualRoot with
-                        | :? Window as w -> Some w
-                        | _ ->
-                            match Application.Current.ApplicationLifetime with
-                            | :? IClassicDesktopStyleApplicationLifetime as desktop ->
-                                Option.ofObj desktop.MainWindow
-                            | _ -> None
-
-                match winOpt with
-                | Some w ->
-                    FShotLog.write (sprintf "[CaptureCanvas] Found window (%s), invoking Close()..." (w.GetType().Name))
-                    Dispatcher.UIThread.Post(fun () ->
-                        try
-                            // Thông báo hủy nếu đang ở chế độ daemon trước khi đóng overlay.
-                            CaptureCanvasEvents.TriggerAbortRequested()
-                            w.Close()
-                        with ex ->
-                            FShotLog.writeEx "Failed to close overlay window" ex
-                    )
-                | None ->
-                    FShotLog.write "[CaptureCanvas] Could not find Window to close! Invoking desktop shutdown."
-                    match Application.Current.ApplicationLifetime with
-                    | :? IClassicDesktopStyleApplicationLifetime as desktop ->
-                        Dispatcher.UIThread.Post(fun () -> desktop.Shutdown())
-                    | _ -> ()
+                this.CloseOverlayWindow()
+            | RequestPin ->
+                FShotLog.write "[CaptureCanvas] RequestPin command: pinning selection as PinWindow"
+                this.ExecutePin()
             | StartExport target ->
                 FShotLog.write (sprintf "[CaptureCanvas] StartExport command: %A" target)
                 this.ExecuteStartExport(target)
@@ -857,6 +883,46 @@ type CaptureCanvas() as this =
             Async.StartImmediate(runExport)
         | _ ->
             FShotLog.write "[CaptureCanvas] Cannot export: missing capture result, overlay state, or toplevel"
+
+    /// Ghim vùng chọn thành cửa sổ PinWindow nổi.
+    /// Render composite bitmap (crop + annotations), tạo PinWindow tại đúng vị trí
+    /// vùng chọn trên màn hình, hiển thị rồi đóng overlay.
+    /// Xem 11_07_PinWindow.md, mục 4.
+    member private this.ExecutePin() =
+        match captureResult, overlayState with
+        | Some result, Some state ->
+            try
+                let selection = state.Selection
+                let bounds = selection.Bounds
+                FShotLog.write (sprintf "[CaptureCanvas] Pinning selection: %A" bounds)
+
+                // Composite ảnh: crop screenshot + render toàn bộ annotations đã commit.
+                let exportBitmap = SceneComposer.renderExport result selection (committedAnnotations state)
+
+                // Kích thước hiển thị (logical DIP) khớp vùng chọn trên màn hình.
+                let scaleFactor = result.ScaleFactor.Value
+                let logicalW = max 1.0 (float exportBitmap.Width / scaleFactor)
+                let logicalH = max 1.0 (float exportBitmap.Height / scaleFactor)
+
+                let position = PixelPoint(int (Math.Round bounds.X), int (Math.Round bounds.Y))
+
+                Dispatcher.UIThread.Post(fun () ->
+                    try
+                        let pin = PinWindow()
+                        pin.Initialize(exportBitmap, position, Size(logicalW, logicalH))
+                        pin.Show()
+                        pin.Focus() |> ignore
+                        FShotLog.write (sprintf "[CaptureCanvas] PinWindow shown at %A size=%.0fx%.0f" position logicalW logicalH)
+                        // Đóng overlay chụp để giải phóng toàn màn hình.
+                        this.CloseOverlayWindow()
+                    with ex ->
+                        FShotLog.writeEx "[CaptureCanvas] Failed to create PinWindow" ex
+                        exportBitmap.Dispose()
+                )
+            with ex ->
+                FShotLog.writeEx "[CaptureCanvas] Pin render failed" ex
+        | _ ->
+            FShotLog.write "[CaptureCanvas] Cannot pin: missing capture result or overlay state"
 
     /// Gửi event đến OverlayState, cập nhật state và vẽ lại.
     member private this.Dispatch(event: OverlayEvent) =

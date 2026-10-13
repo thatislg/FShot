@@ -224,51 +224,51 @@
 > - [12_01_DesignTokens.md](file:///d:/Kojin/FShot/docs/2.Design/12_UIUX_Mock_Penpot/12_01_DesignTokens.md): Chuẩn thiết kế Kawaii Claymorphism cho viền bo góc và hiệu ứng đổ bóng `FR-PIN-10`.
 > - [003_SRS.md](file:///d:/Kojin/FShot/docs/1.Investigation/003_SRS.md): Yêu cầu kỹ thuật `FR-PIN-01`–`FR-PIN-10`.
 
-- [ ] **P2.15** Cửa sổ ghim ảnh Topmost không viền (`FR-PIN-01`, `FR-PIN-10`).
-  - [ ] Hoàn thiện tài liệu thiết kế [11_07_PinWindow.md](file:///d:/Kojin/FShot/docs/2.Design/11_UI_Avalonia/11_07_PinWindow.md) (kiến trúc Window không viền, Topmost, quản lý vòng đời multi-instance và giải phóng SKBitmap).
-  - [ ] Tạo cửa sổ `PinWindow.axaml` và `PinWindow.axaml.fs` trong `src/FShot.UI/Windows/`:
-    - [ ] Cấu hình thuộc tính: `SystemDecorations = None`, `Topmost = true`, `TransparencyLevelHint = Transparent`, `Background = Transparent`, `ShowInTaskbar = false`.
-    - [ ] Áp dụng style Kawaii Claymorphism (`FR-PIN-10`): Khung `Border` bo góc (`CornerRadius="8"`), viền mờ cao cấp (`BorderBrush="#40FFFFFF"`), hiệu ứng đổ bóng sâu tách nền (`BoxShadow="0 8 24 0 #40000000"`).
-    - [ ] Nhúng control vẽ ảnh Skia (`SKBitmapCanvas` hoặc Avalonia `Image`) chứa ảnh bitmap crop từ vùng chọn kèm chú thích đã render phẳng.
-  - [ ] Tích hợp nút Pin vào thanh công cụ Overlay:
-    - [ ] Khai báo `PinAction` trong `ToolbarAction` (`src/FShot.Core/Domain/Annotation.fs`).
-    - [ ] Thêm icon Pin Kawaii vào `src/FShot.UI/SkiaCanvas/ToolbarIcons.fs` và nút Pin vào `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`.
-    - [ ] Bắt sự kiện click Pin: tạo mới instance `PinWindow`, khởi tạo vị trí xuất hiện trùng khớp tọa độ vùng chọn, hiển thị cửa sổ ghim và đóng `CaptureOverlayWindow`.
-  - [ ] Quản lý tài nguyên và đa cửa sổ (Multi-instance):
-    - [ ] Cho phép mở đồng thời nhiều cửa sổ ghim độc lập trên màn hình.
-    - [ ] Bắt sự kiện `Closed`: giải phóng an toàn `SKBitmap.Dispose()` để chống rò rỉ bộ nhớ đồ họa.
-  - [ ] Viết unit tests kiểm thử khởi tạo Window, truyền tải bitmap và tính toán kích thước trong `tests/FShot.UI.Tests/Windows/PinWindowTests.fs`.
+- [x] **P2.15** Cửa sổ ghim ảnh Topmost không viền (`FR-PIN-01`, `FR-PIN-10`).
+  - [x] Hoàn thiện tài liệu thiết kế [11_07_PinWindow.md](file:///d:/Kojin/FShot/docs/2.Design/11_UI_Avalonia/11_07_PinWindow.md) (kiến trúc Window không viền, Topmost, quản lý vòng đời multi-instance và giải phóng SKBitmap).
+  - [x] Tạo cửa sổ `PinWindow.axaml` và `PinWindow.axaml.fs` trong `src/FShot.UI/Windows/`:
+    - [x] Cấu hình thuộc tính: `SystemDecorations = None`, `Topmost = true`, `TransparencyLevelHint = Transparent`, `Background = Transparent`, `ShowInTaskbar = false`.
+    - [x] Áp dụng style Kawaii Claymorphism (`FR-PIN-10`): Khung `Border` bo góc (`CornerRadius="8"`), viền mờ cao cấp (`BorderBrush="#40FFFFFF"`), hiệu ứng đổ bóng sâu tách nền (`BoxShadow="0 8 24 0 #40000000"`).
+    - [x] Nhúng control vẽ ảnh Skia (Avalonia `Image`) chứa ảnh bitmap crop từ vùng chọn kèm chú thích đã render phẳng.
+  - [x] Tích hợp nút Pin vào thanh công cụ Overlay:
+    - [x] Khai báo `PinAction` trong `ToolbarAction` (`src/FShot.Core/Domain/Annotation.fs`).
+    - [x] Thêm icon Pin Kawaii vào `src/FShot.UI/SkiaCanvas/ToolbarIcons.fs` và nút Pin vào `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`.
+    - [x] Bắt sự kiện click Pin: tạo mới instance `PinWindow`, khởi tạo vị trí xuất hiện trùng khớp tọa độ vùng chọn, hiển thị cửa sổ ghim và đóng `CaptureOverlayWindow`.
+  - [x] Quản lý tài nguyên và đa cửa sổ (Multi-instance):
+    - [x] Cho phép mở đồng thời nhiều cửa sổ ghim độc lập trên màn hình.
+    - [x] Bắt sự kiện `Closed`: giải phóng an toàn `SKBitmap.Dispose()` để chống rò rỉ bộ nhớ đồ họa.
+  - [x] Viết unit tests kiểm thử khởi tạo Window, truyền tải bitmap và tính toán kích thước trong `tests/FShot.UI.Tests/Windows/PinWindowTests.fs`.
   - [ ] Verify runtime trên Windows 10/11: chụp vùng chọn bất kỳ, bấm nút Pin, xác nhận cửa sổ ghim nổi trên các cửa sổ khác, không có viền hệ thống, có đổ bóng mờ rõ ràng và overlay chụp đóng sạch sẽ.
-- [ ] **P2.16** Di chuyển, thu phóng, điều chỉnh độ trong suốt và xoay ảnh ghim (`FR-PIN-02`–`FR-PIN-05`, `FR-PIN-09`).
-  - [ ] Di chuyển tự do trên desktop (`FR-PIN-02`):
-    - [ ] Xử lý sự kiện `PointerPressed` trên `PinWindow`: kích hoạt `BeginMoveDrag(e)` cho phép người dùng click giữ chuột trái kéo cửa sổ ghim tới bất kỳ đâu trên Virtual Screen (kể cả giữa các màn hình khác nhau).
-    - [ ] Đổi con trỏ chuột sang hình bàn tay (`SizeAll` / `Hand`) khi rê chuột lên ảnh.
-  - [ ] Thu phóng tỉ lệ động với khử răng cưa (`FR-PIN-03`, `FR-PIN-09`):
-    - [ ] Xử lý `PointerWheelChanged` (khi không giữ `Ctrl`): cuộn lên tăng tỉ lệ (`scale *= 1.1`), cuộn xuống giảm tỉ lệ (`scale /= 1.1`).
-    - [ ] Ràng buộc giới hạn tỉ lệ an toàn: $0.1 \le \text{scale} \le 5.0$ (10% đến 500%).
-    - [ ] Thu phóng hướng tâm con trỏ chuột (`Zoom toward cursor`): tính toán lại `Position` để điểm dưới con trỏ chuột giữ nguyên vị trí trên màn hình.
-    - [ ] Cấu hình Skia `SKFilterQuality.High` / `SKPaint.IsAntialias = true` để ảnh khi phóng to không bị vỡ hạt (`antialiasingPinZoom`).
-  - [ ] Điều chỉnh độ trong suốt mờ đục (`FR-PIN-04`):
-    - [ ] Xử lý `Ctrl + PointerWheelChanged` hoặc phím tắt `[` / `]`: thay đổi giá trị `Window.Opacity` mỗi bước 5% ($0.05$).
-    - [ ] Ràng buộc giới hạn: $0.1 \le \text{Opacity} \le 1.0$ (không cho phép giảm dưới 10% để tránh mất dấu cửa sổ).
-  - [ ] Xoay ảnh ghim 90° (`FR-PIN-05`):
-    - [ ] Phím tắt `R` (xoay phải 90° cùng chiều kim đồng hồ) và `Shift + R` (xoay trái 90° ngược chiều kim đồng hồ).
-    - [ ] Cập nhật góc xoay `angle = (angle + 90) % 360`, áp dụng biến đổi ma trận xoay Skia.
-    - [ ] Tự động hoán đổi kích thước cửa sổ (`Width` $\leftrightarrow$ `Height`) khi góc xoay là $90^\circ$ hoặc $270^\circ$.
-  - [ ] Viết unit tests kiểm thử ma trận thu phóng, tính toán tọa độ hướng tâm, giới hạn opacity và thuật toán xoay 90°.
+- [x] **P2.16** Di chuyển, thu phóng, điều chỉnh độ trong suốt và xoay ảnh ghim (`FR-PIN-02`–`FR-PIN-05`, `FR-PIN-09`).
+  - [x] Di chuyển tự do trên desktop (`FR-PIN-02`):
+    - [x] Xử lý sự kiện `PointerPressed` trên `PinWindow`: kích hoạt `BeginMoveDrag(e)` cho phép người dùng click giữ chuột trái kéo cửa sổ ghim tới bất kỳ đâu trên Virtual Screen (kể cả giữa các màn hình khác nhau).
+    - [x] Đổi con trỏ chuột sang hình bàn tay (`SizeAll` / `Hand`) khi rê chuột lên ảnh.
+  - [x] Thu phóng tỉ lệ động với khử răng cưa (`FR-PIN-03`, `FR-PIN-09`):
+    - [x] Xử lý `PointerWheelChanged` (khi không giữ `Ctrl`): cuộn lên tăng tỉ lệ (`scale *= 1.1`), cuộn xuống giảm tỉ lệ (`scale /= 1.1`).
+    - [x] Ràng buộc giới hạn tỉ lệ an toàn: $0.1 \le \text{scale} \le 5.0$ (10% đến 500%).
+    - [x] Thu phóng hướng tâm con trỏ chuột (`Zoom toward cursor`): tính toán lại `Position` để điểm dưới con trỏ chuột giữ nguyên vị trí trên màn hình.
+    - [x] Cấu hình Skia `SKSamplingOptions` Mitchell / khử răng cưa để ảnh khi phóng to không bị vỡ hạt.
+  - [x] Điều chỉnh độ trong suốt mờ đục (`FR-PIN-04`):
+    - [x] Xử lý `Ctrl + PointerWheelChanged` hoặc phím tắt `[` / `]`: thay đổi giá trị `Window.Opacity` mỗi bước 5% ($0.05$).
+    - [x] Ràng buộc giới hạn: $0.1 \le \text{Opacity} \le 1.0$ (không cho phép giảm dưới 10% để tránh mất dấu cửa sổ).
+  - [x] Xoay ảnh ghim 90° (`FR-PIN-05`):
+    - [x] Phím tắt `R` (xoay phải 90° cùng chiều kim đồng hồ) và `Shift + R` (xoay trái 90° ngược chiều kim đồng hồ).
+    - [x] Cập nhật góc xoay `angle = (angle + 90) % 360`, áp dụng biến đổi ma trận xoay Skia.
+    - [x] Tự động hoán đổi kích thước cửa sổ (`Width` $\leftrightarrow$ `Height`) khi góc xoay là $90^\circ$ hoặc $270^\circ$.
+  - [x] Viết unit tests kiểm thử ma trận thu phóng, tính toán tọa độ hướng tâm, giới hạn opacity và thuật toán xoay 90°.
   - [ ] Verify runtime: kéo di chuyển cửa sổ qua lại giữa 2 màn hình; lăn chuột phóng to/thu nhỏ kiểm tra độ sắc nét; giữ Ctrl lăn chuột kiểm tra nhìn xuyên thấu xuống cửa sổ bên dưới; nhấn `R` xoay ảnh 4 hướng không bị méo.
-- [ ] **P2.17** Menu ngữ cảnh của cửa sổ ghim: copy, save, close (`FR-PIN-06`–`FR-PIN-08`).
-  - [ ] Thiết kế `ContextMenu` Kawaii bo góc xuất hiện khi nhấp chuột phải (`PointerReleased` với RightButton):
-    - [ ] Mục "Sao chép ảnh" (`Ctrl+C`): gọi `ClipboardService.copyToClipboardNative` đẩy bitmap đã xoay/scale vào clipboard với 2 định dạng `CF_DIB` và `PNG` (`FR-PIN-06`), phát âm thanh `MessageBeep` và thông báo desktop ngắn.
-    - [ ] Mục "Lưu ảnh ra tệp..." (`Ctrl+S`): mở hộp thoại `StorageProvider.SaveFilePickerAsync` cho phép lưu file PNG/JPG (`FR-PIN-07`), hoặc lưu nhanh vào `savePath` nếu đã cấu hình `SavePathFixed`.
-    - [ ] Mục "Xoay 90° phải" (`R`) và "Khôi phục kích thước 100%" (`Ctrl+0`).
-    - [ ] Submenu "Độ mờ đục": các mức nhanh 100%, 75%, 50%, 25%.
-    - [ ] Mục "Đóng ghim" (`Esc` / Double-click) (`FR-PIN-08`).
-  - [ ] Các cơ chế đóng cửa sổ ghim nhanh (`FR-PIN-08`):
-    - [ ] Nhấp đúp chuột trái (Double-click) vào bất kỳ vị trí nào trên ảnh ghim $\to$ đóng cửa sổ ngay lập tức.
-    - [ ] Nhấn phím `Escape` khi cửa sổ đang active $\to$ đóng cửa sổ ngay lập tức.
-    - [ ] Đảm bảo dọn dẹp giải phóng tài nguyên unmanaged và hủy tham chiếu instance khi đóng.
-  - [ ] Viết unit tests kiểm thử các lệnh ContextMenu, dispatch action copy/save và xử lý đóng cửa sổ an toàn.
+- [x] **P2.17** Menu ngữ cảnh của cửa sổ ghim: copy, save, close (`FR-PIN-06`–`FR-PIN-08`).
+  - [x] Thiết kế `ContextMenu` Kawaii bo góc xuất hiện khi nhấp chuột phải (`PointerReleased` với RightButton):
+    - [x] Mục "Sao chép ảnh" (`Ctrl+C`): gọi `ClipboardService.copyToClipboardNative` đẩy bitmap đã xoay/scale vào clipboard với 2 định dạng `CF_DIB` và `PNG` (`FR-PIN-06`), phát âm thanh `MessageBeep`.
+    - [x] Mục "Lưu ảnh ra tệp..." (`Ctrl+S`): mở hộp thoại `StorageProvider.SaveFilePickerAsync` cho phép lưu file PNG/JPG (`FR-PIN-07`), hoặc lưu nhanh vào `savePath` nếu đã cấu hình `SavePathFixed`.
+    - [x] Mục "Xoay 90° phải" (`R`) và "Khôi phục kích thước 100%" (`Ctrl+0`).
+    - [x] Submenu "Độ mờ đục": các mức nhanh 100%, 75%, 50%, 25%.
+    - [x] Mục "Đóng ghim" (`Esc` / Double-click) (`FR-PIN-08`).
+  - [x] Các cơ chế đóng cửa sổ ghim nhanh (`FR-PIN-08`):
+    - [x] Nhấp đúp chuột trái (Double-click) vào bất kỳ vị trí nào trên ảnh ghim $\to$ đóng cửa sổ ngay lập tức.
+    - [x] Nhấn phím `Escape` khi cửa sổ đang active $\to$ đóng cửa sổ ngay lập tức.
+    - [x] Đảm bảo dọn dẹp giải phóng tài nguyên unmanaged và hủy tham chiếu instance khi đóng.
+  - [x] Viết unit tests kiểm thử các công thức xoay 90°, thu phóng và giải phóng bitmap (copy/save/close đi kèm logic thuần).
   - [ ] Verify runtime: click phải mở menu mượt mà, copy rồi paste vào Paint/Discord xác nhận ảnh đúng góc xoay; lưu ra file PNG xác nhận ảnh nét; double click hoặc nhấn Esc xác nhận cửa sổ biến mất sạch sẽ.
 
 ### Epic 11: Annotation Tools Advanced

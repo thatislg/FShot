@@ -23,6 +23,7 @@
     <Compile Include="HotkeyParserTests.fs" />
     <Compile Include="NotificationServiceTests.fs" />
     <Compile Include="ColorSelectorTests.fs" />
+    <Compile Include="Windows\PinWindowTests.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

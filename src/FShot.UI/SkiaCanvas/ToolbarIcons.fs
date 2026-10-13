@@ -78,6 +78,17 @@ module ToolbarIcons =
         "M9 5 h14 a4 4 0 0 1 4 4 v14 a4 4 0 0 1 -4 4 h-14 a4 4 0 0 1 -4 -4 v-14 a4 4 0 0 1 4 -4 z " +
         "M10 5 h12 v8 h-12 z M17 6.5 h3 v5 h-3 z M9 16 h14 v11 h-14 z"
 
+    /// Pin - pushpin Kawaii (viewBox 32x32, converted from docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/pin.svg).
+    /// Thân ghim phồng béo màu xanh da trời (#7BD5F5).
+    let pin =
+        "M10 9 C 10 7, 12 5, 16 5 C 20 5, 22 7, 22 9 C 22 11, 20 12, 19 14 C 21 16, 23 18, 23 20 C 23 22, 21 23, 16 23 C 11 23, 9 22, 9 20 C 9 18, 11 16, 13 14 C 12 12, 10 11, 10 9 Z"
+
+    /// Đầu kim loại cùn của pin (pin.svg).
+    let pinTip = "M15 22 L 15 28 L 17 28 L 17 22 Z"
+
+    /// Miệng cười của pin (pin.svg).
+    let pinMouth = "M15.2 18.8 Q 16 19.8 16.8 18.8"
+
     /// Cancel - puffed X (viewBox 32x32, converted from docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/cancel.svg).
     let cancel =
         "M9 7 C 8 6, 6 8, 7 9 L 14 16 L 7 23 C 6 24, 8 26, 9 25 L 16 18 L 23 25 C 24 26, 26 24, 25 23 L 18 16 L 25 9 C 26 8, 24 6, 23 7 L 16 14 Z"
@@ -101,6 +112,7 @@ module ToolbarIcons =
         | FShot.Core.Domain.RedoAction -> Some redo
         | FShot.Core.Domain.CopyAction -> Some copy
         | FShot.Core.Domain.SaveAction -> Some save
+        | FShot.Core.Domain.PinAction -> Some pin
         | FShot.Core.Domain.CancelAction -> Some cancel
 
     /// Màu icon mặc định trên nền toolbar kem trắng, theo token ToolButton.Default.IconColor (#3D2B1F).

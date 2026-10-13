@@ -9,6 +9,7 @@
     <Compile Include="Logging\FShotLog.fs" />
     <Compile Include="Cli\CliArguments.fs" />
     <Compile Include="SkiaCanvas\ToolbarIcons.fs" />
+    <Compile Include="Windows\PinWindow.axaml.fs" />
     <Compile Include="SkiaCanvas\CaptureCanvas.axaml.fs" />
     <Compile Include="Windows\NotificationWindow.axaml.fs" />
     <Compile Include="Windows\AboutWindow.axaml.fs" />
@@ -25,6 +26,7 @@
   <ItemGroup>
     <EmbeddedResource Include="Windows\NotificationWindow.axaml" />
     <EmbeddedResource Include="Windows\AboutWindow.axaml" />
+    <EmbeddedResource Include="Windows\PinWindow.axaml" />
     <EmbeddedResource Include="Windows\CaptureOverlayWindow.axaml" />
     <EmbeddedResource Include="Windows\FileNameEditor.axaml" />
     <EmbeddedResource Include="Windows\ColorSelector.axaml" />

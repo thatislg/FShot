@@ -87,6 +87,7 @@ type OverlayCommand =
     | StartExport of ExportTarget
     | ShowTextInput of Point
     | HideTextInput
+    | RequestPin
 
 /// Trạng thái tương tác annotation đang diễn ra.
 /// Xem 08_02_States.md, mục 2.4.
@@ -497,6 +498,9 @@ module OverlayStateLogic =
 
         | SelectionState.Selected, _, ToolbarAction SaveAction ->
             startExport (ExportTarget.SaveToFile state.Config.SaveOptions.Path) state
+
+        | SelectionState.Selected, _, ToolbarAction PinAction ->
+            result [ RequestPin ] state
 
         | SelectionState.Selected, _, ToolbarAction CopyAction ->
             startExport ExportTarget.CopyToClipboard state
