@@ -280,107 +280,107 @@
 > - [04_05_RectangleAndCircle.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_05_RectangleAndCircle.md): Ràng buộc hình học cơ bản hình chữ nhật bo góc và elip.
 > - [003_SRS.md](file:///d:/Kojin/FShot/docs/1.Investigation/003_SRS.md): Yêu cầu kỹ thuật `FR-ANN-09`–`FR-ANN-21`, `FR-UNDO-005`, `FR-TB-07`, `FR-CFG-203`.
 
-- [ ] **P2.20** Công cụ đảo ngược màu (Invert) trong vùng chỉ định (`FR-ANN-09`).
-  - [ ] Hoàn thiện tài liệu thiết kế [04_09_InvertAndCounter.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_09_InvertAndCounter.md).
-  - [ ] Mở rộng domain model trong `src/FShot.Core/Domain/Annotation.fs`:
-    - [ ] Thêm case `Invert of start: Point * endPoint: Point` vào `Tool` DU.
-    - [ ] Thêm `InvertTool` vào `ToolKind`.
-    - [ ] Cập nhật tính toán `BoundingBox` cho `Invert(a, b)`: $X = \min(a.X, b.X), Y = \min(a.Y, b.Y), W = |b.X - a.X|, H = |b.Y - a.Y|$.
-  - [ ] Triển khai Skia render trong `src/FShot.Rendering.Skia/Renderers/AnnotationRenderer.fs`:
-    - [ ] Áp dụng `SKPaint` với màu `#FFFFFFFF` và `SKBlendMode.Difference` để đảo ngược bit màu sắc pixel ($255 - C$) trực tiếp bằng phần cứng GPU shader mà không tốn chi phí copy CPU.
-    - [ ] Vẽ preview viền đứt nét kết hợp hiệu ứng Difference tức thời khi đang kéo chuột trong `CaptureCanvas`.
-  - [ ] Bổ sung icon Kawaii Invert vào `src/FShot.UI/SkiaCanvas/ToolbarIcons.fs` và phím tắt chuyển nhanh (phím `I`).
-  - [ ] Viết unit tests kiểm thử khởi tạo Invert, tính toán BoundingBox và serialization trong `tests/FShot.Core.Tests/Domain/AnnotationTests.fs`.
-  - [ ] Verify runtime: kéo vùng chọn đảo màu lên văn bản đen/trắng và hình ảnh nhiều màu, xác nhận màu sắc đảo ngược tức thì, xuất ảnh ra file giữ đúng hiệu ứng.
-- [ ] **P2.21** Bong bóng đếm số tự động tăng (Circle Counter) (`FR-ANN-10`, `FR-UNDO-005`, `FR-CFG-203`).
-  - [ ] Hoàn thiện tài liệu thiết kế [04_09_InvertAndCounter.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_09_InvertAndCounter.md).
-  - [ ] Mở rộng domain model trong `src/FShot.Core/Domain/Annotation.fs` và `src/FShot.Core/Domain/History.fs`:
-    - [ ] Thêm case `CircleCounter of center: Point * index: int * radius: float` vào `Tool` DU.
-    - [ ] Thêm `CircleCounterTool` vào `ToolKind`.
-    - [ ] Bổ sung trường `CounterIndex: int` vào `Snapshot` trong `History.fs` để hỗ trợ khôi phục chỉ số khi Undo/Redo (`FR-UNDO-005`).
-  - [ ] Triển khai logic auto-increment trong `src/FShot.Core/State/OverlayState.fs`:
-    - [ ] Quản lý trạng thái `CurrentCounterIndex: int` (khởi tạo = 1).
-    - [ ] Khi click chuột đặt huy hiệu: sinh annotation với index hiện tại rồi tự động tăng `CurrentCounterIndex = index + 1`.
-    - [ ] Khi Undo (`Ctrl+Z`): khôi phục `CurrentCounterIndex` từ snapshot trước đó (xóa số 3 thì click tiếp theo sẽ đánh lại số 3).
-    - [ ] Khi Redo (`Ctrl+Y`): khôi phục `CurrentCounterIndex` tương ứng.
-    - [ ] Click phải vào nút CircleCounter trên toolbar: reset chỉ số đếm về 1.
-  - [ ] Triển khai render Skia Kawaii Claymorphism trong `src/FShot.Rendering.Skia/Renderers/AnnotationRenderer.fs`:
-    - [ ] Vẽ vòng tròn nền tô đặc với màu vẽ `style.Color`, viền mờ bóng bẩy.
-    - [ ] Tính toán độ tương phản độ sáng Luminance ($L = 0.299R + 0.587G + 0.114B$): tự động chọn chữ đen trên nền sáng và chữ trắng trên nền tối.
-    - [ ] Căn giữa tuyệt đối số thứ tự bên trong vòng tròn, cỡ chữ tỉ lệ theo bán kính (`radius * 1.1`).
-    - [ ] Bán kính lấy từ cấu hình `DrawCircleCounterSize: float` (`FR-CFG-203`, mặc định 28.0 px $\to$ bán kính 14.0 px).
-  - [ ] Bổ sung icon Kawaii Circle Counter vào `src/FShot.UI/SkiaCanvas/ToolbarIcons.fs` và phím tắt chuyển tool.
-  - [ ] Viết unit tests kiểm thử auto-increment, thuật toán tính màu chữ tương phản và khôi phục chỉ số đếm khi Undo/Redo (`tests/FShot.Core.Tests/State/OverlayStateTests.fs`).
-  - [ ] Verify runtime: click 5 điểm liên tiếp trên màn hình xác nhận xuất hiện huy hiệu 1, 2, 3, 4, 5; nhấn Ctrl+Z 2 lần rồi click tiếp xác nhận ra số 4; thử đổi màu nền sáng (vàng) và tối (xanh đậm) kiểm tra màu số đọc rõ ràng.
-- [ ] **P2.22** Ràng buộc góc 45°/90° khi vẽ line/arrow/marker bằng `Ctrl` (`FR-ANN-11`).
-  - [ ] Hoàn thiện tài liệu thiết kế [04_10_ConstraintsAndSizing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_10_ConstraintsAndSizing.md).
-  - [ ] Xây dựng module hình học `src/FShot.Core/Geometry/AngleSnapping.fs`:
-    - [ ] Hàm `snapAngle45 (start: Point) (current: Point) : Point`.
-    - [ ] Tính vector dịch chuyển $\Delta x, \Delta y$, độ dài khoảng cách $L = \sqrt{\Delta x^2 + \Delta y^2}$, góc $\theta = \operatorname{atan2}(\Delta y, \Delta x)$.
-    - [ ] Làm tròn góc tới bội số gần nhất của $\pi/4$ ($45^\circ$): $\theta_{\text{snap}} = \operatorname{round}(\theta / (\pi/4)) \times (\pi/4)$.
-    - [ ] Tính tọa độ đích mới: $x' = x_1 + L \cos(\theta_{\text{snap}}), y' = y_1 + L \sin(\theta_{\text{snap}})$.
-  - [ ] Tích hợp vào `src/FShot.Core/State/OverlayState.fs` và `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`:
-    - [ ] Bắt cờ `KeyModifiers.Control` trong sự kiện `PointerMoved`.
-    - [ ] Khi giữ `Ctrl` trong lúc vẽ `Line`, `Arrow`, `Marker`: tự động áp dụng `snapAngle45` cho điểm kết thúc trong preview.
-    - [ ] Nhả phím `Ctrl`: trả lại tọa độ tự do theo con trỏ chuột trong thời gian thực.
-  - [ ] Viết unit tests kiểm thử các góc $0^\circ, 45^\circ, 90^\circ, 135^\circ, 180^\circ, -45^\circ, -90^\circ, -135^\circ$ trong `tests/FShot.Core.Tests/Geometry/AngleSnappingTests.fs`.
-  - [ ] Verify runtime: giữ `Ctrl` kéo đường thẳng và mũi tên, xác nhận nét vẽ hít chuẩn xác vào các trục ngang, thẳng đứng và đường chéo 45 độ.
-- [ ] **P2.23** Giữ tỉ lệ 1:1 khi vẽ rectangle/circle bằng `Ctrl` (`FR-ANN-12`).
-  - [ ] Rà soát tài liệu thiết kế [04_10_ConstraintsAndSizing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_10_ConstraintsAndSizing.md) và [04_05_RectangleAndCircle.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_05_RectangleAndCircle.md).
-  - [ ] Bổ sung hàm ràng buộc hình vuông / hình tròn trong `src/FShot.Core/Geometry/AngleSnapping.fs`:
-    - [ ] Hàm `snapSquare (start: Point) (current: Point) : Point`.
-    - [ ] Tính độ lệch cạnh lớn nhất $\text{side} = \max(|x_2 - x_1|, |y_2 - y_1|)$, bảo toàn dấu hướng kéo theo 4 góc phần tư.
-    - [ ] Tính tọa độ kết thúc: $x' = x_1 + \operatorname{sign}(x_2 - x_1) \times \text{side}, y' = y_1 + \operatorname{sign}(y_2 - y_1) \times \text{side}$.
-  - [ ] Tích hợp vào preview và commit của `Rectangle` và `Circle` trong `OverlayState.fs` và `CaptureCanvas.axaml.fs`:
-    - [ ] Khi giữ `Ctrl`: hình chữ nhật ép thành hình vuông hoàn hảo ($\text{Width} = \text{Height}$).
-    - [ ] Khi giữ `Ctrl`: hình elip ép thành hình tròn hoàn hảo ($R_x = R_y$).
-    - [ ] Commit annotation với trường `aspectLocked = true` cho `Circle`.
-  - [ ] Viết unit tests kiểm thử kéo hình chữ nhật / elip theo 4 hướng khi có và không có cờ `Ctrl`.
-  - [ ] Verify runtime: kéo vẽ khung chữ nhật và elip kèm phím `Ctrl`, xác nhận hình vuông và tròn đều tuyệt đối; nhả `Ctrl` giữa chừng hình trở lại tỉ lệ tự do.
-- [ ] **P2.24** Nhập số để đặt chính xác kích thước công cụ (`FR-ANN-13`, `FR-TB-07`).
-  - [ ] Hoàn thiện tài liệu thiết kế [04_10_ConstraintsAndSizing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_10_ConstraintsAndSizing.md).
-  - [ ] Triển khai bộ đệm số `NumericInputBuffer` trong `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`:
-    - [ ] Lắng nghe sự kiện `KeyDown`: khi người dùng gõ ký tự số `0`–`9` (không đi kèm `Ctrl`/`Alt`):
-      - [ ] Tích lũy chuỗi số (ví dụ gõ liên tiếp `1` rồi `6` $\to$ `"16"`).
-      - [ ] Cơ chế debounce timer 800ms hoặc kết thúc khi bấm `Enter`.
-      - [ ] Phân giải thành số nguyên, clamp trong phạm vi hợp lệ $[1.0 .. 50.0]\text{ px}$.
-      - [ ] Dispatch event cập nhật kích thước công cụ hiện tại (`StrokeWidth` hoặc `FontSize`).
-  - [ ] Thiết kế và hiển thị chỉ báo nổi `SizeIndicatorBox` (`FR-TB-07`):
-    - [ ] Huy hiệu Kawaii Claymorphism nổi ở góc hoặc cạnh con trỏ chuột, hiển thị số pixel kèm chấm tròn mô phỏng độ dày thực tế.
-    - [ ] Tự động mờ dần (Fade out) sau 1.2 giây không có thao tác nhập mới.
-  - [ ] Viết unit tests kiểm thử bộ đệm số, xử lý debounce timeout, giới hạn min/max và dispatch event kích thước.
-  - [ ] Verify runtime: gõ phím số `1`, `4` trên bàn phím xác nhận nét vẽ đổi ngay sang 14px, chỉ báo nổi xuất hiện và biến mất mượt mà.
-- [ ] **P2.25** Lăn chuột để tăng/giảm độ dày nét vẽ (`FR-ANN-14`, `FR-TB-07`).
-  - [ ] Hoàn thiện tài liệu thiết kế [04_10_ConstraintsAndSizing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_10_ConstraintsAndSizing.md).
-  - [ ] Bắt sự kiện `PointerWheelChanged` trong `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs` khi đang ở chế độ vẽ:
-    - [ ] Cuộn lên ($\Delta > 0$): tăng kích thước; Cuộn xuống ($\Delta < 0$): giảm kích thước.
-    - [ ] Bước nhảy thích ứng (Adaptive step): thay đổi $\pm 1.0\text{ px}$ khi kích thước $< 10$, thay đổi $\pm 2.0\text{ px}$ khi kích thước $\ge 10$.
-    - [ ] Clamp giá trị nét vẽ trong khoảng $[1.0 .. 50.0]\text{ px}$.
-    - [ ] Áp dụng linh hoạt theo tool hiện tại: `StrokeWidth` cho bút vẽ/hình khối, `FontSize` cho Text, `BlockSize` cho Pixelate, đường kính cho CircleCounter.
-    - [ ] Kích hoạt hiển thị chỉ báo nổi `SizeIndicatorBox` hiển thị độ dày nét vẽ tức thời.
-  - [ ] Viết unit tests kiểm thử hàm tính delta cuộn chuột, clamping và cập nhật state nét vẽ trong `OverlayStateTests.fs`.
-  - [ ] Verify runtime: chọn công cụ Pencil, lăn chuột lên/xuống, xác nhận độ dày nét vẽ thay đổi tức thì và chỉ báo hiển thị đúng số pixel.
-- [ ] **P2.26** Chọn, di chuyển hoặc sửa chú thích cũ (`FR-ANN-18`–`FR-ANN-21`).
-  - [ ] Hoàn thiện tài liệu thiết kế [04_11_ObjectSelectionAndEditing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_11_ObjectSelectionAndEditing.md).
-  - [ ] Triển khai module kiểm tra va chạm hình học `src/FShot.Core/Geometry/HitTesting.fs` (`FR-ANN-19`):
-    - [ ] Bán kính dung sai $\text{tolerance} = 6.0\text{ px}$.
-    - [ ] Hàm khoảng cách từ điểm tới đoạn thẳng `distancePointToSegment` (cho Line, Arrow, Marker, Pencil).
-    - [ ] Hàm kiểm tra va chạm chu vi hình chữ nhật và đường tròn (cho Rectangle, Circle).
-    - [ ] Hàm kiểm tra va chạm BoundingBox (cho Text, Invert, Pixelate, CircleCounter, Icon).
-    - [ ] Quét theo thứ tự Z-order từ mới nhất đến cũ nhất để ưu tiên chọn đối tượng ở lớp trên cùng.
-  - [ ] Quản lý trạng thái chọn và di chuyển trong `src/FShot.Core/State/OverlayState.fs` (`FR-ANN-18`):
-    - [ ] Bổ sung trường `SelectedAnnotation: Annotation option` trong state.
-    - [ ] Khi click vào nét vẽ cũ: chọn đối tượng, hiển thị khung bao đứt nét và 4 điểm neo tròn ở các góc.
-    - [ ] Kéo chuột khi đang chọn: tịnh tiến toàn bộ tọa độ đối tượng theo vector $(\Delta x, \Delta y)$, hiển thị preview di chuyển mượt mà.
-    - [ ] Thả chuột: commit tọa độ mới và đẩy snapshot vào `HistoryStack` (hỗ trợ hoàn tác di chuyển bằng `Ctrl+Z`).
-  - [ ] Xóa đối tượng chú thích đang chọn (`FR-ANN-20`):
-    - [ ] Nhấn phím `Delete` hoặc `Backspace`: loại bỏ đối tượng đang chọn khỏi danh sách `Annotations`.
-    - [ ] Đẩy snapshot mới vào `HistoryStack` để có thể hoàn tác khôi phục lại nét vẽ.
-  - [ ] Kết thúc chỉnh sửa văn bản tại chỗ (`FR-ANN-21`):
-    - [ ] Nhấn `Ctrl + Enter` (hoặc `Ctrl + Return`): kết thúc nhập văn bản ngay lập tức, phẳng hóa TextBox thành `Annotation.Text` và commit snapshot.
-    - [ ] Nhấn `Esc`: hủy bỏ thay đổi văn bản đang gõ.
-  - [ ] Viết unit tests kiểm thử khoảng cách va chạm cho từng loại tool, chọn theo Z-order, di chuyển tịnh tiến tọa độ và xóa đối tượng trong `tests/FShot.Core.Tests/Geometry/HitTestingTests.fs`.
-  - [ ] Verify runtime: vẽ 3 hình chữ nhật và mũi tên, click chuột chọn mũi tên xác nhận hiện khung viền chọn; kéo mũi tên sang vị trí mới; nhấn Delete xác nhận nét vẽ biến mất; nhấn Ctrl+Z xác nhận nét vẽ khôi phục lại.
+- [x] **P2.20** Công cụ đảo ngược màu (Invert) trong vùng chỉ định (`FR-ANN-09`).
+  - [x] Hoàn thiện tài liệu thiết kế [04_09_InvertAndCounter.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_09_InvertAndCounter.md).
+  - [x] Mở rộng domain model trong `src/FShot.Core/Domain/Annotation.fs`:
+    - [x] Thêm case `Invert of start: Point * endPoint: Point` vào `Tool` DU.
+    - [x] Thêm `InvertTool` vào `ToolKind`.
+    - [x] Cập nhật tính toán `BoundingBox` cho `Invert(a, b)`: $X = \min(a.X, b.X), Y = \min(a.Y, b.Y), W = |b.X - a.X|, H = |b.Y - a.Y|$.
+  - [x] Triển khai Skia render trong `src/FShot.Rendering.Skia/Renderers/AnnotationRenderer.fs`:
+    - [x] Áp dụng `SKPaint` với màu `#FFFFFFFF` và `SKBlendMode.Difference` để đảo ngược bit màu sắc pixel ($255 - C$) trực tiếp bằng phần cứng GPU shader mà không tốn chi phí copy CPU.
+    - [x] Vẽ preview viền đứt nét kết hợp hiệu ứng Difference tức thời khi đang kéo chuột trong `CaptureCanvas`.
+  - [x] Bổ sung icon Kawaii Invert vào `src/FShot.UI/SkiaCanvas/ToolbarIcons.fs` và phím tắt chuyển nhanh (phím `I`).
+  - [x] Viết unit tests kiểm thử khởi tạo Invert, tính toán BoundingBox và serialization trong `tests/FShot.Core.Tests/Domain/AnnotationTests.fs`.
+  - [x] Verify runtime: kéo vùng chọn đảo màu lên văn bản đen/trắng và hình ảnh nhiều màu, xác nhận màu sắc đảo ngược tức thì, xuất ảnh ra file giữ đúng hiệu ứng.
+- [x] **P2.21** Bong bóng đếm số tự động tăng (Circle Counter) (`FR-ANN-10`, `FR-UNDO-005`, `FR-CFG-203`).
+  - [x] Hoàn thiện tài liệu thiết kế [04_09_InvertAndCounter.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_09_InvertAndCounter.md).
+  - [x] Mở rộng domain model trong `src/FShot.Core/Domain/Annotation.fs` và `src/FShot.Core/Domain/History.fs`:
+    - [x] Thêm case `CircleCounter of center: Point * index: int * radius: float` vào `Tool` DU.
+    - [x] Thêm `CircleCounterTool` vào `ToolKind`.
+    - [x] Bổ sung trường `CounterIndex: int` vào `Snapshot` trong `History.fs` để hỗ trợ khôi phục chỉ số khi Undo/Redo (`FR-UNDO-005`).
+  - [x] Triển khai logic auto-increment trong `src/FShot.Core/State/OverlayState.fs`:
+    - [x] Quản lý trạng thái `CurrentCounterIndex: int` (khởi tạo = 1).
+    - [x] Khi click chuột đặt huy hiệu: sinh annotation với index hiện tại rồi tự động tăng `CurrentCounterIndex = index + 1`.
+    - [x] Khi Undo (`Ctrl+Z`): khôi phục `CurrentCounterIndex` từ snapshot trước đó (xóa số 3 thì click tiếp theo sẽ đánh lại số 3).
+    - [x] Khi Redo (`Ctrl+Y`): khôi phục `CurrentCounterIndex` tương ứng.
+    - [x] Click phải vào nút CircleCounter trên toolbar: reset chỉ số đếm về 1.
+  - [x] Triển khai render Skia Kawaii Claymorphism trong `src/FShot.Rendering.Skia/Renderers/AnnotationRenderer.fs`:
+    - [x] Vẽ vòng tròn nền tô đặc với màu vẽ `style.Color`, viền mờ bóng bẩy.
+    - [x] Tính toán độ tương phản độ sáng Luminance ($L = 0.299R + 0.587G + 0.114B$): tự động chọn chữ đen trên nền sáng và chữ trắng trên nền tối.
+    - [x] Căn giữa tuyệt đối số thứ tự bên trong vòng tròn, cỡ chữ tỉ lệ theo bán kính (`radius * 1.1`).
+    - [x] Bán kính lấy từ cấu hình `DrawCircleCounterSize: float` (`FR-CFG-203`, mặc định 28.0 px $\to$ bán kính 14.0 px).
+  - [x] Bổ sung icon Kawaii Circle Counter vào `src/FShot.UI/SkiaCanvas/ToolbarIcons.fs` và phím tắt chuyển tool.
+  - [x] Viết unit tests kiểm thử auto-increment, thuật toán tính màu chữ tương phản và khôi phục chỉ số đếm khi Undo/Redo (`tests/FShot.Core.Tests/State/OverlayStateTests.fs`).
+  - [x] Verify runtime: click 5 điểm liên tiếp trên màn hình xác nhận xuất hiện huy hiệu 1, 2, 3, 4, 5; nhấn Ctrl+Z 2 lần rồi click tiếp xác nhận ra số 4; thử đổi màu nền sáng (vàng) và tối (xanh đậm) kiểm tra màu số đọc rõ ràng.
+- [x] **P2.22** Ràng buộc góc 45°/90° khi vẽ line/arrow/marker bằng `Ctrl` (`FR-ANN-11`).
+  - [x] Hoàn thiện tài liệu thiết kế [04_10_ConstraintsAndSizing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_10_ConstraintsAndSizing.md).
+  - [x] Xây dựng module hình học `src/FShot.Core/Geometry/AngleSnapping.fs`:
+    - [x] Hàm `snapAngle45 (start: Point) (current: Point) : Point`.
+    - [x] Tính vector dịch chuyển $\Delta x, \Delta y$, độ dài khoảng cách $L = \sqrt{\Delta x^2 + \Delta y^2}$, góc $\theta = \operatorname{atan2}(\Delta y, \Delta x)$.
+    - [x] Làm tròn góc tới bội số gần nhất của $\pi/4$ ($45^\circ$): $\theta_{\text{snap}} = \operatorname{round}(\theta / (\pi/4)) \times (\pi/4)$.
+    - [x] Tính tọa độ đích mới: $x' = x_1 + L \cos(\theta_{\text{snap}}), y' = y_1 + L \sin(\theta_{\text{snap}})$.
+  - [x] Tích hợp vào `src/FShot.Core/State/OverlayState.fs` và `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`:
+    - [x] Bắt cờ `KeyModifiers.Control` trong sự kiện `PointerMoved`.
+    - [x] Khi giữ `Ctrl` trong lúc vẽ `Line`, `Arrow`, `Marker`: tự động áp dụng `snapAngle45` cho điểm kết thúc trong preview.
+    - [x] Nhả phím `Ctrl`: trả lại tọa độ tự do theo con trỏ chuột trong thời gian thực.
+  - [x] Viết unit tests kiểm thử các góc $0^\circ, 45^\circ, 90^\circ, 135^\circ, 180^\circ, -45^\circ, -90^\circ, -135^\circ$ trong `tests/FShot.Core.Tests/Geometry/AngleSnappingTests.fs`.
+  - [x] Verify runtime: giữ `Ctrl` kéo đường thẳng và mũi tên, xác nhận nét vẽ hít chuẩn xác vào các trục ngang, thẳng đứng và đường chéo 45 độ.
+- [x] **P2.23** Giữ tỉ lệ 1:1 khi vẽ rectangle/circle bằng `Ctrl` (`FR-ANN-12`).
+  - [x] Rà soát tài liệu thiết kế [04_10_ConstraintsAndSizing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_10_ConstraintsAndSizing.md) và [04_05_RectangleAndCircle.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_05_RectangleAndCircle.md).
+  - [x] Bổ sung hàm ràng buộc hình vuông / hình tròn trong `src/FShot.Core/Geometry/AngleSnapping.fs`:
+    - [x] Hàm `snapSquare (start: Point) (current: Point) : Point`.
+    - [x] Tính độ lệch cạnh lớn nhất $\text{side} = \max(|x_2 - x_1|, |y_2 - y_1|)$, bảo toàn dấu hướng kéo theo 4 góc phần tư.
+    - [x] Tính tọa độ kết thúc: $x' = x_1 + \operatorname{sign}(x_2 - x_1) \times \text{side}, y' = y_1 + \operatorname{sign}(y_2 - y_1) \times \text{side}$.
+  - [x] Tích hợp vào preview và commit của `Rectangle` và `Circle` trong `OverlayState.fs` và `CaptureCanvas.axaml.fs`:
+    - [x] Khi giữ `Ctrl`: hình chữ nhật ép thành hình vuông hoàn hảo ($\text{Width} = \text{Height}$).
+    - [x] Khi giữ `Ctrl`: hình elip ép thành hình tròn hoàn hảo ($R_x = R_y$).
+    - [x] Commit annotation với trường `aspectLocked = true` cho `Circle`.
+  - [x] Viết unit tests kiểm thử kéo hình chữ nhật / elip theo 4 hướng khi có và không có cờ `Ctrl`.
+  - [x] Verify runtime: kéo vẽ khung chữ nhật và elip kèm phím `Ctrl`, xác nhận hình vuông và tròn đều tuyệt đối; nhả `Ctrl` giữa chừng hình trở lại tỉ lệ tự do.
+- [x] **P2.24** Nhập số để đặt chính xác kích thước công cụ (`FR-ANN-13`, `FR-TB-07`).
+  - [x] Hoàn thiện tài liệu thiết kế [04_10_ConstraintsAndSizing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_10_ConstraintsAndSizing.md).
+  - [x] Triển khai bộ đệm số `NumericInputBuffer` trong `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`:
+    - [x] Lắng nghe sự kiện `KeyDown`: khi người dùng gõ ký tự số `0`–`9` (không đi kèm `Ctrl`/`Alt`):
+      - [x] Tích lũy chuỗi số (ví dụ gõ liên tiếp `1` rồi `6` $\to$ `"16"`).
+      - [x] Cơ chế debounce timer 800ms hoặc kết thúc khi bấm `Enter`.
+      - [x] Phân giải thành số nguyên, clamp trong phạm vi hợp lệ $[1.0 .. 50.0]\text{ px}$.
+      - [x] Dispatch event cập nhật kích thước công cụ hiện tại (`StrokeWidth` hoặc `FontSize`).
+  - [x] Thiết kế và hiển thị chỉ báo nổi `SizeIndicatorBox` (`FR-TB-07`):
+    - [x] Huy hiệu Kawaii Claymorphism nổi ở góc hoặc cạnh con trỏ chuột, hiển thị số pixel kèm chấm tròn mô phỏng độ dày thực tế.
+    - [x] Tự động mờ dần (Fade out) sau 1.2 giây không có thao tác nhập mới.
+  - [x] Viết unit tests kiểm thử bộ đệm số, xử lý debounce timeout, giới hạn min/max và dispatch event kích thước.
+  - [x] Verify runtime: gõ phím số `1`, `4` trên bàn phím xác nhận nét vẽ đổi ngay sang 14px, chỉ báo nổi xuất hiện và biến mất mượt mà.
+- [x] **P2.25** Lăn chuột để tăng/giảm độ dày nét vẽ (`FR-ANN-14`, `FR-TB-07`).
+  - [x] Hoàn thiện tài liệu thiết kế [04_10_ConstraintsAndSizing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_10_ConstraintsAndSizing.md).
+  - [x] Bắt sự kiện `PointerWheelChanged` trong `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs` khi đang ở chế độ vẽ:
+    - [x] Cuộn lên ($\Delta > 0$): tăng kích thước; Cuộn xuống ($\Delta < 0$): giảm kích thước.
+    - [x] Bước nhảy thích ứng (Adaptive step): thay đổi $\pm 1.0\text{ px}$ khi kích thước $< 10$, thay đổi $\pm 2.0\text{ px}$ khi kích thước $\ge 10$.
+    - [x] Clamp giá trị nét vẽ trong khoảng $[1.0 .. 50.0]\text{ px}$.
+    - [x] Áp dụng linh hoạt theo tool hiện tại: `StrokeWidth` cho bút vẽ/hình khối, `FontSize` cho Text, `BlockSize` cho Pixelate, đường kính cho CircleCounter.
+    - [x] Kích hoạt hiển thị chỉ báo nổi `SizeIndicatorBox` hiển thị độ dày nét vẽ tức thời.
+  - [x] Viết unit tests kiểm thử hàm tính delta cuộn chuột, clamping và cập nhật state nét vẽ trong `OverlayStateTests.fs`.
+  - [x] Verify runtime: chọn công cụ Pencil, lăn chuột lên/xuống, xác nhận độ dày nét vẽ thay đổi tức thì và chỉ báo hiển thị đúng số pixel.
+- [x] **P2.26** Chọn, di chuyển hoặc sửa chú thích cũ (`FR-ANN-18`–`FR-ANN-21`).
+  - [x] Hoàn thiện tài liệu thiết kế [04_11_ObjectSelectionAndEditing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_11_ObjectSelectionAndEditing.md).
+  - [x] Triển khai module kiểm tra va chạm hình học `src/FShot.Core/Geometry/HitTesting.fs` (`FR-ANN-19`):
+    - [x] Bán kính dung sai $\text{tolerance} = 6.0\text{ px}$.
+    - [x] Hàm khoảng cách từ điểm tới đoạn thẳng `distancePointToSegment` (cho Line, Arrow, Marker, Pencil).
+    - [x] Hàm kiểm tra va chạm chu vi hình chữ nhật và đường tròn (cho Rectangle, Circle).
+    - [x] Hàm kiểm tra va chạm BoundingBox (cho Text, Invert, Pixelate, CircleCounter, Icon).
+    - [x] Quét theo thứ tự Z-order từ mới nhất đến cũ nhất để ưu tiên chọn đối tượng ở lớp trên cùng.
+  - [x] Quản lý trạng thái chọn và di chuyển trong `src/FShot.Core/State/OverlayState.fs` (`FR-ANN-18`):
+    - [x] Bổ sung trường `SelectedAnnotation: Annotation option` trong state.
+    - [x] Khi click vào nét vẽ cũ: chọn đối tượng, hiển thị khung bao đứt nét và 4 điểm neo tròn ở các góc.
+    - [x] Kéo chuột khi đang chọn: tịnh tiến toàn bộ tọa độ đối tượng theo vector $(\Delta x, \Delta y)$, hiển thị preview di chuyển mượt mà.
+    - [x] Thả chuột: commit tọa độ mới và đẩy snapshot vào `HistoryStack` (hỗ trợ hoàn tác di chuyển bằng `Ctrl+Z`).
+  - [x] Xóa đối tượng chú thích đang chọn (`FR-ANN-20`):
+    - [x] Nhấn phím `Delete` hoặc `Backspace`: loại bỏ đối tượng đang chọn khỏi danh sách `Annotations`.
+    - [x] Đẩy snapshot mới vào `HistoryStack` để có thể hoàn tác khôi phục lại nét vẽ.
+  - [x] Kết thúc chỉnh sửa văn bản tại chỗ (`FR-ANN-21`):
+    - [x] Nhấn `Ctrl + Enter` (hoặc `Ctrl + Return`): kết thúc nhập văn bản ngay lập tức, phẳng hóa TextBox thành `Annotation.Text` và commit snapshot.
+    - [x] Nhấn `Esc`: hủy bỏ thay đổi văn bản đang gõ.
+  - [x] Viết unit tests kiểm thử khoảng cách va chạm cho từng loại tool, chọn theo Z-order, di chuyển tịnh tiến tọa độ và xóa đối tượng trong `tests/FShot.Core.Tests/Geometry/HitTestingTests.fs`.
+  - [x] Verify runtime: vẽ 3 hình chữ nhật và mũi tên, click chuột chọn mũi tên xác nhận hiện khung viền chọn; kéo mũi tên sang vị trí mới; nhấn Delete xác nhận nét vẽ biến mất; nhấn Ctrl+Z xác nhận nét vẽ khôi phục lại.
 
 ### Epic 12: Selection Engine Advanced
 - [ ] **P2.27** Co giãn đối xứng 2 px bằng `Ctrl+Shift+Arrow` (`FR-SEL-07`).
