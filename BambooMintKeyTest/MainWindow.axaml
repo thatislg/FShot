@@ -1,0 +1,82 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="BambooMintKeyTest.MainWindow"
+        Title="Kiểm chứng BambooMintKey &amp; TSF trong Avalonia (FShot Test)"
+        Width="780" Height="580"
+        Topmost="True"
+        ShowInTaskbar="True"
+        WindowDecorations="None"
+        Background="#00000000"
+        WindowStartupLocation="CenterScreen">
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Margin="24">
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Spacing="6" Margin="0,0,0,16">
+            <TextBlock Text="Kiểm chứng BambooMintKey &amp; TSF (Avalonia 12 / .NET 8)"
+                       FontSize="20" FontWeight="Bold" />
+            <TextBlock Text="Mục đích: Kiểm tra xem BambooMintKey có thể gõ tiếng Việt có dấu trong Avalonia TextBox hay không, và so sánh với hành vi khi gọi TF_CreateThreadMgr / Win32 EDIT."
+                       FontSize="13" Foreground="Gray" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <!-- Main Input: The primary TextBox requested by user -->
+        <Border Grid.Row="1" Background="#1E1E2E" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+            <StackPanel Spacing="10">
+                <TextBlock Text="1. Ô nhập liệu Avalonia TextBox (chức năng tương tự Text Annotation):"
+                           FontWeight="SemiBold" FontSize="14" Foreground="#89B4FA" />
+                <TextBox x:Name="MainTextBox"
+                         Height="48"
+                         FontSize="18"
+                         PlaceholderText="Gõ tiếng Việt thử tại đây (ví dụ: 'tiếng Việt', 'alo', 'đường')..."
+                         VerticalContentAlignment="Center"
+                         Padding="12,8" />
+                <TextBlock x:Name="TextStatsBlock"
+                           Text="Độ dài: 0 ký tự | Mã Unicode: []"
+                           FontSize="12" Foreground="#A6ADC8" />
+            </StackPanel>
+        </Border>
+
+        <!-- Controls: TSF Activation & Win32 EDIT comparison -->
+        <Border Grid.Row="2" Background="#24273A" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+            <StackPanel Spacing="12">
+                <TextBlock Text="2. Thử nghiệm trạng thái TSF &amp; Win32 EDIT:"
+                           FontWeight="SemiBold" FontSize="14" Foreground="#A6E3A1" />
+                <WrapPanel Orientation="Horizontal">
+                    <Button x:Name="BtnActivateTsf"
+                            Content="⚡ Kích hoạt TSF (TF_CreateThreadMgr như FShot)"
+                            Margin="0,0,10,6" Padding="12,8" />
+                    <Button x:Name="BtnOpenWin32Edit"
+                            Content="🪟 Mở Win32 EDIT popup (như FShot)"
+                            Margin="0,0,10,6" Padding="12,8" />
+                    <Button x:Name="BtnCloseWin32Edit"
+                            Content="✕ Đóng Win32 EDIT popup"
+                            Margin="0,0,10,6" Padding="12,8" />
+                    <Button x:Name="BtnClearText"
+                            Content="🗑 Xóa text"
+                            Margin="0,0,10,6" Padding="12,8" />
+                </WrapPanel>
+                <TextBlock x:Name="TsfStatusBlock"
+                           Text="Trạng thái TSF: Chưa kích hoạt (Default Avalonia - IMM32)"
+                           FontSize="13" Foreground="#F9E2AF" FontWeight="Medium" />
+            </StackPanel>
+        </Border>
+
+        <!-- Log & Event Tracing -->
+        <Border Grid.Row="3" Background="#181825" CornerRadius="8" Padding="16">
+            <Grid RowDefinitions="Auto,*">
+                <TextBlock Grid.Row="0" Text="3. Nhật ký sự kiện bàn phím &amp; nhập liệu (Event Log):"
+                           FontWeight="SemiBold" FontSize="13" Foreground="#CDD6F4" Margin="0,0,0,8" />
+                <ScrollViewer Grid.Row="1">
+                    <TextBox x:Name="LogTextBox"
+                             IsReadOnly="True"
+                             FontFamily="Consolas, Cascadia Code, Courier New"
+                             FontSize="12"
+                             AcceptsReturn="True"
+                             TextWrapping="Wrap"
+                             Background="#11111B"
+                             Foreground="#A6ADC8"
+                             BorderThickness="0"
+                             Padding="8" />
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

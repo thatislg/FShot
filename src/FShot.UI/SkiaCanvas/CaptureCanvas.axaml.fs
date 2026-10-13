@@ -1007,10 +1007,13 @@ type CaptureCanvas() as this =
         tb.AcceptsReturn <- true
         tb.AcceptsTab <- false
         tb.Text <- ""
-        tb.FontSize <-
+
+        let fontSize =
             overlayState
             |> Option.map (fun s -> s.CurrentStyle.FontSize)
             |> Option.defaultValue 14.0
+
+        tb.FontSize <- fontSize
 
         let color =
             overlayState
@@ -1019,32 +1022,37 @@ type CaptureCanvas() as this =
 
         let mediaColor = Avalonia.Media.Color.FromArgb(color.A, color.R, color.G, color.B)
         tb.Foreground <- new SolidColorBrush(mediaColor)
-        // Caret phải dùng brush riêng; nếu dùng cùng brush với Foreground có thể bị ẩn.
         tb.CaretBrush <- new SolidColorBrush(mediaColor)
-        // Nền hơi tối để text nổi bật trên ảnh chụp; vẫn đủ trong suốt để nhìn xuyên.
-        tb.Background <- new SolidColorBrush(Avalonia.Media.Color.FromArgb(64uy, 0uy, 0uy, 0uy))
+        tb.Background <- new SolidColorBrush(Avalonia.Media.Color.FromArgb(180uy, 25uy, 25uy, 35uy))
         tb.BorderBrush <- new SolidColorBrush(mediaColor)
-        tb.BorderThickness <- Avalonia.Thickness(1.0)
-        tb.Padding <- Avalonia.Thickness(4.0)
-        tb.MinWidth <- 80.0
+        tb.BorderThickness <- Avalonia.Thickness(1.5)
+        tb.CornerRadius <- Avalonia.CornerRadius(4.0)
+        tb.Padding <- Avalonia.Thickness(6.0, 4.0)
+        tb.MinWidth <- 120.0
         tb.MinHeight <- 28.0
-        // Bắt buộc hiển thị và nhận input.
         tb.IsVisible <- true
         tb.IsHitTestVisible <- true
         tb.Focusable <- true
 
-        let scale =
-            match captureResult with
-            | Some r -> r.ScaleFactor.Value
-            | None -> 1.0
-
         let localPos = this.ToControlPoint position
-        let x = localPos.X * scale
-        let y = localPos.Y * scale
-        Canvas.SetLeft(tb, x)
-        Canvas.SetTop(tb, y)
+        Canvas.SetLeft(tb, localPos.X)
+        Canvas.SetTop(tb, localPos.Y)
+
+        let isImeInitial = InputMethod.GetIsInputMethodEnabled(tb)
+        FShotLog.write (sprintf "[Layer:TextBox] Created TextBox at (%.1f, %.1f) | InputMethodEnabled=%b" localPos.X localPos.Y isImeInitial)
+
+        tb.GotFocus.Add(fun _ ->
+            let isIme = InputMethod.GetIsInputMethodEnabled(tb)
+            FShotLog.write (sprintf "[Layer:TextBox] GotFocus | IsFocused=%b | InputMethodEnabled=%b" tb.IsFocused isIme)
+        )
+
+        tb.LostFocus.Add(fun _ ->
+            FShotLog.write (sprintf "[Layer:TextBox] LostFocus | IsFocused=%b | Text=\"%s\"" tb.IsFocused tb.Text)
+            this.CommitOrCancelTextInput()
+        )
 
         tb.KeyDown.Add(fun e ->
+            FShotLog.write (sprintf "[Layer:TextBox] KeyDown: Key=%A | KeySymbol=%A | Modifiers=%A" e.Key e.KeySymbol e.KeyModifiers)
             let ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control)
             match e.Key with
             | Key.Enter
@@ -1052,69 +1060,57 @@ type CaptureCanvas() as this =
                 // FR-ANN-21: Ctrl+Enter kết thúc nhập và commit ngay lập tức.
                 // Enter thường (không Ctrl) để TextBox tự xuống dòng (AcceptsReturn = true).
                 e.Handled <- true
-                this.Dispatch(TextCommitted tb.Text)
+                this.CommitOrCancelTextInput()
             | Key.Escape ->
                 e.Handled <- true
+                this.HideTextInput()
                 this.Dispatch(Cancel)
             | _ -> ()
         )
 
-        tb.LostFocus.Add(fun _ ->
-            if String.IsNullOrWhiteSpace tb.Text then
-                this.Dispatch(Cancel)
-            else
-                this.Dispatch(TextCommitted tb.Text)
+        tb.KeyUp.Add(fun e ->
+            FShotLog.write (sprintf "[Layer:TextBox] KeyUp: Key=%A | KeySymbol=%A" e.Key e.KeySymbol)
         )
 
-        // Ưu tiên: thêm TextBox vào Canvas cha trực tiếp (RootCanvas trong XAML).
-        // Nếu vì lý do gì cha không phải Canvas, dùng TopLevel.GetTopLevel để
-        // tìm Window và fallback bọc Content trong Canvas tạm thời.
+        tb.TextInput.Add(fun e ->
+            FShotLog.write (sprintf "[Layer:TextBox] TextInput: Text=\"%s\"" e.Text)
+        )
+
+        tb.TextChanged.Add(fun _ ->
+            FShotLog.write (sprintf "[Layer:TextBox] TextChanged: CurrentText=\"%s\"" tb.Text)
+        )
+
         match this.Parent with
         | :? Canvas as canvas ->
             canvas.Children.Add(tb) |> ignore
             textBox <- Some tb
-            tb.Focus() |> ignore
-            FShotLog.write "[CaptureCanvas] TextBox added to Canvas (Parent)"
+            let syncFocus = tb.Focus()
+            FShotLog.write (sprintf "[Layer:Canvas] tb added to Canvas | Sync Focus()=%b" syncFocus)
+            Dispatcher.UIThread.Post(fun () ->
+                let asyncFocus = tb.Focus()
+                let topLevel = Avalonia.Controls.TopLevel.GetTopLevel(this)
+                let focusedEl =
+                    if isNull topLevel || isNull topLevel.FocusManager || isNull (topLevel.FocusManager.GetFocusedElement()) then "null"
+                    else (topLevel.FocusManager.GetFocusedElement()).GetType().Name
+                FShotLog.write (sprintf "[Layer:Canvas] Async tb.Focus()=%b | tb.IsFocused=%b | TopLevel.Focused=%s" asyncFocus tb.IsFocused focusedEl)
+            )
         | _ ->
-            FShotLog.write "[CaptureCanvas] ShowTextInput: Parent is not Canvas, using fallback"
+            FShotLog.write "[CaptureCanvas] ShowTextInput: Parent is not Canvas, searching TopLevel"
             let topLevel = Avalonia.Controls.TopLevel.GetTopLevel(this)
-            FShotLog.write (sprintf "[CaptureCanvas] ShowTextInput fallback: TopLevel type = %s" (if isNull topLevel then "null" else topLevel.GetType().Name))
-
             match topLevel with
             | :? Window as window ->
-                let contentTypeName =
-                    if isNull window.Content then "null"
-                    else window.Content.GetType().Name
-                let refEquals = Object.ReferenceEquals(window.Content, this)
-                FShotLog.write (sprintf "[CaptureCanvas] ShowTextInput fallback: Window.Content = %s, ReferenceEquals(this) = %b" contentTypeName refEquals)
-
                 match window.Content with
-                | :? Canvas as canvas when canvas.Children.Contains(this) ->
+                | :? Canvas as canvas ->
                     canvas.Children.Add(tb) |> ignore
                     textBox <- Some tb
-                    tb.Focus() |> ignore
-                    FShotLog.write "[CaptureCanvas] TextBox added to existing Canvas wrapper"
-                | content when Object.ReferenceEquals(content, this) ->
-                    let canvas = new Canvas()
-                    canvas.Background <- Brushes.Transparent
-                    canvas.HorizontalAlignment <- Avalonia.Layout.HorizontalAlignment.Stretch
-                    canvas.VerticalAlignment <- Avalonia.Layout.VerticalAlignment.Stretch
-                    canvas.Width <- window.Bounds.Width
-                    canvas.Height <- window.Bounds.Height
-
-                    window.Content <- null
-                    canvas.Children.Add(this) |> ignore
-                    this.Width <- canvas.Width
-                    this.Height <- canvas.Height
-                    canvas.Children.Add(tb) |> ignore
-                    textBox <- Some tb
-                    window.Content <- canvas
-                    tb.Focus() |> ignore
-                    FShotLog.write "[CaptureCanvas] TextBox added to new Canvas wrapper (CaptureCanvas as root)"
+                    Dispatcher.UIThread.Post(fun () ->
+                        tb.Focus() |> ignore
+                    )
+                    FShotLog.write "[CaptureCanvas] Avalonia TextBox added to Window Canvas"
                 | _ ->
-                    FShotLog.write "[CaptureCanvas] Window.Content không phải CaptureCanvas hoặc wrapper Canvas"
+                    FShotLog.write "[CaptureCanvas] Window.Content is not Canvas"
             | _ ->
-                FShotLog.write "[CaptureCanvas] Không tìm thấy Panel/Canvas để thêm TextBox"
+                FShotLog.write "[CaptureCanvas] Cannot find TopLevel Window"
 
     /// Ẩn và xóa TextBox tạm.
     member private this.HideTextInput() =
@@ -1123,21 +1119,23 @@ type CaptureCanvas() as this =
             textBox <- None
             try
                 match tb.Parent with
-                | :? Canvas as canvas ->
-                    canvas.Children.Remove(tb) |> ignore
-                    // Nếu Canvas này là wrapper tạm thời trong Window, khôi phục lại Window.Content.
-                    match canvas.Parent with
-                    | :? Window as window when window.Content = (canvas :> obj) && canvas.Children.Contains(this) ->
-                        canvas.Children.Remove(this) |> ignore
-                        this.Width <- Double.NaN
-                        this.Height <- Double.NaN
-                        window.Content <- this
-                    | _ -> ()
                 | :? Panel as panel ->
                     panel.Children.Remove(tb) |> ignore
                 | _ -> ()
             with ex ->
                 FShotLog.writeEx "HideTextInput failed" ex
+        | None -> ()
+
+    /// Đóng và chốt nội dung text box (commit nếu có chữ, cancel nếu rỗng).
+    member private this.CommitOrCancelTextInput() =
+        match textBox with
+        | Some tb ->
+            let text = tb.Text
+            this.HideTextInput()
+            if String.IsNullOrWhiteSpace text then
+                this.Dispatch(Cancel)
+            else
+                this.Dispatch(TextCommitted text)
         | None -> ()
 
     override this.OnAttachedToVisualTree(e: Avalonia.VisualTreeAttachmentEventArgs) =
@@ -1166,6 +1164,7 @@ type CaptureCanvas() as this =
 
         match toolbarBounds with
         | Some tb when tb.Contains avPoint ->
+            this.CommitOrCancelTextInput()
             match Toolbar.hitTool tb avPoint with
             | Some hit ->
                 match hit with
@@ -1180,15 +1179,19 @@ type CaptureCanvas() as this =
                 FShotLog.write (sprintf "[CaptureCanvas] Toolbar click at %A inside tb=%A but hit no button" avPoint tb)
                 ()
         | _ ->
-            // Đảm bảo control có focus để nhận phím tắt.
-            this.Focus() |> ignore
+            if textBox.IsSome then
+                // Click ra ngoài text box: kết thúc nhập text trước, không vẽ đè tool mới ngay
+                this.CommitOrCancelTextInput()
+            else
+                // Đảm bảo control có focus để nhận phím tắt.
+                this.Focus() |> ignore
 
-            FShotLog.write (sprintf "[CaptureCanvas] PointerPressed at (%.1f, %.1f)" point.X point.Y)
+                FShotLog.write (sprintf "[CaptureCanvas] PointerPressed at (%.1f, %.1f)" point.X point.Y)
 
-            // Capture pointer để nhận sự kiện moved/released ngay cả khi chuột ra ngoài control.
-            e.Pointer.Capture(this) |> ignore
+                // Capture pointer để nhận sự kiện moved/released ngay cả khi chuột ra ngoài control.
+                e.Pointer.Capture(this) |> ignore
 
-            this.Dispatch(PointerPressed(point))
+                this.Dispatch(PointerPressed(point))
 
     override this.OnPointerMoved(e: PointerEventArgs) =
         base.OnPointerMoved(e)
@@ -1276,16 +1279,21 @@ type CaptureCanvas() as this =
             FShotLog.write (sprintf "[CaptureCanvas] Tương tác hoàn tất: %A" sel.Bounds)
         | _ -> ()
 
+    override this.OnTextInput(e: TextInputEventArgs) =
+        base.OnTextInput(e)
+        FShotLog.write (sprintf "[Layer:Canvas] TextInput: Text=\"%s\" | textBox.IsSome=%b" e.Text textBox.IsSome)
+
     override this.OnKeyDown(e: KeyEventArgs) =
         base.OnKeyDown(e)
         let keyString = this.ToKeyString(e)
         let isFocused = this.IsFocused
-        FShotLog.write (sprintf "[CaptureCanvas] KeyDown: %s | Key: %A | Focused: %b" keyString e.Key isFocused)
+        FShotLog.write (sprintf "[Layer:Canvas] KeyDown: %s | Key: %A | Canvas.IsFocused: %b | textBox.IsSome: %b" keyString e.Key isFocused textBox.IsSome)
 
-        // Khi đang nhập text (TextBox hiển thị), không chặn phím: để TextBox và IME xử lý.
-        // Nếu không, phím tắt công cụ (A/R/S...) và phím số sẽ nuốt mất ký tự tiếng Việt
-        // (Telex dùng s/r/a, VNI dùng số). Tiếng Nhật đi qua composition nên không bị ảnh hưởng.
-        if textBox.IsSome then
+        // Khi đang nhập text (TextBox đang hiển thị), không chặn phím: để TextBox và IME xử lý.
+        // Ngoại lệ: Escape thì đóng/hủy text input.
+        if e.Key = Key.Escape && textBox.IsSome then
+            this.CommitOrCancelTextInput()
+        elif textBox.IsSome then
             ()
         else
             // Phím tắt chuyển nhanh công cụ annotation và thao tác xuất ảnh.

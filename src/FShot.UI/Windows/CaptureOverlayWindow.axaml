@@ -7,9 +7,7 @@
         Topmost="True"
         CanResize="False"
         Background="#00000000"
-        ShowInTaskbar="False"
-        Focusable="True"
-        IsVisible="False"
+        ShowInTaskbar="True"
         IsHitTestVisible="True">
     <!--
         CaptureCanvas được bọc trong Canvas để có thể thêm Avalonia TextBox khi cần

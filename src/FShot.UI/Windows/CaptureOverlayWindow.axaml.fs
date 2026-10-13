@@ -53,8 +53,26 @@ type CaptureOverlayWindow() as this =
         this.InitializeComponent()
         this.ConfigureOverlayWindow()
 
-        // Key handling đã được chuyển xuống CaptureCanvas để OverlayState xử lý.
-        // Window không còn đóng trực tiếp từ Esc.
+        this.Opened.Add(fun _ ->
+            let hwnd =
+                let platform = this.PlatformImpl
+                if isNull platform then IntPtr.Zero
+                else
+                    let prop = platform.GetType().GetProperty("Handle")
+                    if isNull prop then IntPtr.Zero
+                    else
+                        let hObj = prop.GetValue(platform)
+                        if isNull hObj then IntPtr.Zero
+                        else
+                            let hp = hObj.GetType().GetProperty("Handle")
+                            if isNull hp then IntPtr.Zero else hp.GetValue(hObj) :?> nativeint
+            FShotLog.write (sprintf "[Layer:Window] Opened (HWND=0x%X, Topmost=%b, ShowInTaskbar=%b, Decorations=%A)"
+                (hwnd.ToInt64()) this.Topmost this.ShowInTaskbar this.WindowDecorations)
+        )
+        this.Activated.Add(fun _ -> FShotLog.write "[Layer:Window] Activated")
+        this.Deactivated.Add(fun _ -> FShotLog.write "[Layer:Window] Deactivated")
+        this.GotFocus.Add(fun _ -> FShotLog.write "[Layer:Window] GotFocus")
+        this.LostFocus.Add(fun _ -> FShotLog.write "[Layer:Window] LostFocus")
 
     member this.ConfigSnapshot
         with get() = configSnapshot
@@ -78,8 +96,7 @@ type CaptureOverlayWindow() as this =
         this.WindowStartupLocation <- WindowStartupLocation.Manual
         this.Topmost <- true
         this.CanResize <- false
-        this.ShowInTaskbar <- false
-        this.Focusable <- true
+        this.ShowInTaskbar <- true
 
         // Flameshot-style: cửa sổ trong suốt hoàn toàn.
         // Dimming và selection được vẽ bởi CaptureCanvas trên nền trong suốt.

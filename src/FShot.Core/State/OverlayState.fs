@@ -468,6 +468,11 @@ module OverlayStateLogic =
             emptyResult { state with Selection = Selection.Empty }
 
         // --- Selected ---
+        | SelectionState.Selected, EditingText _, PointerPressed _ ->
+            // Khi đang nhập text mà nhận PointerPressed: kết thúc/hủy text input trước để không tạo thêm text box lặp
+            let newState = cancelAnnotation state
+            result [ HideTextInput ] newState
+
         | SelectionState.Selected, _, PointerPressed point ->
             match state.Selection.HitTestHandle point with
             | Some handle when state.CurrentTool = SelectionTool ->
@@ -705,6 +710,10 @@ module OverlayStateLogic =
             emptyResult { state with AnnotationInteraction = NoAnnotation }
 
         // --- TextEditing ---
+        | _, EditingText _, Cancel ->
+            let newState = cancelAnnotation state
+            result [ HideTextInput ] newState
+
         | _, EditingText _, KeyDown key when isCancelKey key ->
             let newState = cancelAnnotation state
             result [ HideTextInput ] newState

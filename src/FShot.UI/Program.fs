@@ -30,9 +30,32 @@ module Program =
             .WithInterFont()
             .LogToTrace(areas = Array.empty)
 
+    let runDaemon () : int =
+        let app = buildAvaloniaApp()
+        App.IsDaemon <- true
+        FShotLog.write (sprintf "[Program] Starting daemon mode on Thread ID=%d, Apartment=%A" 
+            Threading.Thread.CurrentThread.ManagedThreadId 
+            (Threading.Thread.CurrentThread.GetApartmentState()))
+        app.StartWithClassicDesktopLifetime([||])
+
+    let runGui (request: ParsedCliRequest) : int =
+        let app = buildAvaloniaApp()
+        App.OpenSettingsOnStartup <- request.OpenSettings
+        App.CaptureRequest <-
+            {
+              CaptureRequest.Default with
+                  Mode = request.Mode
+                  DelayMs = request.DelayMs
+                  OutputTarget = request.OutputTarget
+            }
+        FShotLog.write (sprintf "[Program] Starting GUI mode on Thread ID=%d, Apartment=%A" 
+            Threading.Thread.CurrentThread.ManagedThreadId 
+            (Threading.Thread.CurrentThread.GetApartmentState()))
+        app.StartWithClassicDesktopLifetime([||])
+
     /// Chụp màn hình theo CaptureMode và độ trễ, sau đó xuất ra OutputTarget.
     /// Trả về exit code 0 nếu thành công, 1 nếu thất bại.
-    let rec runHeadlessCaptureAsync (request: ParsedCliRequest) : Async<int> =
+    let runHeadlessCaptureAsync (request: ParsedCliRequest) : Async<int> =
         async {
             try
                 if request.DelayMs > 0 then
@@ -115,7 +138,7 @@ module Program =
                             1
 
                     if exitCode = -1 then
-                        return! runGuiAsync { request with OutputTarget = OutputTarget.OpenGui }
+                        return runGui { request with OutputTarget = OutputTarget.OpenGui }
                     else
                         return exitCode
 
@@ -127,29 +150,6 @@ module Program =
                 FShotLog.writeEx "Headless capture failed" ex
                 printfn "Error: %s" ex.Message
                 return 1
-        }
-
-    and runDaemonAsync (cancellationToken: CancellationToken) : Async<int> =
-        async {
-            let app = buildAvaloniaApp()
-            App.IsDaemon <- true
-            FShotLog.write "[Program] Starting daemon mode (tray only)"
-            return app.StartWithClassicDesktopLifetime([||])
-        }
-
-    and runGuiAsync (request: ParsedCliRequest) : Async<int> =
-        async {
-            let app = buildAvaloniaApp()
-            // Truyền request vào App thông qua static field đơn giản.
-            App.OpenSettingsOnStartup <- request.OpenSettings
-            App.CaptureRequest <-
-                {
-                  CaptureRequest.Default with
-                      Mode = request.Mode
-                      DelayMs = request.DelayMs
-                      OutputTarget = request.OutputTarget
-                }
-            return app.StartWithClassicDesktopLifetime([||])
         }
 
     [<EntryPoint; STAThread>]
@@ -207,9 +207,9 @@ module Program =
 
                 let exitCode =
                     if request.RunAsDaemon then
-                        runDaemonAsync cts.Token |> Async.RunSynchronously
+                        runDaemon ()
                     elif request.Mode = GuiInteractive then
-                        runGuiAsync request |> Async.RunSynchronously
+                        runGui request
                     else
                         runHeadlessCaptureAsync request |> Async.RunSynchronously
                 try cts.Cancel() with _ -> ()
@@ -221,9 +221,9 @@ module Program =
             FShotLog.write "[Program] Multiple instances allowed"
             let exitCode =
                 if request.RunAsDaemon then
-                    runDaemonAsync cts.Token |> Async.RunSynchronously
+                    runDaemon ()
                 elif request.Mode = GuiInteractive then
-                    runGuiAsync request |> Async.RunSynchronously
+                    runGui request
                 else
                     runHeadlessCaptureAsync request |> Async.RunSynchronously
             try cts.Cancel() with _ -> ()

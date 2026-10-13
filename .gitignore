@@ -68,3 +68,4 @@ nunit-*.xml
 
 # Flameshot src (ignore whole embedded repo)
 flameshot
+.fake
