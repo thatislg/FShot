@@ -61,6 +61,14 @@ module ToolbarIcons =
     let stickerPeelCorner =
         "M 21 25.5 L 18 21 L 25 20.5 C 24 23, 22.5 24.5, 21 25.5 Z"
 
+    /// Invert icon (viewBox 32x32, from kawaii/invert.svg): nửa tròn âm dương.
+    let invert =
+        "M16 6 A 10 10 0 0 1 16 26 Z M16 6 A 10 10 0 0 0 16 26 Z"
+
+    /// Counter bubble icon (viewBox 32x32, derived from kawaii/counter-bubble.svg).
+    let counterBubble =
+        "M16 5 C 9 5, 4 9.5, 4 15.5 C 4 19, 6 22, 9 24 L 8 28 C 7.5 29, 9 30, 10.5 29 L 14.5 26 C 15 26, 15.5 26, 16 26 C 23 26, 28 21.5, 28 15.5 C 28 9.5, 23 5, 16 5 Z"
+
     /// Undo (viewBox 32x32, converted from docs/2.Design/12_UIUX_Mock_Penpot/assets/icon/kawaii/undo.svg).
     let undo =
         "M12 9 L 6 14 L 12 19 L 12 15 C 17 15, 23 17, 24 23 C 25 16, 20 10, 12 10 Z"
@@ -104,6 +112,8 @@ module ToolbarIcons =
         | FShot.Core.Domain.MarkerTool -> Some marker
         | FShot.Core.Domain.TextTool -> Some text
         | FShot.Core.Domain.PixelateTool -> Some pixelate
+        | FShot.Core.Domain.InvertTool -> Some invert
+        | FShot.Core.Domain.CircleCounterTool -> Some counterBubble
         | FShot.Core.Domain.IconTool -> Some iconTool
 
     let actionPathFor (action: FShot.Core.Domain.ToolbarAction) : string option =

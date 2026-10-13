@@ -111,6 +111,9 @@ type OverlayState = {
     /// Lưu ý: trạng thái này phụ thuộc vào UI gửi đúng CtrlModifier true/false;
     /// nếu window mất focus trong khi Ctrl đang giữ thì trạng thái có thể cũ (chấp nhận cho MVP).
     CtrlPressed: bool
+
+    /// Chỉ số đếm CircleCounter tiếp theo sẽ được dùng khi đặt huy hiệu mới (FR-ANN-10).
+    CurrentCounterIndex: int
 }
 
 /// Kết quả sau khi xử lý một sự kiện.
@@ -168,8 +171,10 @@ module OverlayStateLogic =
         | CircleTool -> Some (Tool.Circle(start, current, ctrlPressed))
         | MarkerTool -> Some (Tool.Marker [ start; current ])
         | PixelateTool -> Some (Tool.Pixelate(start, current, 10))
+        | InvertTool -> Some (Tool.Invert(start, current))
         | TextTool -> Some (Tool.Text(start, "", TextAlignment.Left))
         | IconTool -> None
+        | CircleCounterTool -> None
 
     /// Cập nhật preview từ điểm hiện tại.
     let private updatePreview (current: Point) (interaction: AnnotationInteraction) : AnnotationInteraction =
@@ -236,7 +241,7 @@ module OverlayStateLogic =
         match maker state with
         | Some annotation ->
             let newAnnotations = committedAnnotations state @ [ annotation ]
-            let snapshot = Snapshot.Create newAnnotations
+            let snapshot = Snapshot.CreateWithCounter(newAnnotations, state.CurrentCounterIndex)
             let newHistory = state.History.Push snapshot
             { state with
                 History = newHistory
@@ -246,13 +251,17 @@ module OverlayStateLogic =
 
     /// Xử lý Undo.
     let private performUndo (state: OverlayState) : OverlayState =
-        let newHistory, _ = state.History.Undo()
-        { state with History = newHistory }
+        let newHistory, current = state.History.Undo()
+        { state with
+            History = newHistory
+            CurrentCounterIndex = current.CounterIndex }
 
     /// Xử lý Redo.
     let private performRedo (state: OverlayState) : OverlayState =
-        let newHistory, _ = state.History.Redo()
-        { state with History = newHistory }
+        let newHistory, current = state.History.Redo()
+        { state with
+            History = newHistory
+            CurrentCounterIndex = current.CounterIndex }
 
     /// Hủy thao tác annotation đang diễn ra.
     let private cancelAnnotation (state: OverlayState) : OverlayState =
@@ -340,6 +349,7 @@ module OverlayStateLogic =
           CurrentTool = config.DefaultTool
           CurrentStyle = style
           CtrlPressed = false
+          CurrentCounterIndex = 1
         }
 
     /// Tạo OverlayResult từ state và commands.
@@ -429,13 +439,23 @@ module OverlayStateLogic =
                 elif state.CurrentTool = SelectionTool then
                     let newSelection = state.Selection.StartMoving point
                     emptyResult { state with Selection = newSelection }
+                elif state.CurrentTool = CircleCounterTool then
+                    // CircleCounter: click đặt huy hiệu với số hiện tại rồi tăng chỉ số (FR-ANN-10).
+                    let radius = state.Config.DrawCircleCounterSize / 2.0
+                    let tool = Tool.CircleCounter(point, state.CurrentCounterIndex, radius)
+                    let annotation = Annotation.FromPreview(tool, currentAnnotationStyle state)
+                    let nextIndex = state.CurrentCounterIndex + 1
+                    let newAnnotations = committedAnnotations state @ [ annotation ]
+                    let snapshot = Snapshot.CreateWithCounter(newAnnotations, nextIndex)
+                    let newHistory = state.History.Push snapshot
+                    emptyResult { state with History = newHistory; CurrentCounterIndex = nextIndex }
                 elif state.CurrentTool = IconTool then
                     // MVP: IconTool chỉ chèn placeholder 64×64 tại vị trí click, commit ngay lập tức.
                     let placeholderSize = 64.0
                     let tool = Tool.Icon(point, placeholderSize, placeholderSize, "")
                     let annotation = Annotation.FromPreview(tool, currentAnnotationStyle state)
                     let newAnnotations = committedAnnotations state @ [ annotation ]
-                    let snapshot = Snapshot.Create newAnnotations
+                    let snapshot = Snapshot.CreateWithCounter(newAnnotations, state.CurrentCounterIndex)
                     let newHistory = state.History.Push snapshot
                     emptyResult { state with History = newHistory }
                 else

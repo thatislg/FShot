@@ -1397,6 +1397,94 @@ let ``IconTool click trong vùng commit placeholder annotation`` () =
         | _ -> Assert.True(false, "Expected Icon annotation")
     | _ -> Assert.True(false, "Expected one annotation")
 
+/// Kiểm tra Invert PointerReleased commit annotation Invert.
+[<Fact>]
+let ``Invert PointerReleased commit annotation Invert`` () =
+    let result =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool InvertTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+
+    Assert.Equal(NoAnnotation, result.State.AnnotationInteraction)
+    Assert.Equal(1, List.length result.State.History.Current.Annotations)
+    let annotation = List.head result.State.History.Current.Annotations
+    match annotation.Tool with
+    | Tool.Invert (a, b) ->
+        Assert.Equal(point 150.0 150.0, a)
+        Assert.Equal(point 250.0 250.0, b)
+    | _ -> Assert.True(false, "Expected Tool.Invert")
+
+/// Kiểm tra CircleCounter click liên tiếp tạo huy hiệu số 1,2,3 và tăng chỉ số.
+[<Fact>]
+let ``CircleCounter click liên tiếp tạo huy hiệu tăng dần`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool CircleCounterTool)
+        |> (fun r -> r.State)
+
+    let after1 = state |> update (PointerPressed(point 150.0 150.0))
+    let after2 = after1.State |> update (PointerPressed(point 160.0 160.0))
+    let after3 = after2.State |> update (PointerPressed(point 170.0 170.0))
+
+    Assert.Equal(4, after3.State.CurrentCounterIndex)
+    let annotations = after3.State.History.Current.Annotations
+    Assert.Equal(3, List.length annotations)
+    let indices =
+        annotations
+        |> List.map (fun a ->
+            match a.Tool with
+            | Tool.CircleCounter (_, idx, _) -> idx
+            | _ -> -1)
+    Assert.Equal<int list>([ 1; 2; 3 ], indices)
+
+/// Kiểm tra CircleCounter Undo khôi phục chỉ số đếm.
+[<Fact>]
+let ``CircleCounter Undo khôi phục chỉ số đếm`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool CircleCounterTool)
+        |> (fun r -> r.State)
+
+    let after1 = state |> update (PointerPressed(point 150.0 150.0))
+    let after2 = after1.State |> update (PointerPressed(point 160.0 160.0))
+    let after3 = after2.State |> update (PointerPressed(point 170.0 170.0))
+    Assert.Equal(4, after3.State.CurrentCounterIndex)
+
+    // Undo -> counter quay về 3.
+    let undone = after3.State |> update Undo
+    Assert.Equal(3, undone.State.CurrentCounterIndex)
+    Assert.Equal(2, List.length undone.State.History.Current.Annotations)
+
+    // Click tiếp theo đặt số 3.
+    let afterClick = undone.State |> update (PointerPressed(point 180.0 180.0))
+    Assert.Equal(4, afterClick.State.CurrentCounterIndex)
+    match (List.last afterClick.State.History.Current.Annotations).Tool with
+    | Tool.CircleCounter (_, idx, _) -> Assert.Equal(3, idx)
+    | _ -> Assert.True(false, "Expected CircleCounter")
+
 // --- Regression tests cho P1.21 Undo ---
 
 /// Kiểm tra Undo khi chưa có annotation nào thì giữ nguyên state, không crash.

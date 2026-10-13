@@ -55,6 +55,8 @@ module Toolbar =
         MarkerTool
         TextTool
         PixelateTool
+        InvertTool
+        CircleCounterTool
         IconTool
     ]
 
@@ -358,6 +360,22 @@ module Toolbar =
                         for c in 0 .. 2 do
                             let brush = new SolidColorBrush(colors.[r].[c])
                             context.DrawRectangle(brush, blockPen, Avalonia.Rect(xs.[c], ys.[r], 6.0, 6.0), 2.0, 2.0)
+
+                | "CircleCounterTool" ->
+                    // Bong bóng thoại số đếm màu xanh pastel (#BAE6FD), viền nâu, số trắng.
+                    let bubbleBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xBAuy, 0xE6uy, 0xF4uy))
+                    context.DrawGeometry(bubbleBrush, darkWalnutPen 1.8, geometry)
+                    let numPen = new Pen(new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFFuy, 0xFFuy, 0xFFuy)), 1.6, lineCap = PenLineCap.Round)
+                    context.DrawLine(numPen, Avalonia.Point(14.0, 13.0), Avalonia.Point(14.0, 19.0))
+                    context.DrawLine(numPen, Avalonia.Point(11.0, 16.0), Avalonia.Point(16.0, 16.0))
+
+                | "InvertTool" ->
+                    // Nửa tròn âm dương: nửa tối (#3D2B1F) và nửa sáng, hai đốm đối xứng.
+                    let darkBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0x3Duy, 0x2Buy, 0x1Fuy))
+                    context.DrawGeometry(darkBrush, darkWalnutPen 1.8, geometry)
+                    let lightBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(alpha, 0xFFuy, 0xF4uy, 0xF9uy))
+                    context.DrawEllipse(lightBrush, null, Avalonia.Point(16.0, 21.0), 1.5, 1.5)
+                    context.DrawEllipse(darkBrush, null, Avalonia.Point(16.0, 11.0), 1.5, 1.5)
 
                 | "IconTool" ->
                     // Thân nhãn dán ngôi sao bo phồng màu vàng bơ (#FDE047), viền nâu (#3D2B1F)
@@ -1213,7 +1231,7 @@ type CaptureCanvas() as this =
         | Key.M -> this.Dispatch(SelectTool MarkerTool)
         | Key.T -> this.Dispatch(SelectTool TextTool)
         | Key.B -> this.Dispatch(SelectTool PixelateTool)
-        | Key.I -> this.Dispatch(SelectTool IconTool)
+        | Key.I -> this.Dispatch(SelectTool InvertTool)
         | Key.S -> this.Dispatch(SelectTool SelectionTool)
         | Key.Z when e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.KeyModifiers.HasFlag(KeyModifiers.Shift) ->
             this.Dispatch(Redo)
@@ -1651,6 +1669,49 @@ type CaptureCanvas() as this =
                     let textX = rect.Center.X - ft.Width / 2.0
                     let textY = rect.Center.Y - ft.Height / 2.0
                     context.DrawText(ft, Avalonia.Point(textX, textY))
+
+            | Tool.Invert (startPoint, endPoint) ->
+                // Invert preview: viền đứt nét + phủ trắng mờ chỉ vùng đảo màu.
+                // Hiệu ứng đảo bit thực tế được áp dụng trong Skia export renderer (Difference blend).
+                let x = Math.Min(startPoint.X, endPoint.X) * scale
+                let y = Math.Min(startPoint.Y, endPoint.Y) * scale
+                let w = Math.Abs(endPoint.X - startPoint.X) * scale
+                let h = Math.Abs(endPoint.Y - startPoint.Y) * scale
+                let rect = Avalonia.Rect(x, y, w, h)
+                let mediaColor = avaloniaColor annotation.Style.Color
+                let dashPen = new Pen(new SolidColorBrush(mediaColor), 1.5, DashStyle = new DashStyle([| 6.0; 4.0 |], 0.0))
+                let overlayBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(0x80uy, 0xFFuy, 0xFFuy, 0xFFuy))
+                context.DrawRectangle(overlayBrush, null, rect)
+                context.DrawRectangle(null, dashPen, rect)
+
+            | Tool.CircleCounter (center, index, radius) ->
+                // Huy hiệu số: nền tròn tô màu vẽ, chữ số tương phản theo luminance (FR-ANN-10).
+                let c = annotation.Style.Color
+                let cx = center.X * scale
+                let cy = center.Y * scale
+                let r = radius * scale
+                let fillBrush = new SolidColorBrush(avaloniaColor c)
+                context.DrawEllipse(fillBrush, null, Avalonia.Point(cx, cy), r, r)
+
+                let lightText = c.Luminance() * 255.0 > 150.0
+                let textColor =
+                    if lightText then
+                        Avalonia.Media.Color.FromRgb(0x1Euy, 0x29uy, 0x3Buy)
+                    else
+                        Avalonia.Media.Color.FromRgb(0xFFuy, 0xFFuy, 0xFFuy)
+
+                let fontSize = radius * 1.1 * scale
+                if fontSize > 0.0 then
+                    let ft =
+                        new FormattedText(
+                            string index,
+                            System.Globalization.CultureInfo.CurrentCulture,
+                            FlowDirection.LeftToRight,
+                            new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Bold),
+                            fontSize,
+                            new SolidColorBrush(textColor)
+                        )
+                    context.DrawText(ft, Avalonia.Point(cx - ft.Width / 2.0, cy - ft.Height / 2.0))
 
             | _ -> ()
 

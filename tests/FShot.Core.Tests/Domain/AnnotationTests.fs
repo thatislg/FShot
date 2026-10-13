@@ -114,3 +114,33 @@ let ``Bounding box của Icon`` () =
     Assert.Equal(80.0, box.Y)
     Assert.Equal(64.0, box.Width)
     Assert.Equal(48.0, box.Height)
+
+/// Kiểm tra bounding box của Invert.
+[<Fact>]
+let ``Bounding box của Invert`` () =
+    let style = defaultStyle Color.Black (StrokeWidth.Create 2.0)
+    let annotation =
+        Annotation.FromPreview(
+            Invert(point 100.0 80.0, point 400.0 300.0),
+            style
+        )
+    let box = annotation.BoundingBox
+    Assert.Equal(100.0, box.X)
+    Assert.Equal(80.0, box.Y)
+    Assert.Equal(300.0, box.Width)
+    Assert.Equal(220.0, box.Height)
+
+/// Kiểm tra bounding box của CircleCounter.
+[<Fact>]
+let ``Bounding box của CircleCounter`` () =
+    let style = defaultStyle Color.Red (StrokeWidth.Create 2.0)
+    let annotation =
+        Annotation.FromPreview(
+            CircleCounter(point 100.0 100.0, 3, 14.0),
+            style
+        )
+    let box = annotation.BoundingBox
+    Assert.Equal(86.0, box.X)
+    Assert.Equal(86.0, box.Y)
+    Assert.Equal(28.0, box.Width)
+    Assert.Equal(28.0, box.Height)

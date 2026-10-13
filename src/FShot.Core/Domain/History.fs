@@ -7,12 +7,20 @@ open System
 type Snapshot = {
     /// Danh sách chú thích đã được commit.
     Annotations: Annotation list
+
+    /// Chỉ số đếm CircleCounter tiếp theo tại thời điểm snapshot (FR-UNDO-005).
+    /// Dùng để khôi phục đúng chỉ số khi Undo/Redo.
+    CounterIndex: int
 } with
     /// Tạo snapshot ban đầu với danh sách chú thích rỗng.
-    static member Empty = { Annotations = [] }
+    static member Empty = { Annotations = []; CounterIndex = 1 }
 
-    /// Tạo snapshot mới từ danh sách chú thích.
-    static member Create(annotations: Annotation list) = { Annotations = annotations }
+    /// Tạo snapshot mới từ danh sách chú thích (chỉ số đếm giữ mặc định 1).
+    static member Create(annotations: Annotation list) = { Annotations = annotations; CounterIndex = 1 }
+
+    /// Tạo snapshot mới kèm chỉ số đếm CircleCounter.
+    static member CreateWithCounter(annotations: Annotation list, counterIndex: int) =
+        { Annotations = annotations; CounterIndex = counterIndex }
 
 /// Stack lịch sử bất biến phục vụ hoàn tác và làm lại.
 /// Xem tài liệu 05_03_HistoryStack.md.

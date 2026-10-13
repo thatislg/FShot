@@ -22,6 +22,9 @@ type ConfigSnapshot = {
     /// Cỡ chữ mặc định cho công cụ Text.
     DefaultFontSize: float
 
+    /// Đường kính huy hiệu số mặc định cho CircleCounter (FR-CFG-203).
+    DrawCircleCounterSize: float
+
     /// Giới hạn số snapshot trong HistoryStack.
     HistoryLimit: int
 
@@ -52,6 +55,7 @@ type ConfigSnapshot = {
         DefaultColor = Color.Red
         DefaultStrokeWidth = StrokeWidth.Create 2.0
         DefaultFontSize = 14.0
+        DrawCircleCounterSize = 28.0
         HistoryLimit = HistoryStack.DefaultLimit
         CloseAfterExport = true
         SaveOptions = SaveOptions.Default
@@ -361,6 +365,8 @@ type AppConfig = {
             | "markertool" | "marker" -> MarkerTool
             | "texttool" | "text" -> TextTool
             | "pixelatetool" | "pixelate" -> PixelateTool
+            | "inverttool" | "invert" -> InvertTool
+            | "circlecountertool" | "circlecounter" -> CircleCounterTool
             | "icontool" | "icon" -> IconTool
             | _ -> SelectionTool
 
@@ -400,6 +406,7 @@ type AppConfig = {
             DefaultColor = color
             DefaultStrokeWidth = strokeWidth
             DefaultFontSize = norm.DrawFontSize
+            DrawCircleCounterSize = norm.DrawCircleCounterSize
             HistoryLimit = HistoryStack.DefaultLimit
             CloseAfterExport = norm.CloseAfterExport
             SaveOptions = saveOptions
@@ -430,6 +437,8 @@ type AppConfig = {
             | MarkerTool -> "MarkerTool"
             | TextTool -> "TextTool"
             | PixelateTool -> "PixelateTool"
+            | InvertTool -> "InvertTool"
+            | CircleCounterTool -> "CircleCounterTool"
             | IconTool -> "IconTool"
         CloseAfterExport = snapshot.CloseAfterExport
         StartupLaunch = false
@@ -456,7 +465,7 @@ type AppConfig = {
         UiLanguage = ConfigDefaults.defaultUiLanguage
         FontFamily = ""
         DrawFontSize = snapshot.DefaultFontSize
-        DrawCircleCounterSize = 28.0
+        DrawCircleCounterSize = snapshot.DrawCircleCounterSize
         DrawPixelateSize = 10
         DrawRectangleRadius = 0.0
         DrawMarkerSize = 10.0

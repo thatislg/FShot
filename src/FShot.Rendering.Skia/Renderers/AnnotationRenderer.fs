@@ -228,6 +228,55 @@ module AnnotationRenderer =
                 let textY = y + h / 2.0f + fontSize / 3.0f
                 canvas.DrawText(text, textX, textY, textAlign, font, textPaint)
 
+        | Tool.Invert (startPoint, endPoint) ->
+            // Đảo bit màu sắc trực tiếp bằng SKBlendMode.Difference trên GPU shader (FR-ANN-09).
+            // Vẽ hình chữ nhật màu trắng #FFFFFFFF với chế độ Difference: |255 - dst| = 255 - dst.
+            let x = Math.Min(startPoint.X, endPoint.X) * scale.Value
+            let y = Math.Min(startPoint.Y, endPoint.Y) * scale.Value
+            let w = Math.Abs(endPoint.X - startPoint.X) * scale.Value
+            let h = Math.Abs(endPoint.Y - startPoint.Y) * scale.Value
+            let rect = SKRect(float32 x, float32 y, float32 (x + w), float32 (y + h))
+            use paint = new SKPaint()
+            paint.Color <- SKColors.White
+            paint.BlendMode <- SKBlendMode.Difference
+            paint.Style <- SKPaintStyle.Fill
+            canvas.DrawRect(rect, paint)
+
+        | Tool.CircleCounter (center, index, radius) ->
+            // Huy hiệu số: nền tròn tô màu vẽ, chữ số tương phản theo luminance (FR-ANN-10).
+            let cx = float32 (center.X * scale.Value)
+            let cy = float32 (center.Y * scale.Value)
+            let r = float32 (radius * scale.Value)
+
+            use fillPaint = new SKPaint()
+            fillPaint.Style <- SKPaintStyle.Fill
+            fillPaint.IsAntialias <- true
+            fillPaint.Color <- DomainToSkia.colorToSk annotation.Style.Color
+            canvas.DrawCircle(cx, cy, r, fillPaint)
+
+            use borderPaint = new SKPaint()
+            borderPaint.Style <- SKPaintStyle.Stroke
+            borderPaint.StrokeWidth <- 1.5f
+            borderPaint.IsAntialias <- true
+            borderPaint.Color <- SKColor(0x60uy, 0xFFuy, 0xFFuy, 0xFFuy)
+            canvas.DrawCircle(cx, cy, r, borderPaint)
+
+            let lightText = annotation.Style.Color.Luminance() * 255.0 > 150.0
+            let textColor =
+                if lightText then SKColor(0x1Euy, 0x29uy, 0x3Buy)
+                else SKColors.White
+
+            let fontSize = float32 (radius * 1.1 * scale.Value)
+            use font = new SKFont(SKTypeface.Default, fontSize)
+            use textPaint = new SKPaint()
+            textPaint.IsAntialias <- true
+            textPaint.Color <- textColor
+
+            let text = string index
+            let metrics = font.Metrics
+            let baselineY = cy - (metrics.Ascent + metrics.Descent) / 2.0f
+            canvas.DrawText(text, cx, baselineY, SKTextAlign.Center, font, textPaint)
+
         | _ ->
             // Các tool khác sẽ được triển khai sau.
             ()

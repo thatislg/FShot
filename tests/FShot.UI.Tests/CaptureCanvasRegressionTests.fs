@@ -40,7 +40,7 @@ let private makeOverlayState (bounds: Rect) (annotations: Annotation list) : Ove
     let selection = { Selection.Empty with State = SelectionState.Selected; Bounds = bounds }
     { state with
         Selection = selection
-        History = state.History.Push { Annotations = annotations }
+        History = state.History.Push { Annotations = annotations; CounterIndex = 1 }
         CurrentTool = LineTool }
 
 let private runSmokeTest () : bool * string =

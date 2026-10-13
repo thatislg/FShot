@@ -47,6 +47,12 @@ type ToolKind =
     | MarkerTool
     | TextTool
     | PixelateTool
+
+    /// Công cụ đảo ngược màu sắc vùng chữ nhật (FR-ANN-09).
+    | InvertTool
+
+    /// Công cụ bong bóng đếm số tự động tăng (FR-ANN-10).
+    | CircleCounterTool
     | IconTool
     /// Xem tài liệu 04_02_ToolModel.md, mục 2.9.
 
@@ -110,7 +116,13 @@ type Tool =
     /// Làm mờ pixelate vùng.
     | Pixelate of start: Point * endPoint: Point * blockSize: int
 
-    /// Chèn icon/hình ảnh. Trong MVP chỉ là placeholder để dành phím tắt I.
+    /// Đảo ngược màu sắc vùng chữ nhật từ start đến endPoint (FR-ANN-09).
+    | Invert of start: Point * endPoint: Point
+
+    /// Bong bóng đếm số tại vị trí tâm, số thứ tự index và bán kính radius (FR-ANN-10).
+    | CircleCounter of center: Point * index: int * radius: float
+
+    /// Chèn icon/hình ảnh. Trong MVP chỉ là placeholder.
     | Icon of position: Point * width: float * height: float * iconId: string
 
 /// Một chú thích đã hoàn thành.
@@ -163,7 +175,15 @@ type Annotation = {
         | Arrow (a, b, _)
         | Rectangle (a, b, _)
         | Circle (a, b, _)
-        | Pixelate (a, b, _) -> rectFromTwoPoints a b
+        | Pixelate (a, b, _)
+        | Invert (a, b) -> rectFromTwoPoints a b
+        | CircleCounter (center, _, radius) ->
+            {
+              X = center.X - radius
+              Y = center.Y - radius
+              Width = 2.0 * radius
+              Height = 2.0 * radius
+            }
         | Text (position, _, _) ->
             {
               X = position.X
