@@ -3,6 +3,7 @@ namespace FShot.Core.State
 open System
 open FShot.Core.Geometry
 open FShot.Core.Geometry.Operations
+open FShot.Core.Geometry.AngleSnapping
 open FShot.Core.Domain
 
 /// Loại con trỏ gợi ý để UI hiển thị.
@@ -164,12 +165,17 @@ module OverlayStateLogic =
         match kind with
         | SelectionTool -> None
         | PencilTool -> Some (Tool.Pencil [ start; current ])
-        | LineTool -> Some (Tool.Line(start, current))
-        | ArrowTool -> Some (Tool.Arrow(start, current, ArrowStyle.Standard))
-        | RectangleTool -> Some (Tool.Rectangle(start, current, 0.0))
+        | LineTool ->
+            Some (Tool.Line(start, (if ctrlPressed then snapAngle45 start current else current)))
+        | ArrowTool ->
+            Some (Tool.Arrow(start, (if ctrlPressed then snapAngle45 start current else current), ArrowStyle.Standard))
+        | RectangleTool ->
+            Some (Tool.Rectangle(start, (if ctrlPressed then snapSquare start current else current), 0.0))
         // MVP: cornerRadius luôn là 0.0; UI chưa cho phép điều chỉnh bo góc.
-        | CircleTool -> Some (Tool.Circle(start, current, ctrlPressed))
-        | MarkerTool -> Some (Tool.Marker [ start; current ])
+        | CircleTool ->
+            Some (Tool.Circle(start, (if ctrlPressed then snapSquare start current else current), ctrlPressed))
+        | MarkerTool ->
+            Some (Tool.Marker [ start; (if ctrlPressed then snapAngle45 start current else current) ])
         | PixelateTool -> Some (Tool.Pixelate(start, current, 10))
         | InvertTool -> Some (Tool.Invert(start, current))
         | TextTool -> Some (Tool.Text(start, "", TextAlignment.Left))

@@ -637,7 +637,7 @@ let ``Circle PointerReleased commit annotation Circle`` () =
     match annotationLocked.Tool with
     | Tool.Circle (a, b, true) ->
         Assert.Equal(point 150.0 150.0, a)
-        Assert.Equal(point 300.0 250.0, b)
+        Assert.Equal(point 300.0 300.0, b)
     | _ -> Assert.True(false, "Expected Tool.Circle with aspect lock")
 
 /// Kiểm tra Ctrl modifier được cập nhật trong lúc preview Circle.
@@ -1484,6 +1484,68 @@ let ``CircleCounter Undo khôi phục chỉ số đếm`` () =
     match (List.last afterClick.State.History.Current.Annotations).Tool with
     | Tool.CircleCounter (_, idx, _) -> Assert.Equal(3, idx)
     | _ -> Assert.True(false, "Expected CircleCounter")
+
+/// Kiểm tra Line giữ Ctrl ràng buộc góc 45°.
+[<Fact>]
+let ``Line giữ Ctrl hít góc 45 độ`` () =
+    let baseState =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool LineTool)
+        |> (fun r -> r.State)
+
+    let result =
+        baseState
+        |> update (CtrlModifier true)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 180.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+
+    match (List.head result.State.History.Current.Annotations).Tool with
+    | Tool.Line (a, b) ->
+        Assert.Equal(point 150.0 150.0, a)
+        // dx=100, dy=30 -> hít về 0° (nằm ngang), dy ≈ 0.
+        Assert.True(System.Math.Abs(b.Y - a.Y) < 0.01, "Line giữ Ctrl phải nằm ngang")
+        Assert.True(b.X > a.X, "Line phải kéo dài sang phải")
+    | _ -> Assert.True(false, "Expected Tool.Line")
+
+/// Kiểm tra Rectangle giữ Ctrl ép thành hình vuông.
+[<Fact>]
+let ``Rectangle giữ Ctrl ép hình vuông`` () =
+    let baseState =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool RectangleTool)
+        |> (fun r -> r.State)
+
+    let result =
+        baseState
+        |> update (CtrlModifier true)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+
+    match (List.head result.State.History.Current.Annotations).Tool with
+    | Tool.Rectangle (a, b, _) ->
+        Assert.Equal(point 150.0 150.0, a)
+        Assert.Equal(point 300.0 300.0, b)
+    | _ -> Assert.True(false, "Expected Tool.Rectangle")
 
 // --- Regression tests cho P1.21 Undo ---
 
