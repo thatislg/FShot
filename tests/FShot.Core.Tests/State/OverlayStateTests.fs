@@ -854,6 +854,30 @@ let ``TextCommitted rỗng không tạo annotation`` () =
     | [ HideTextInput ] -> ()
     | _ -> Assert.True(false, "Expected HideTextInput command")
 
+/// Kiểm tra TextCommitted giữ nguyên nội dung nhiều dòng (FR-ANN-21).
+[<Fact>]
+let ``TextCommitted giữ nguyên nội dung nhiều dòng`` () =
+    let result =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool TextTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (TextCommitted "line1\nline2")
+
+    match result.State.History.Current.Annotations with
+    | [ annotation ] ->
+        match annotation.Tool with
+        | Text(_, content, _) -> Assert.Equal("line1\nline2", content)
+        | _ -> Assert.True(false, "Expected Text annotation")
+    | _ -> Assert.True(false, "Expected exactly one annotation")
+
 /// Kiểm tra chuyển tool khác trong lúc EditingText hủy text input.
 [<Fact>]
 let ``Chuyển tool trong lúc EditingText hủy preview`` () =

@@ -997,7 +997,7 @@ type CaptureCanvas() as this =
         this.HideTextInput()
 
         let tb = new TextBox()
-        tb.AcceptsReturn <- false
+        tb.AcceptsReturn <- true
         tb.AcceptsTab <- false
         tb.Text <- ""
         tb.FontSize <-
@@ -1038,9 +1038,12 @@ type CaptureCanvas() as this =
         Canvas.SetTop(tb, y)
 
         tb.KeyDown.Add(fun e ->
+            let ctrl = e.KeyModifiers.HasFlag(KeyModifiers.Control)
             match e.Key with
             | Key.Enter
-            | Key.Return ->
+            | Key.Return when ctrl ->
+                // FR-ANN-21: Ctrl+Enter kết thúc nhập và commit ngay lập tức.
+                // Enter thường (không Ctrl) để TextBox tự xuống dòng (AcceptsReturn = true).
                 e.Handled <- true
                 this.Dispatch(TextCommitted tb.Text)
             | Key.Escape ->
@@ -1763,27 +1766,33 @@ type CaptureCanvas() as this =
 
             | Tool.Text (position, content, alignment) when not (String.IsNullOrWhiteSpace content) ->
                 // Text đã commit: vẽ trực tiếp bằng Avalonia FormattedText.
+                // Hỗ trợ nhiều dòng (FR-ANN-21): tách theo ký tự xuống dòng.
                 let text = content.Trim()
                 let fontSize = annotation.Style.FontSize * scale
                 if fontSize > 0.0 then
-                    let ft =
-                        new FormattedText(
-                            text,
-                            System.Globalization.CultureInfo.CurrentCulture,
-                            FlowDirection.LeftToRight,
-                            new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Normal),
-                            fontSize,
-                            new SolidColorBrush(avaloniaColor annotation.Style.Color)
-                        )
-
+                    let lineHeight = fontSize * 1.2
                     let origin = avPoint position
-                    let x =
-                        match alignment with
-                        | TextAlignment.Left -> origin.X
-                        | TextAlignment.Center -> origin.X - ft.Width / 2.0
-                        | TextAlignment.Right -> origin.X - ft.Width
+                    text.Split('\n')
+                    |> Array.iteri (fun i line ->
+                        let ft =
+                            new FormattedText(
+                                line,
+                                System.Globalization.CultureInfo.CurrentCulture,
+                                FlowDirection.LeftToRight,
+                                new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Normal),
+                                fontSize,
+                                new SolidColorBrush(avaloniaColor annotation.Style.Color)
+                            )
 
-                    context.DrawText(ft, Avalonia.Point(x, origin.Y))
+                        let x =
+                            match alignment with
+                            | TextAlignment.Left -> origin.X
+                            | TextAlignment.Center -> origin.X - ft.Width / 2.0
+                            | TextAlignment.Right -> origin.X - ft.Width
+
+                        let y = origin.Y + float i * lineHeight
+                        context.DrawText(ft, Avalonia.Point(x, y))
+                    )
 
             | Tool.Icon (position, width, height, iconId) ->
                 // MVP placeholder: vẽ hình chữ nhật nét đứt với chữ "ICON".

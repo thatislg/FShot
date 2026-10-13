@@ -170,7 +170,13 @@ module AnnotationRenderer =
                     | TextAlignment.Center -> SKTextAlign.Center
                     | TextAlignment.Right -> SKTextAlign.Right
 
-                canvas.DrawText(text, float32 baseline.X, float32 baseline.Y, textAlign, font, paint)
+                // Hỗ trợ văn bản nhiều dòng (FR-ANN-21): tách theo ký tự xuống dòng,
+                // mỗi dòng được vẽ ở baseline dịch xuống theo lineHeight = 1.2 × fontSize.
+                let lineHeight = fontSize * 1.2f
+                text.Split('\n')
+                |> Array.iteri (fun i line ->
+                    let y = float32 baseline.Y + float32 i * lineHeight
+                    canvas.DrawText(line, float32 baseline.X, y, textAlign, font, paint))
 
         | Tool.Pixelate (startPoint, endPoint, blockSize) ->
             // Pixelate tái tạo từ ảnh gốc trong CaptureResult.
