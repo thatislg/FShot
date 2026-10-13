@@ -72,6 +72,7 @@ type OverlayEvent =
     | SetStrokeWidth of StrokeWidth
     | SetToolSize of float
     | AdjustToolSize of float
+    | DeleteSelectedAnnotation
     | Undo
     | Redo
     | Copy
@@ -99,6 +100,8 @@ type AnnotationInteraction =
     | DrawingPreview of start: Point * current: Point * ToolKind
     | FreehandDrawing of points: Point list * ToolKind
     | EditingText of position: Point * content: string
+    /// Đang kéo di chuyển chú thích được chọn (FR-ANN-18).
+    | MovingAnnotation of original: Annotation * dragStart: Point
 
 /// Trạng thái tổng thể của overlay.
 /// Xem 08_02_States.md, mục 4.
@@ -117,6 +120,9 @@ type OverlayState = {
 
     /// Chỉ số đếm CircleCounter tiếp theo sẽ được dùng khi đặt huy hiệu mới (FR-ANN-10).
     CurrentCounterIndex: int
+
+    /// Chú thích đang được chọn (FR-ANN-18). None nếu không có đối tượng nào được chọn.
+    SelectedAnnotation: Annotation option
 }
 
 /// Kết quả sau khi xử lý một sự kiện.
@@ -133,6 +139,14 @@ module OverlayStateLogic =
     /// Danh sách annotation đã commit từ snapshot hiện tại.
     let committedAnnotations (state: OverlayState) = state.History.Current.Annotations
 
+    /// Danh sách annotation để vẽ: thay thế annotation đang di chuyển bằng vị trí mới (FR-ANN-18).
+    let renderableAnnotations (state: OverlayState) : Annotation list =
+        match state.SelectedAnnotation, state.AnnotationInteraction with
+        | Some selected, MovingAnnotation _ ->
+            committedAnnotations state
+            |> List.map (fun a -> if a.Id = selected.Id then selected else a)
+        | _ -> committedAnnotations state
+
     /// Kiểm tra key có phải là phím Cancel (Esc / Ctrl+Backspace) hay không.
     /// Chấp nhận các dạng: Escape, Esc, Ctrl+Backspace, Control+Backspace, Ctrl+Back.
     let isCancelKey (key: string) : bool =
@@ -144,11 +158,13 @@ module OverlayStateLogic =
     /// Xóa annotations và vùng chọn, quay về Idle (màn hình mờ toàn màn hình).
     let private clearSelectionAndAnnotations (state: OverlayState) : OverlayState =
         let clearedHistory =
-            if state.History.CanUndo then state.History.Push (Snapshot.Create [])
+            if state.History.CanUndo then state.History.Push (Snapshot.CreateWithCounter([], 1))
             else state.History
         { state with
             Selection = Selection.Empty
             AnnotationInteraction = NoAnnotation
+            SelectedAnnotation = None
+            CurrentCounterIndex = 1
             History = clearedHistory }
 
     /// Độ dày nét vẽ tối đa khi điều chỉnh bằng phím/lăn chuột.
@@ -307,6 +323,7 @@ module OverlayStateLogic =
         let cursor =
             match state.AnnotationInteraction with
             | EditingText _ -> CursorHint.Default
+            | MovingAnnotation _ -> CursorHint.Move
             | DrawingPreview _
             | FreehandDrawing _ -> CursorHint.Crosshair
             | NoAnnotation ->
@@ -339,7 +356,7 @@ module OverlayStateLogic =
           VirtualBounds = state.Capture.VirtualBounds
           Selection =
               if state.Selection.State = SelectionState.Idle then None else Some state.Selection
-          Annotations = committedAnnotations state
+          Annotations = renderableAnnotations state
           Preview = currentPreview state
           ToolbarVisible = toolbarVisible
           CurrentTool = state.CurrentTool
@@ -378,6 +395,7 @@ module OverlayStateLogic =
           CurrentStyle = style
           CtrlPressed = false
           CurrentCounterIndex = 1
+          SelectedAnnotation = None
         }
 
     /// Tạo OverlayResult từ state và commands.
@@ -465,8 +483,16 @@ module OverlayStateLogic =
                         let newSelection = Selection.StartSelecting point
                         emptyResult { state with Selection = newSelection }
                 elif state.CurrentTool = SelectionTool then
-                    let newSelection = state.Selection.StartMoving point
-                    emptyResult { state with Selection = newSelection }
+                    // Ưu tiên chọn chú thích (Z-order) nếu click trúng; nếu không thì di chuyển vùng chọn (FR-ANN-18).
+                    match HitTesting.hitTestTopmost HitTesting.defaultTolerance point (committedAnnotations state) with
+                    | Some ann ->
+                        emptyResult
+                            { state with
+                                SelectedAnnotation = Some ann
+                                AnnotationInteraction = MovingAnnotation(ann, point) }
+                    | None ->
+                        let newSelection = state.Selection.StartMoving point
+                        emptyResult { state with Selection = newSelection; SelectedAnnotation = None }
                 elif state.CurrentTool = CircleCounterTool then
                     // CircleCounter: click đặt huy hiệu với số hiện tại rồi tăng chỉ số (FR-ANN-10).
                     let radius = state.Config.DrawCircleCounterSize / 2.0
@@ -544,6 +570,16 @@ module OverlayStateLogic =
         | SelectionState.Selected, NoAnnotation, AdjustToolSize delta ->
             let newSize = currentToolSize state + delta
             emptyResult (setToolSize newSize state)
+
+        | SelectionState.Selected, NoAnnotation, DeleteSelectedAnnotation ->
+            match state.SelectedAnnotation with
+            | Some selected ->
+                let newAnnotations =
+                    committedAnnotations state |> List.filter (fun a -> a.Id <> selected.Id)
+                let snapshot = Snapshot.CreateWithCounter(newAnnotations, state.CurrentCounterIndex)
+                let newHistory = state.History.Push snapshot
+                emptyResult { state with History = newHistory; SelectedAnnotation = None }
+            | None -> emptyResult state
 
         | SelectionState.Selected, _, ToolbarAction UndoAction ->
             emptyResult (performUndo state)
@@ -638,6 +674,35 @@ module OverlayStateLogic =
         | _, DrawingPreview _, Cancel
         | _, FreehandDrawing _, Cancel ->
             emptyResult (cancelAnnotation state)
+
+        // --- Moving selected annotation (FR-ANN-18) ---
+        | _, MovingAnnotation (original, dragStart), PointerMoved point ->
+            let dx = point.X - dragStart.X
+            let dy = point.Y - dragStart.Y
+            let moved = HitTesting.translateAnnotation dx dy original
+            emptyResult { state with SelectedAnnotation = Some moved }
+
+        | _, MovingAnnotation _, PointerReleased ->
+            match state.SelectedAnnotation with
+            | Some moved ->
+                let newAnnotations =
+                    committedAnnotations state
+                    |> List.map (fun a -> if a.Id = moved.Id then moved else a)
+                let snapshot = Snapshot.CreateWithCounter(newAnnotations, state.CurrentCounterIndex)
+                let newHistory = state.History.Push snapshot
+                emptyResult
+                    { state with
+                        History = newHistory
+                        AnnotationInteraction = NoAnnotation
+                        SelectedAnnotation = Some moved }
+            | None ->
+                emptyResult { state with AnnotationInteraction = NoAnnotation }
+
+        | _, MovingAnnotation _, Cancel ->
+            emptyResult { state with AnnotationInteraction = NoAnnotation }
+
+        | _, MovingAnnotation _, KeyDown key when isCancelKey key ->
+            emptyResult { state with AnnotationInteraction = NoAnnotation }
 
         // --- TextEditing ---
         | _, EditingText _, KeyDown key when isCancelKey key ->

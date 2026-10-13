@@ -14,6 +14,7 @@
     <Compile Include="Domain\Selection.fs" />
     <Compile Include="Domain\Annotation.fs" />
     <Compile Include="Domain\History.fs" />
+    <Compile Include="Domain\HitTesting.fs" />
     <Compile Include="Domain\Export.fs" />
     <Compile Include="Domain\Config.fs" />
     <Compile Include="State\OverlayState.fs" />

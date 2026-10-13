@@ -1892,3 +1892,83 @@ let ``Redo hoạt động với Pencil Text và Icon`` () =
     let redo3 = redo2.State |> update Redo
     Assert.Equal(3, List.length redo3.State.History.Current.Annotations)
     Assert.False(redo3.State.History.CanRedo)
+
+// ============ P2.26: Chọn, di chuyển và xóa chú thích (FR-ANN-18/19/20) ============
+
+/// Tạo state đã có vùng chọn và một annotation Line (150,150)-(250,250) đã commit.
+let private stateWithLine =
+    initResult()
+    |> update (PointerPressed(point 100.0 100.0))
+    |> (fun r -> r.State)
+    |> update (PointerMoved(point 300.0 200.0))
+    |> (fun r -> r.State)
+    |> update PointerReleased
+    |> (fun r -> r.State)
+    |> update (SelectTool LineTool)
+    |> (fun r -> r.State)
+    |> update (PointerPressed(point 150.0 150.0))
+    |> (fun r -> r.State)
+    |> update (PointerMoved(point 250.0 250.0))
+    |> (fun r -> r.State)
+    |> update PointerReleased
+    |> (fun r -> r.State)
+    |> update (SelectTool SelectionTool)
+    |> (fun r -> r.State)
+
+/// Kiểm tra click trúng chú thích bằng SelectionTool sẽ chọn đối tượng.
+[<Fact>]
+let ``SelectionTool click trúng annotation chọn đối tượng`` () =
+    let result = stateWithLine |> update (PointerPressed(point 180.0 180.0))
+    Assert.True(result.State.SelectedAnnotation.IsSome)
+    match result.State.AnnotationInteraction with
+    | MovingAnnotation(original, dragStart) ->
+        Assert.Equal(point 180.0 180.0, dragStart)
+        let ann = List.head stateWithLine.History.Current.Annotations
+        Assert.Equal(ann.Id, original.Id)
+    | _ -> Assert.True(false, "Expected MovingAnnotation")
+
+/// Kiểm tra kéo di chuyển annotation rồi thả commit vị trí mới.
+[<Fact>]
+let ``Kéo di chuyển annotation rồi thả commit vị trí mới`` () =
+    let pressed =
+        stateWithLine
+        |> update (PointerPressed(point 180.0 180.0))
+        |> (fun r -> r.State)
+
+    let moved = pressed |> update (PointerMoved(point 190.0 200.0)) |> (fun r -> r.State)
+    match moved.SelectedAnnotation with
+    | Some ann ->
+        match ann.Tool with
+        | Line(a, b) ->
+            Assert.Equal(point 160.0 170.0, a)
+            Assert.Equal(point 260.0 270.0, b)
+        | _ -> Assert.True(false, "Expected Line")
+    | None -> Assert.True(false, "Expected selected annotation")
+
+    let released = moved |> update PointerReleased |> (fun r -> r.State)
+    Assert.Equal(NoAnnotation, released.AnnotationInteraction)
+    let ann = List.head released.History.Current.Annotations
+    match ann.Tool with
+    | Line(a, b) ->
+        Assert.Equal(point 160.0 170.0, a)
+        Assert.Equal(point 260.0 270.0, b)
+    | _ -> Assert.True(false, "Expected Line")
+    Assert.True(released.History.CanUndo)
+
+/// Kiểm tra DeleteSelectedAnnotation xóa chú thích đang chọn và đẩy snapshot undo.
+[<Fact>]
+let ``DeleteSelectedAnnotation xóa chú thích đang chọn`` () =
+    let selected =
+        stateWithLine
+        |> update (PointerPressed(point 180.0 180.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+
+    Assert.True(selected.SelectedAnnotation.IsSome)
+    Assert.Equal(1, List.length selected.History.Current.Annotations)
+
+    let deleted = selected |> update DeleteSelectedAnnotation |> (fun r -> r.State)
+    Assert.True(deleted.SelectedAnnotation.IsNone)
+    Assert.Empty(deleted.History.Current.Annotations)
+    Assert.True(deleted.History.CanUndo)

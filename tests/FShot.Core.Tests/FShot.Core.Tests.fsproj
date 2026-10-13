@@ -16,6 +16,7 @@
     <Compile Include="Domain\SelectionTests.fs" />
     <Compile Include="Domain\AnnotationTests.fs" />
     <Compile Include="Domain\HistoryTests.fs" />
+    <Compile Include="Domain\HitTestingTests.fs" />
     <Compile Include="Domain\ExportTests.fs" />
     <Compile Include="Domain\ConfigTests.fs" />
     <Compile Include="State\OverlayStateTests.fs" />

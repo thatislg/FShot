@@ -1299,6 +1299,11 @@ type CaptureCanvas() as this =
         // Sử dụng e.Key thay vì modifier string để tránh IME nuốt mất sự kiện Ctrl khi đang gõ tiếng Việt.
         | Key.LeftCtrl
         | Key.RightCtrl -> this.Dispatch(CtrlModifier true)
+        // Xóa chú thích đang chọn bằng Delete/Backspace (FR-ANN-20).
+        // Backspace giữ Ctrl được giữ nguyên để đi qua KeyDown → isCancelKey (Ctrl+Backspace hủy).
+        | Key.Delete -> this.Dispatch(DeleteSelectedAnnotation)
+        | Key.Back when not (e.KeyModifiers.HasFlag(KeyModifiers.Control)) ->
+            this.Dispatch(DeleteSelectedAnnotation)
         | Key.D0 | Key.D1 | Key.D2 | Key.D3 | Key.D4 | Key.D5 | Key.D6 | Key.D7 | Key.D8 | Key.D9
         | Key.NumPad0 | Key.NumPad1 | Key.NumPad2 | Key.NumPad3 | Key.NumPad4
         | Key.NumPad5 | Key.NumPad6 | Key.NumPad7 | Key.NumPad8 | Key.NumPad9 ->
@@ -1557,6 +1562,41 @@ type CaptureCanvas() as this =
                     context.DrawEllipse(knobBrush, knobPen, Avalonia.Point(cx, cy), knobRadius, knobRadius)
                     // Điểm phản chiếu ánh sáng trắng (specular highlight)
                     context.DrawEllipse(highlightBrush, null, Avalonia.Point(cx - 2.0, cy - 2.0), 1.8, 1.8)
+        | None -> ()
+
+    /// Vẽ khung chọn + 4 handle góc cho chú thích đang được chọn (FR-ANN-18).
+    /// Khung đứt nét Kawaii Blue #38BDF8 bao quanh bounding box, handle nền trắng viền xanh.
+    member private this.RenderSelectedAnnotation(context: DrawingContext, annotation: Annotation) =
+        match captureResult with
+        | Some result ->
+            let scale = result.ScaleFactor.Value
+            let box = annotation.BoundingBox
+            let local = this.ToControlRect box
+            let r =
+                Rect(
+                    local.X * scale,
+                    local.Y * scale,
+                    local.Width * scale,
+                    local.Height * scale
+                )
+
+            // Kawaii Blue #38BDF8.
+            let blue = Avalonia.Media.Color.FromArgb(0xFFuy, 0x38uy, 0xBDuy, 0xF8uy)
+            let dashPen =
+                new Pen(new SolidColorBrush(blue), 2.0, DashStyle = new DashStyle([| 6.0; 4.0 |], 0.0))
+            context.DrawRectangle(null, dashPen, r)
+
+            // 4 handle tròn ở góc: nền trắng, viền xanh đậm 2px.
+            let handleRadius = 5.0
+            let handleFill = Brushes.White
+            let handlePen = new Pen(new SolidColorBrush(blue), 2.0)
+            let corners =
+                [ Avalonia.Point(r.X, r.Y)
+                  Avalonia.Point(r.Right, r.Y)
+                  Avalonia.Point(r.X, r.Bottom)
+                  Avalonia.Point(r.Right, r.Bottom) ]
+            for c in corners do
+                context.DrawEllipse(handleFill, handlePen, c, handleRadius, handleRadius)
         | None -> ()
 
     override this.Render(context: DrawingContext) =
@@ -1836,6 +1876,11 @@ type CaptureCanvas() as this =
 
             // Vẽ preview annotation đang vẽ.
             renderModel.Preview |> Option.iter drawAnnotation
+
+        // Vẽ khung chọn + handles cho chú thích đang được chọn (FR-ANN-18).
+        overlayState
+        |> Option.bind (fun s -> s.SelectedAnnotation)
+        |> Option.iter (fun ann -> this.RenderSelectedAnnotation(context, ann))
 
         // Vẽ toolbar.
         this.RenderToolbar(context, renderModel)
