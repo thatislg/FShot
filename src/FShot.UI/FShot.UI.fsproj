@@ -9,6 +9,7 @@
     <Compile Include="Logging\FShotLog.fs" />
     <Compile Include="Cli\CliArguments.fs" />
     <Compile Include="SkiaCanvas\ToolbarIcons.fs" />
+    <Compile Include="SkiaCanvas\CaptureCanvasEvents.fs" />
     <Compile Include="Windows\PinWindow.axaml.fs" />
     <Compile Include="SkiaCanvas\CaptureCanvas.axaml.fs" />
     <Compile Include="Windows\NotificationWindow.axaml.fs" />

@@ -15,6 +15,7 @@ open FShot.Core.Domain
 open FShot.Platform.Win32.Clipboard
 open FShot.Platform.Win32.Config
 open FShot.UI.Logging
+open FShot.UI.SkiaCanvas
 
 /// Các công thức hình học thuần của PinWindow, tách riêng để kiểm thử đơn vị.
 /// Xem tài liệu 11_07_PinWindow.md, mục 3.
@@ -283,6 +284,10 @@ type PinWindow() as this =
                 Marshal.Copy(ptr, pixelBytes, 0, pixelBytes.Length)
             let ok = ClipboardService.copyImageToClipboard rotated.Width rotated.Height pngBytes pixelBytes
             ClipboardService.playNotificationSound ()
+            if ok then
+                CaptureCanvasEvents.TriggerExportCompleted(Copied)
+            else
+                CaptureCanvasEvents.TriggerExportCompleted(Failed)
             FShotLog.write (sprintf "[PinWindow] Copy to clipboard: %b" ok)
 
     /// Lưu ảnh ghim ra tệp (FR-PIN-07). Lưu nhanh nếu có SavePathFixed, ngược lại mở hộp thoại.
@@ -333,6 +338,7 @@ type PinWindow() as this =
             use stream = File.Create(path)
             data.SaveTo(stream)
             stream.Flush()
+            CaptureCanvasEvents.TriggerExportCompleted(Saved path)
             FShotLog.write (sprintf "[PinWindow] Saved to %s" path)
 
     /// Giải phóng tài nguyên unmanaged và hủy tham chiếu instance (FR-PIN-08).
