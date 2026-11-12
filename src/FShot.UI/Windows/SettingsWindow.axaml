@@ -10,12 +10,14 @@
         WindowStartupLocation="CenterScreen">
     <DockPanel>
         <Border DockPanel.Dock="Bottom" Padding="12" BorderThickness="0,1,0,0" BorderBrush="#20000000">
-            <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto">
+            <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto,Auto,Auto">
                 <Button Grid.Column="0" x:Name="ResetButton" Content="Khôi phục mặc định" Click="OnResetClick" />
-                <TextBlock Grid.Column="1" x:Name="StatusText" VerticalAlignment="Center" Margin="12,0,0,0" TextWrapping="Wrap" />
-                <Button Grid.Column="2" x:Name="CancelButton" Content="Hủy" Click="OnCancelClick" />
-                <Button Grid.Column="3" x:Name="ApplyButton" Content="Áp dụng" Click="OnApplyClick" Margin="8,0,0,0" />
-                <Button Grid.Column="4" x:Name="SaveCloseButton" Content="Lưu &amp; Đóng" Click="OnSaveCloseClick" Margin="8,0,0,0" />
+                <Button Grid.Column="1" x:Name="ImportButton" Content="Nhập..." Click="OnImportClick" Margin="8,0,0,0" />
+                <Button Grid.Column="2" x:Name="ExportButton" Content="Xuất..." Click="OnExportClick" Margin="8,0,0,0" />
+                <TextBlock Grid.Column="3" x:Name="StatusText" VerticalAlignment="Center" Margin="12,0,0,0" TextWrapping="Wrap" />
+                <Button Grid.Column="4" x:Name="CancelButton" Content="Hủy" Click="OnCancelClick" />
+                <Button Grid.Column="5" x:Name="ApplyButton" Content="Áp dụng" Click="OnApplyClick" Margin="8,0,0,0" />
+                <Button Grid.Column="6" x:Name="SaveCloseButton" Content="Lưu &amp; Đóng" Click="OnSaveCloseClick" Margin="8,0,0,0" />
             </Grid>
         </Border>
 

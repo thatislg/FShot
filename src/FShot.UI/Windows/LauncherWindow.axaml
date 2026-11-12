@@ -1,0 +1,38 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="FShot.UI.Windows.LauncherWindow"
+        Title="Trình phóng nhanh"
+        Width="360"
+        Height="300"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen">
+    <StackPanel Margin="24" Spacing="12">
+        <TextBlock Text="Trình phóng nhanh"
+                   FontSize="20"
+                   FontWeight="Bold"
+                   HorizontalAlignment="Center" />
+        <TextBlock Text="Chọn chế độ và độ trễ trước khi chụp."
+                   TextWrapping="Wrap"
+                   HorizontalAlignment="Center"
+                   Foreground="Gray" />
+
+        <TextBlock Text="Chế độ chụp:" />
+        <ComboBox Name="ModeCombo" />
+
+        <TextBlock Text="Độ trễ:" />
+        <ComboBox Name="DelayCombo" />
+
+        <TextBlock Name="MonitorLabel" Text="Màn hình:" />
+        <ComboBox Name="MonitorCombo" />
+
+        <StackPanel Orientation="Horizontal"
+                    HorizontalAlignment="Center"
+                    Spacing="12"
+                    Margin="0,12,0,0">
+            <Button Content="Bắt đầu chụp"
+                    Click="OnStartClick" />
+            <Button Content="Hủy"
+                    Click="OnCancelClick" />
+        </StackPanel>
+    </StackPanel>
+</Window>

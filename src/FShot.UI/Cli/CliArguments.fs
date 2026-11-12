@@ -54,14 +54,22 @@ type ScreenArgs =
             | Raw -> "Xuất ảnh PNG dạng byte thô ra stdout (FR-OUT-09)."
             | Print_Geometry -> "In tọa độ hình học vùng chọn ra stdout (FR-OUT-10)."
 
-/// Subcommand "config": mở cửa sổ cài đặt hoặc nhập cấu hình Flameshot.
+/// Subcommand "config": mở cửa sổ cài đặt hoặc nhập/xuất cấu hình.
 type ConfigArgs =
     | Import_Flameshot
+    | Open_Dir
+    | Export of string
+    | Import of string
+    | Reset
 
     interface IArgParserTemplate with
         member this.Usage =
             match this with
             | Import_Flameshot -> "Nhập cấu hình từ file flameshot.ini (đường dẫn tùy chọn)."
+            | Open_Dir -> "Mở thư mục lưu ảnh chụp trong Windows Explorer (FR-SYS-007)."
+            | Export _ -> "Xuất cấu hình hiện tại ra file JSON (FR-SYS-013)."
+            | Import _ -> "Nhập cấu hình từ file JSON (FR-SYS-013)."
+            | Reset -> "Khôi phục cấu hình về mặc định (FR-SYS-014)."
 
 /// Cây tham số dòng lệnh gốc.
 type CliArguments =
@@ -80,6 +88,13 @@ type CliArguments =
             | Config _ -> "Mở cửa sổ cài đặt."
             | Version -> "Hiển thị phiên bản."
 
+/// Hành động cấu hình headless từ subcommand `config` (P2.43).
+type ConfigAction =
+    | OpenSaveDir
+    | ExportConfig of path: string
+    | ImportConfig of path: string
+    | ResetConfig
+
 /// Kết quả parse dòng lệnh.
 type ParsedCliRequest =
     {
@@ -90,6 +105,7 @@ type ParsedCliRequest =
       AllowMultiple: bool
       OpenSettings: bool
       ImportFlameshotPath: string option
+      ConfigAction: ConfigAction option
     }
 
 module CliParser =
@@ -154,6 +170,7 @@ module CliParser =
                   AllowMultiple = allowMultiple
                   OpenSettings = false
                   ImportFlameshotPath = None
+                  ConfigAction = None
                 }
             elif results.Contains Full then
                 let full = results.GetResult Full
@@ -177,6 +194,7 @@ module CliParser =
                   AllowMultiple = allowMultiple
                   OpenSettings = false
                   ImportFlameshotPath = None
+                  ConfigAction = None
                 }
             elif results.Contains Screen then
                 let screen = results.GetResult Screen
@@ -201,6 +219,7 @@ module CliParser =
                   AllowMultiple = allowMultiple
                   OpenSettings = false
                   ImportFlameshotPath = None
+                  ConfigAction = None
                 }
             elif results.Contains Config then
                 let config = results.GetResult Config
@@ -214,14 +233,29 @@ module CliParser =
                         | _ -> None
                     else
                         None
+
+                // Xác định hành động headless từ `config` (P2.43): --open-dir / --export / --import / --reset.
+                let configAction =
+                    if config.Contains <@ ConfigArgs.Open_Dir @> then
+                        Some ConfigAction.OpenSaveDir
+                    elif config.Contains <@ ConfigArgs.Reset @> then
+                        Some ConfigAction.ResetConfig
+                    elif config.Contains <@ ConfigArgs.Export @> then
+                        config.GetResults <@ ConfigArgs.Export @> |> List.tryHead |> Option.map ConfigAction.ExportConfig
+                    elif config.Contains <@ ConfigArgs.Import @> then
+                        config.GetResults <@ ConfigArgs.Import @> |> List.tryHead |> Option.map ConfigAction.ImportConfig
+                    else
+                        None
+
                 {
                   Mode = GuiInteractive
                   DelayMs = 0
                   OutputTarget = OpenGui
                   RunAsDaemon = false
                   AllowMultiple = allowMultiple
-                  OpenSettings = true
+                  OpenSettings = configAction.IsNone
                   ImportFlameshotPath = importPath
+                  ConfigAction = configAction
                 }
             else
                 // Mặc định: chạy nền với tray icon.
@@ -233,14 +267,15 @@ module CliParser =
                   AllowMultiple = allowMultiple
                   OpenSettings = false
                   ImportFlameshotPath = None
+                  ConfigAction = None
                 }
         with
         | :? ArguParseException as ex ->
             printfn "%s" ex.Message
             System.Environment.Exit(1)
             // never reached
-            { Mode = GuiInteractive; DelayMs = 0; OutputTarget = OpenGui; RunAsDaemon = true; AllowMultiple = allowMultiple; OpenSettings = false; ImportFlameshotPath = None }
+            { Mode = GuiInteractive; DelayMs = 0; OutputTarget = OpenGui; RunAsDaemon = true; AllowMultiple = allowMultiple; OpenSettings = false; ImportFlameshotPath = None; ConfigAction = None }
         | ex ->
             printfn "Lỗi khi phân tích tham số dòng lệnh: %s" ex.Message
             System.Environment.Exit(1)
-            { Mode = GuiInteractive; DelayMs = 0; OutputTarget = OpenGui; RunAsDaemon = true; AllowMultiple = allowMultiple; OpenSettings = false; ImportFlameshotPath = None }
+            { Mode = GuiInteractive; DelayMs = 0; OutputTarget = OpenGui; RunAsDaemon = true; AllowMultiple = allowMultiple; OpenSettings = false; ImportFlameshotPath = None; ConfigAction = None }

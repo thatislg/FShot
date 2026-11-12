@@ -1,9 +1,11 @@
 namespace FShot.UI.Windows
 
 open System
+open Avalonia
 open Avalonia.Controls
 open Avalonia.Input
 open Avalonia.Interactivity
+open Avalonia.Layout
 open Avalonia.Markup.Xaml
 open Avalonia.Media
 open Avalonia.Platform.Storage
@@ -272,5 +274,117 @@ type SettingsWindow() as this =
         this.Close()
 
     member private this.OnResetClick(_: obj, _: RoutedEventArgs) =
-        originalConfig <- AppConfig.Default
-        this.LoadConfig()
+        // Xác nhận trước khi khôi phục mặc định (FR-SYS-014).
+        Async.StartImmediate(async {
+            let! confirmed = this.ConfirmAsync "Khôi phục cấu hình mặc định?" "Thao tác này sẽ ghi đè toàn bộ cấu hình hiện tại về giá trị xuất xưởng. Bạn có chắc chắn?"
+            if confirmed then
+                match ConfigStore.resetConfig() with
+                | Ok () ->
+                    originalConfig <- AppConfig.Default
+                    this.LoadConfig()
+                    this.TryApplyRuntime() |> ignore
+                    this.ShowStatus "Đã khôi phục cấu hình mặc định" false
+                    FShotLog.write "[Settings] Config reset to defaults"
+                | Error err ->
+                    this.ShowStatus (sprintf "Lỗi: %s" err) true
+                    FShotLog.write (sprintf "[Settings] Reset failed: %s" err)
+        })
+
+    member private this.OnImportClick(_: obj, _: RoutedEventArgs) =
+        let runImport =
+            async {
+                try
+                    let topLevel = TopLevel.GetTopLevel(this)
+                    if not (isNull topLevel) then
+                        let options = FilePickerOpenOptions(Title = "Chọn file cấu hình để nhập", AllowMultiple = false)
+                        let jsonType = FilePickerFileType("JSON (*.json)")
+                        jsonType.Patterns <- ResizeArray [ "*.json" ]
+                        options.FileTypeFilter <- ResizeArray [ jsonType ]
+                        let! result = topLevel.StorageProvider.OpenFilePickerAsync(options) |> Async.AwaitTask
+                        if result.Count > 0 then
+                            let path = result[0].TryGetLocalPath()
+                            if not (isNull path) then
+                                match ConfigStore.importConfigFrom path with
+                                | Ok () ->
+                                    this.LoadConfig()
+                                    this.TryApplyRuntime() |> ignore
+                                    this.ShowStatus "Đã nhập cấu hình thành công" false
+                                    FShotLog.write (sprintf "[Settings] Imported config from %s" path)
+                                | Error err ->
+                                    this.ShowStatus (sprintf "Lỗi: %s" err) true
+                                    FShotLog.write (sprintf "[Settings] Import failed: %s" err)
+                with ex ->
+                    FShotLog.writeEx "[Settings] Import config failed" ex
+            }
+        Async.StartImmediate(runImport)
+
+    member private this.OnExportClick(_: obj, _: RoutedEventArgs) =
+        let runExport =
+            async {
+                try
+                    let topLevel = TopLevel.GetTopLevel(this)
+                    if not (isNull topLevel) then
+                        let options = FilePickerSaveOptions()
+                        options.SuggestedFileName <- "fshot-config.json"
+                        let jsonType = FilePickerFileType("JSON (*.json)")
+                        jsonType.Patterns <- ResizeArray [ "*.json" ]
+                        options.FileTypeChoices <- ResizeArray [ jsonType ]
+                        let! file = topLevel.StorageProvider.SaveFilePickerAsync(options) |> Async.AwaitTask
+                        if not (isNull file) then
+                            let path =
+                                match file.TryGetLocalPath() with
+                                | null
+                                | "" -> if file.Path.IsFile then file.Path.LocalPath else file.Path.ToString()
+                                | p -> p
+                            match ConfigStore.exportConfigTo path with
+                            | Ok () ->
+                                this.ShowStatus (sprintf "Đã xuất cấu hình ra %s" path) false
+                                FShotLog.write (sprintf "[Settings] Exported config to %s" path)
+                            | Error err ->
+                                this.ShowStatus (sprintf "Lỗi: %s" err) true
+                                FShotLog.write (sprintf "[Settings] Export failed: %s" err)
+                with ex ->
+                    FShotLog.writeEx "[Settings] Export config failed" ex
+            }
+        Async.StartImmediate(runExport)
+
+    /// Hiển thị hộp thoại xác nhận Yes/No và trả về lựa chọn của người dùng.
+    member private this.ConfirmAsync(title: string) (message: string) : Async<bool> =
+        async {
+            let win = Window()
+            win.Title <- title
+            win.Width <- 400.0
+            win.Height <- 170.0
+            win.WindowStartupLocation <- WindowStartupLocation.CenterOwner
+            win.CanResize <- false
+
+            let panel = StackPanel()
+            panel.Margin <- Thickness(20.0)
+            panel.Spacing <- 12.0
+
+            let msg = TextBlock()
+            msg.Text <- message
+            msg.TextWrapping <- TextWrapping.Wrap
+
+            let btns = StackPanel()
+            btns.Orientation <- Orientation.Horizontal
+            btns.HorizontalAlignment <- HorizontalAlignment.Center
+            btns.Spacing <- 12.0
+
+            let yes = Button()
+            yes.Content <- "Có"
+            yes.Click.Add(fun _ -> win.Close(true))
+
+            let no = Button()
+            no.Content <- "Không"
+            no.Click.Add(fun _ -> win.Close(false))
+
+            btns.Children.Add(yes)
+            btns.Children.Add(no)
+            panel.Children.Add(msg)
+            panel.Children.Add(btns)
+            win.Content <- panel
+
+            let! result = win.ShowDialog<bool>(this) |> Async.AwaitTask
+            return result
+        }

@@ -520,40 +520,40 @@
 > - [10_08_ConfigStore.md](file:///d:/Kojin/FShot/docs/2.Design/10_Platform_Win32/10_08_ConfigStore.md): Ghi nguyên tử, hot-reload qua FileSystemWatcher, import/export và phục hồi mặc định.
 > - [003_SRS.md](file:///d:/Kojin/FShot/docs/1.Investigation/003_SRS.md): Yêu cầu kỹ thuật `FR-WIN-004`, `FR-SYS-004`, `FR-SYS-007`, `FR-SYS-011`, `FR-SYS-013`, `FR-SYS-014`, `FR-SYS-021`.
 
-- [ ] **P2.42** Console output cho các lệnh CLI, tray launcher, mở thư mục lưu (`FR-WIN-004`, `FR-SYS-004`, `FR-SYS-007`, `FR-SYS-021`).
-  - [ ] Hoàn thiện gắn kết Console Output cho ứng dụng Windows GUI (`FR-WIN-004`, `FR-SYS-021`):
-    - [ ] Xử lý vấn đề tiến trình GUI SubSystem trên Windows mặc định không in text ra PowerShell/CMD:
-      - [ ] Sử dụng Win32 P/Invoke `AttachConsole(ATTACH_PARENT_PROCESS = -1u)`.
-      - [ ] Điều hướng lại `stdout` và `stderr` sang Console Stream khi được gọi từ terminal.
-      - [ ] Đảm bảo in thông tin `--help`, `--version`, thông báo lỗi cú pháp hoặc output stdout (`--print-geometry`, `--raw`) xuất hiện ngay lập tức trên command prompt của người dùng.
-  - [ ] Triển khai hộp thoại Launcher từ System Tray (`FR-SYS-004`):
-    - [ ] Thiết kế hộp thoại nhỏ `LauncherWindow.axaml` (Kawaii Claymorphism) xuất hiện khi click menu "Trình phóng nhanh (Launcher)":
-      - [ ] Các tùy chọn chụp nhanh với độ trễ: Chụp ngay (0s), Trễ 3 giây, Trễ 5 giây, Trễ 10 giây.
-      - [ ] Chọn chế độ: Toàn màn hình (Full Screen), Vùng chọn GUI (Interactive GUI), Màn hình cụ thể (Monitor Index).
-      - [ ] Nút "Bắt đầu chụp" kích hoạt đếm ngược và thu nhỏ launcher.
-  - [ ] Mở thư mục lưu ảnh trong Windows Explorer (`FR-SYS-007`):
-    - [ ] Tích hợp mục menu "Mở thư mục ảnh chụp" trong TrayIcon và lệnh CLI `fshot config --open-dir`:
-      - [ ] Đọc đường dẫn `savePath` từ `AppConfig`.
-      - [ ] Tự động tạo thư mục trên ổ đĩa nếu chưa tồn tại.
-      - [ ] Khởi chạy tiến trình `Process.Start(ProcessStartInfo("explorer.exe", savePath, UseShellExecute = true))`.
-  - [ ] Viết unit tests kiểm thử phân giải đường dẫn mở explorer và logic đếm ngược của Launcher.
+- [x] **P2.42** Console output cho các lệnh CLI, tray launcher, mở thư mục lưu (`FR-WIN-004`, `FR-SYS-004`, `FR-SYS-007`, `FR-SYS-021`).
+  - [x] Hoàn thiện gắn kết Console Output cho ứng dụng Windows GUI (`FR-WIN-004`, `FR-SYS-021`):
+    - [x] Xử lý vấn đề tiến trình GUI SubSystem trên Windows mặc định không in text ra PowerShell/CMD:
+      - [x] Sử dụng Win32 P/Invoke `AttachConsole(ATTACH_PARENT_PROCESS = -1u)`.
+      - [x] Điều hướng lại `stdout` và `stderr` sang Console Stream khi được gọi từ terminal.
+      - [x] Đảm bảo in thông tin `--help`, `--version`, thông báo lỗi cú pháp hoặc output stdout (`--print-geometry`, `--raw`) xuất hiện ngay lập tức trên command prompt của người dùng.
+  - [x] Triển khai hộp thoại Launcher từ System Tray (`FR-SYS-004`):
+    - [x] Thiết kế hộp thoại nhỏ `LauncherWindow.axaml` xuất hiện khi click menu "Trình phóng nhanh (Launcher)":
+      - [x] Các tùy chọn chụp nhanh với độ trễ: Chụp ngay (0s), Trễ 3 giây, Trễ 5 giây, Trễ 10 giây.
+      - [x] Chọn chế độ: Toàn màn hình (Full Screen), Vùng chọn GUI (Interactive GUI), Màn hình cụ thể (Monitor Index).
+      - [x] Nút "Bắt đầu chụp" kích hoạt đếm ngược và thu nhỏ launcher.
+  - [x] Mở thư mục lưu ảnh trong Windows Explorer (`FR-SYS-007`):
+    - [x] Tích hợp mục menu "Mở thư mục ảnh chụp" trong TrayIcon và lệnh CLI `fshot config --open-dir`:
+      - [x] Đọc đường dẫn `savePath` từ `AppConfig`.
+      - [x] Tự động tạo thư mục trên ổ đĩa nếu chưa tồn tại.
+      - [x] Khởi chạy tiến trình `Process.Start(ProcessStartInfo("explorer.exe", savePath, UseShellExecute = true))`.
+  - [x] Viết unit tests kiểm thử phân giải đường dẫn mở explorer và logic đếm ngược của Launcher.
   - [ ] Verify runtime: chạy `fshot --help` từ PowerShell xác nhận text trợ giúp in ra trực tiếp trong console; mở Tray menu click "Mở thư mục ảnh chụp" xác nhận thư mục mở ra; mở Launcher thử chụp trễ 3 giây xác nhận đếm ngược mượt mà.
-- [ ] **P2.43** Import/export/reset cấu hình và hot-reload khi file thay đổi (`FR-SYS-011`, `FR-SYS-013`, `FR-SYS-014`).
-  - [ ] Tự động tải lại cấu hình khi file thay đổi trên đĩa (Hot-reload - `FR-SYS-011`):
-    - [ ] Nâng cấp `FileSystemWatcher` trong `src/FShot.Platform.Win32/Config/ConfigStore.fs`:
-      - [ ] Lắng nghe sự kiện `Changed` trên `%APPDATA%\FShot\config.json`.
-      - [ ] Bộ lọc debounce 300ms chống trùng lặp sự kiện ghi tệp.
-      - [ ] Tự động nạp cấu hình mới và phát sự kiện `ConfigChanged` cho instance đang chạy.
-      - [ ] Cập nhật tức thời màu vẽ, kích thước nét vẽ mặc định, và tự động gán lại phím tắt (dynamic rebinding) mà không cần khởi động lại ứng dụng.
-  - [ ] Thao tác Import và Export file cấu hình (`FR-SYS-013`):
-    - [ ] Hỗ trợ dòng lệnh CLI:
-      - [ ] `fshot config --export <filepath.json>`: Xuất toàn bộ cấu hình hiện tại ra file JSON chỉ định.
-      - [ ] `fshot config --import <filepath.json>`: Nạp và xác thực file cấu hình JSON từ đường dẫn ngoài, ghi đè an toàn vào `%APPDATA%\FShot\config.json`.
-    - [ ] Tích hợp trong `SettingsWindow.axaml`: Bổ sung 2 nút "Nhập cấu hình..." và "Xuất cấu hình..." mở hộp thoại chọn file `OpenFileDialog` / `SaveFileDialog`.
-  - [ ] Khôi phục cấu hình mặc định (Reset to Defaults - `FR-SYS-014`):
-    - [ ] Dòng lệnh CLI: `fshot config --reset` khôi phục `config.json` về giá trị xuất xưởng chuẩn.
-    - [ ] Giao diện GUI: Nút "Khôi phục mặc định" trong footer của `SettingsWindow` hiển thị hộp thoại xác nhận (Confirmation Dialog); khi người dùng xác nhận, khôi phục toàn bộ trường về default và áp dụng ngay lập tức.
-  - [ ] Viết unit tests kiểm thử import file JSON hợp lệ/không hợp lệ, export file, logic reset defaults và cơ chế hot-reload debounce.
+- [x] **P2.43** Import/export/reset cấu hình và hot-reload khi file thay đổi (`FR-SYS-011`, `FR-SYS-013`, `FR-SYS-014`).
+  - [x] Tự động tải lại cấu hình khi file thay đổi trên đĩa (Hot-reload - `FR-SYS-011`):
+    - [x] Nâng cấp `FileSystemWatcher` trong `src/FShot.Platform.Win32/Config/ConfigStore.fs`:
+      - [x] Lắng nghe sự kiện `Changed` trên `%APPDATA%\FShot\config.json`.
+      - [x] Bộ lọc debounce 300ms chống trùng lặp sự kiện ghi tệp.
+      - [x] Tự động nạp cấu hình mới và phát sự kiện `ConfigChanged` cho instance đang chạy.
+      - [x] Cập nhật tức thời màu vẽ, kích thước nét vẽ mặc định, và tự động gán lại phím tắt (dynamic rebinding) mà không cần khởi động lại ứng dụng.
+  - [x] Thao tác Import và Export file cấu hình (`FR-SYS-013`):
+    - [x] Hỗ trợ dòng lệnh CLI:
+      - [x] `fshot config --export <filepath.json>`: Xuất toàn bộ cấu hình hiện tại ra file JSON chỉ định.
+      - [x] `fshot config --import <filepath.json>`: Nạp và xác thực file cấu hình JSON từ đường dẫn ngoài, ghi đè an toàn vào `%APPDATA%\FShot\config.json`.
+    - [x] Tích hợp trong `SettingsWindow.axaml`: Bổ sung 2 nút "Nhập cấu hình..." và "Xuất cấu hình..." mở hộp thoại chọn file `OpenFileDialog` / `SaveFileDialog`.
+  - [x] Khôi phục cấu hình mặc định (Reset to Defaults - `FR-SYS-014`):
+    - [x] Dòng lệnh CLI: `fshot config --reset` khôi phục `config.json` về giá trị xuất xưởng chuẩn.
+    - [x] Giao diện GUI: Nút "Khôi phục mặc định" trong footer của `SettingsWindow` hiển thị hộp thoại xác nhận (Confirmation Dialog); khi người dùng xác nhận, khôi phục toàn bộ trường về default và áp dụng ngay lập tức.
+  - [x] Viết unit tests kiểm thử import file JSON hợp lệ/không hợp lệ, export file, logic reset defaults và cơ chế hot-reload debounce.
   - [ ] Verify runtime: sửa thủ công màu vẽ trong `config.json` từ Notepad, xác nhận app nhận màu mới ngay lập tức; thử export ra file desktop rồi reset app về mặc định, sau đó import lại xác nhận cấu hình được khôi phục nguyên vẹn.
 
 ---

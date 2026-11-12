@@ -19,6 +19,7 @@
     <Compile Include="Windows\ColorSelector.axaml.fs" />
     <Compile Include="ConfigRuntime.fs" />
     <Compile Include="Windows\SettingsWindow.axaml.fs" />
+    <Compile Include="Windows\LauncherWindow.axaml.fs" />
     <Compile Include="ViewModels\PlaceholderViewModel.fs" />
     <Compile Include="App.axaml.fs" />
     <Compile Include="Program.fs" />
@@ -32,6 +33,7 @@
     <EmbeddedResource Include="Windows\FileNameEditor.axaml" />
     <EmbeddedResource Include="Windows\ColorSelector.axaml" />
     <EmbeddedResource Include="Windows\SettingsWindow.axaml" />
+    <EmbeddedResource Include="Windows\LauncherWindow.axaml" />
   </ItemGroup>
 
   <ItemGroup>

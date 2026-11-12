@@ -1,6 +1,9 @@
 namespace FShot.UI
 
 open System
+open System.Diagnostics
+open System.IO
+open System.Runtime.InteropServices
 open System.Threading
 open Avalonia
 open Avalonia.Controls.ApplicationLifetimes
@@ -18,6 +21,36 @@ open FShot.UI.Logging
 open SkiaSharp
 
 module Program =
+
+    /// P/Invoke để gắn console của tiến trình cha (PowerShell/CMD) cho ứng dụng GUI SubSystem.
+    module private NativeConsole =
+        [<DllImport("kernel32.dll", SetLastError = true)>]
+        extern bool AttachConsole(uint32 dwProcessId)
+
+        [<DllImport("kernel32.dll", SetLastError = true)>]
+        extern bool FreeConsole()
+
+    let private ATTACH_PARENT_PROCESS = 0xFFFFFFFFu
+
+    /// Gắn console của tiến trình cha và điều hướng lại stdout/stderr sang console (FR-WIN-004, FR-SYS-021).
+    /// Ứng dụng GUI SubSystem trên Windows mặc định không in text ra PowerShell/CMD; hàm này khắc phục.
+    let private tryAttachConsole () : bool =
+        try
+            if NativeConsole.AttachConsole(ATTACH_PARENT_PROCESS) then
+                let stdout = Console.OpenStandardOutput()
+                let outWriter = new StreamWriter(stdout, Text.Encoding.UTF8)
+                outWriter.AutoFlush <- true
+                Console.SetOut(outWriter)
+
+                let stderr = Console.OpenStandardError()
+                let errWriter = new StreamWriter(stderr, Text.Encoding.UTF8)
+                errWriter.AutoFlush <- true
+                Console.SetError(errWriter)
+                true
+            else
+                false
+        with _ ->
+            false
 
     [<CompiledName "BuildAvaloniaApp">]
     let buildAvaloniaApp() =
@@ -167,8 +200,56 @@ module Program =
                 return 1
         }
 
+    /// Thực thi hành động cấu hình headless từ subcommand `config` (P2.43) và trả về exit code.
+    let runConfigAction (action: ConfigAction) : int =
+        match action with
+        | ConfigAction.OpenSaveDir ->
+            let cfg = ConfigStore.loadSnapshot()
+            match cfg.SaveOptions.Path with
+            | Some path ->
+                try
+                    if not (Directory.Exists path) then Directory.CreateDirectory(path) |> ignore
+                    let psi = ProcessStartInfo("explorer.exe", path)
+                    psi.UseShellExecute <- true
+                    Process.Start(psi) |> ignore
+                    printfn "Đã mở thư mục lưu ảnh: %s" path
+                    0
+                with ex ->
+                    printfn "Lỗi khi mở thư mục: %s" ex.Message
+                    1
+            | None ->
+                printfn "Chưa cấu hình thư mục lưu ảnh."
+                1
+        | ConfigAction.ExportConfig path ->
+            match ConfigStore.exportConfigTo path with
+            | Ok () ->
+                printfn "Đã xuất cấu hình ra %s" path
+                0
+            | Error err ->
+                printfn "%s" err
+                1
+        | ConfigAction.ImportConfig path ->
+            match ConfigStore.importConfigFrom path with
+            | Ok () ->
+                printfn "Đã nhập cấu hình từ %s" path
+                0
+            | Error err ->
+                printfn "%s" err
+                1
+        | ConfigAction.ResetConfig ->
+            match ConfigStore.resetConfig() with
+            | Ok () ->
+                printfn "Đã khôi phục cấu hình mặc định."
+                0
+            | Error err ->
+                printfn "%s" err
+                1
+
     [<EntryPoint; STAThread>]
     let main argv =
+        // Gắn console cha để in --help/--version/--raw/--print-geometry ra PowerShell/CMD (FR-WIN-004).
+        tryAttachConsole() |> ignore
+
         let appConfig = ConfigStore.loadConfig()
         let config = appConfig.ToSnapshot()
         App.ConfigSnapshot <- config
@@ -209,6 +290,11 @@ module Program =
                 FShotLog.write (sprintf "[Config] Flameshot config not found at %s" path)
                 printfn "Không tìm thấy file flameshot.ini tại %s" path
             System.Environment.Exit(0)
+        | None -> ()
+
+        // Hành động cấu hình headless (P2.43): --export / --import / --reset / --open-dir.
+        match request.ConfigAction with
+        | Some action -> System.Environment.Exit(runConfigAction action)
         | None -> ()
 
         use cts = new CancellationTokenSource()

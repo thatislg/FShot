@@ -147,16 +147,16 @@ type App() as this =
     let openSaveFolder () =
         let config = ConfigStore.loadSnapshot()
         match config.SaveOptions.Path with
-        | Some path when Directory.Exists path ->
+        | Some path ->
             try
+                // Tự động tạo thư mục nếu chưa tồn tại (FR-SYS-007).
+                if not (Directory.Exists path) then Directory.CreateDirectory(path) |> ignore
                 let psi = ProcessStartInfo("explorer.exe", path)
                 psi.UseShellExecute <- true
                 Process.Start(psi) |> ignore
                 FShotLog.write (sprintf "[Tray] Opened save folder: %s" path)
             with ex ->
                 FShotLog.writeEx "[Tray] Open save folder failed" ex
-        | Some path ->
-            FShotLog.write (sprintf "[Tray] Save path does not exist: %s" path)
         | None ->
             FShotLog.write "[Tray] No save path configured"
 
@@ -372,7 +372,7 @@ type App() as this =
             service.Rebind bindings |> ignore)
         FShotLog.write (sprintf "[Hotkey] Applied %d hotkey(s)" (List.length bindings))
 
-    /// Theo dõi thay đổi của config.json để tự động cập nhật phím nóng (không cần restart).
+    /// Theo dõi thay đổi của config.json để tự động cập nhật cấu hình runtime (không cần restart).
     let startConfigWatcher () =
         try
             let dir = ConfigStore.defaultConfigDir
@@ -380,15 +380,17 @@ type App() as this =
             watcher.NotifyFilter <- NotifyFilters.LastWrite ||| NotifyFilters.FileName
             watcher.EnableRaisingEvents <- true
             watcher.Changed.Add(fun _ ->
-                FShotLog.write "[Hotkey] config.json changed; rebinding hotkeys"
+                FShotLog.write "[Config] config.json changed; reloading runtime config"
                 async {
                     do! Async.Sleep 300
+                    // Cập nhật snapshot (màu vẽ, độ dày nét mặc định) và rebind phím nóng.
+                    App.ConfigSnapshot <- ConfigStore.loadSnapshot()
                     applyHotkeyConfig()
                 } |> Async.Start)
             configWatcher <- Some watcher
-            FShotLog.write "[Hotkey] Config file watcher started"
+            FShotLog.write "[Config] Config file watcher started"
         with ex ->
-            FShotLog.writeEx "[Hotkey] Failed to start config watcher" ex
+            FShotLog.writeEx "[Config] Failed to start config watcher" ex
 
     /// Áp dụng lại cấu hình runtime sau khi lưu từ cửa sổ Settings (FR-SYS-011).
     /// Refresh snapshot cache, rebind hotkey toàn cục và đồng bộ khởi động cùng Windows.
@@ -430,6 +432,38 @@ type App() as this =
             startConfigWatcher()
         | Error err -> FShotLog.write (sprintf "[Hotkey] %s" err)
 
+    /// Mở hộp thoại Trình phóng nhanh (FR-SYS-004).
+    member this.ShowLauncherWindow() =
+        Dispatcher.UIThread.InvokeAsync(fun () ->
+            try
+                LauncherRuntime.startCaptureCallback <- Some (fun (request, bounds) -> this.LaunchCapture request bounds)
+                let launcher = LauncherWindow()
+                launcher.Show()
+                FShotLog.write "[Tray] Launcher window opened"
+            with ex ->
+                FShotLog.writeEx "[Tray] Show launcher window failed" ex
+        ) |> ignore
+
+    /// Kích hoạt chụp theo request từ Trình phóng nhanh.
+    /// GUI đi qua overlay (đã xử lý delay nội bộ); headless áp dụng delay trước khi chụp.
+    member private this.LaunchCapture (request: CaptureRequest) (bounds: Rect option) =
+        match request.Mode with
+        | GuiInteractive
+        | LastRegion ->
+            match desktopLifetime with
+            | Some desktop -> showCaptureOverlay desktop request bounds
+            | None -> FShotLog.write "[Launcher] No desktop lifetime for GUI capture"
+        | FullScreen ->
+            async {
+                if request.DelayMs > 0 then do! Async.Sleep request.DelayMs
+                captureFullScreenHeadless()
+            } |> Async.Start
+        | SingleScreen idx ->
+            async {
+                if request.DelayMs > 0 then do! Async.Sleep request.DelayMs
+                captureScreenHeadless idx
+            } |> Async.Start
+
     /// Dispatcher cho các lệnh phát sinh từ tray.
     member private this.DispatchTrayCommand (desktop: IClassicDesktopStyleApplicationLifetime) (cmd: TrayCommand) =
         match cmd with
@@ -446,6 +480,9 @@ type App() as this =
                     do! Async.Sleep delayMs
                 showCaptureOverlay desktop { CaptureRequest.Default with Mode = GuiInteractive } None
             } |> Async.Start
+        | OpenLauncher ->
+            FShotLog.write "[Tray] OpenLauncher requested"
+            this.ShowLauncherWindow()
         | OpenAbout ->
             FShotLog.write "[Tray] OpenAbout requested"
             showAboutWindow()

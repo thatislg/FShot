@@ -130,3 +130,57 @@ let ``ConfigStore default paths dung chuan APPDATA`` () =
     Assert.True(ConfigStore.defaultConfigFile.EndsWith("config.json", StringComparison.OrdinalIgnoreCase))
     let appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
     Assert.StartsWith(appData, ConfigStore.defaultConfigFile, StringComparison.OrdinalIgnoreCase)
+
+/// Kiểm tra transferConfig sao chép cấu hình từ nguồn sang đích (round-trip import/export).
+[<Fact>]
+let ``ConfigStore transferConfig sao chep cau hinh nguon sang dich`` () =
+    let tempDir = Path.Combine(Path.GetTempPath(), "FShot_Test_" + Guid.NewGuid().ToString("N"))
+    let source = Path.Combine(tempDir, "source.json")
+    let target = Path.Combine(tempDir, "target.json")
+    try
+        Directory.CreateDirectory(tempDir) |> ignore
+        let custom = { AppConfig.Default with SavePath = "C:\\Shots"; DrawColor = "#123456"; JpegQuality = 75 }
+        ConfigStore.saveConfigTo source custom
+
+        match ConfigStore.transferConfig source target with
+        | Ok () ->
+            Assert.True(File.Exists target)
+            let loaded = ConfigStore.loadConfigFrom target
+            Assert.Equal("C:\\Shots", loaded.SavePath)
+            Assert.Equal("#123456", loaded.DrawColor)
+            Assert.Equal(75, loaded.JpegQuality)
+        | Error err -> Assert.Fail("transferConfig unexpectedly failed: " + err)
+    finally
+        if Directory.Exists tempDir then Directory.Delete(tempDir, true)
+
+/// Kiểm tra transferConfig từ chối file JSON không hợp lệ.
+[<Fact>]
+let ``ConfigStore transferConfig tu choi file JSON khong hop le`` () =
+    let tempDir = Path.Combine(Path.GetTempPath(), "FShot_Test_" + Guid.NewGuid().ToString("N"))
+    let source = Path.Combine(tempDir, "broken.json")
+    let target = Path.Combine(tempDir, "target.json")
+    try
+        Directory.CreateDirectory(tempDir) |> ignore
+        File.WriteAllText(source, "{ not valid json !!!")
+        match ConfigStore.transferConfig source target with
+        | Ok () -> Assert.Fail("Expected error for invalid JSON")
+        | Error _ -> ()
+    finally
+        if Directory.Exists tempDir then Directory.Delete(tempDir, true)
+
+/// Kiểm tra resetConfigTo ghi cấu hình mặc định ra file chỉ định.
+[<Fact>]
+let ``ConfigStore resetConfigTo ghi cau hinh mac dinh`` () =
+    let tempDir = Path.Combine(Path.GetTempPath(), "FShot_Test_" + Guid.NewGuid().ToString("N"))
+    let target = Path.Combine(tempDir, "config.json")
+    try
+        match ConfigStore.resetConfigTo target with
+        | Ok () ->
+            let loaded = ConfigStore.loadConfigFrom target
+            Assert.Equal(AppConfig.Default.SavePath, loaded.SavePath)
+            Assert.Equal(AppConfig.Default.DrawColor, loaded.DrawColor)
+            Assert.Equal(AppConfig.Default.DrawThickness, loaded.DrawThickness)
+            Assert.Equal(AppConfig.Default.JpegQuality, loaded.JpegQuality)
+        | Error err -> Assert.Fail("resetConfigTo unexpectedly failed: " + err)
+    finally
+        if Directory.Exists tempDir then Directory.Delete(tempDir, true)

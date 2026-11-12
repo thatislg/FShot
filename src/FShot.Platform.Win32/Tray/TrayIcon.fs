@@ -12,6 +12,7 @@ type TrayCommand =
     | GuiCapture
     | CaptureScreen of screenIndex: int
     | LaunchWithDelay of delayMs: int
+    | OpenLauncher
     | OpenAbout
     | OpenSettings
     | OpenSaveFolder
@@ -96,7 +97,7 @@ type TrayIconService(application: Application, dispatch: TrayCommand -> unit, me
 
         // FR-SYS-004: Trình phóng nhanh.
         let launcherItem = new NativeMenuItem(menuText.Launcher)
-        launcherItem.Click.Add(fun _ -> dispatch (LaunchWithDelay 3000))
+        launcherItem.Click.Add(fun _ -> dispatch OpenLauncher)
         menu.Items.Add(launcherItem)
 
         menu.Items.Add(new NativeMenuItemSeparator())

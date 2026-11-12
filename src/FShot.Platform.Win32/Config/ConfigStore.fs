@@ -142,3 +142,40 @@ module ConfigStore =
                     debounceTimer <- None
                 | None -> ()
                 watcher.Dispose() }
+
+    /// Nạp và xác thực cấu hình từ file nguồn, ghi bản chuẩn hóa sang file đích.
+    /// Dùng chung cho import/export; tách tham số đường dẫn để dễ unit-test (FR-SYS-013).
+    let transferConfig (sourceFile: string) (targetFile: string) : Result<unit, string> =
+        try
+            if not (File.Exists sourceFile) then
+                Error (sprintf "Không tìm thấy file cấu hình: %s" sourceFile)
+            else
+                let json = File.ReadAllText(sourceFile)
+                match ConfigJson.deserialize json with
+                | Some cfg ->
+                    saveConfigTo targetFile (cfg.Normalized())
+                    Ok ()
+                | None ->
+                    Error (sprintf "File cấu hình không hợp lệ (JSON sai cú pháp): %s" sourceFile)
+        with ex ->
+            Error (sprintf "Không thể xử lý cấu hình: %s" ex.Message)
+
+    /// Xuất cấu hình hiện tại ra file JSON tại đường dẫn chỉ định (FR-SYS-013).
+    let exportConfigTo (filePath: string) : Result<unit, string> =
+        transferConfig defaultConfigFile filePath
+
+    /// Nhập cấu hình từ file JSON chỉ định và ghi đè an toàn vào file mặc định (FR-SYS-013).
+    let importConfigFrom (filePath: string) : Result<unit, string> =
+        transferConfig filePath defaultConfigFile
+
+    /// Ghi cấu hình mặc định ra file chỉ định (dùng chung cho reset; FR-SYS-014).
+    let resetConfigTo (filePath: string) : Result<unit, string> =
+        try
+            saveConfigTo filePath AppConfig.Default
+            Ok ()
+        with ex ->
+            Error (sprintf "Không thể khôi phục cấu hình mặc định: %s" ex.Message)
+
+    /// Khôi phục cấu hình về giá trị mặc định của nhà sản xuất (FR-SYS-014).
+    let resetConfig () : Result<unit, string> =
+        resetConfigTo defaultConfigFile

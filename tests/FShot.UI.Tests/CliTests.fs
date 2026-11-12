@@ -124,6 +124,35 @@ let ``parse config import-flameshot không đường dẫn``() =
     Assert.True(request.ImportFlameshotPath.IsNone)
 
 [<Fact>]
+let ``parse config open-dir maps to OpenSaveDir``() =
+    let request = CliParser.parse [| "config"; "--open-dir" |]
+    Assert.False(request.OpenSettings)
+    match request.ConfigAction with
+    | Some ConfigAction.OpenSaveDir -> ()
+    | _ -> Assert.Fail("Expected OpenSaveDir config action")
+
+[<Fact>]
+let ``parse config export maps to ExportConfig``() =
+    let request = CliParser.parse [| "config"; "--export"; "D:\\cfg.json" |]
+    match request.ConfigAction with
+    | Some (ConfigAction.ExportConfig p) -> Assert.Equal("D:\\cfg.json", p)
+    | _ -> Assert.Fail("Expected ExportConfig action")
+
+[<Fact>]
+let ``parse config import maps to ImportConfig``() =
+    let request = CliParser.parse [| "config"; "--import"; "D:\\cfg.json" |]
+    match request.ConfigAction with
+    | Some (ConfigAction.ImportConfig p) -> Assert.Equal("D:\\cfg.json", p)
+    | _ -> Assert.Fail("Expected ImportConfig action")
+
+[<Fact>]
+let ``parse config reset maps to ResetConfig``() =
+    let request = CliParser.parse [| "config"; "--reset" |]
+    match request.ConfigAction with
+    | Some ConfigAction.ResetConfig -> ()
+    | _ -> Assert.Fail("Expected ResetConfig action")
+
+[<Fact>]
 let ``parse full with raw maps to stdout``() =
     let request = CliParser.parse [| "full"; "-r" |]
     Assert.Equal(FullScreen, request.Mode)
