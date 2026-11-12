@@ -198,9 +198,10 @@ type App() as this =
                             desktop.Shutdown()
                     )
 
-                    overlay.Show()
-                    overlay.Focus() |> ignore
-                    overlay.Activate() |> ignore
+                    // 11.10 Freeze-Frame: KHÔNG hiển thị/focus/activate cửa sổ trước khi chụp.
+                    // Cửa sổ overlay chỉ được hiển thị và kích hoạt BÊN TRONG ShowOverlayAsync()
+                    // sau khi ảnh chụp màn hình đã nằm trong bộ nhớ, để menu tạm thời trên
+                    // Taskbar/context menu không bị đóng sập do mất tiêu điểm trước khi chụp.
 
                     async {
                         try

@@ -1722,13 +1722,19 @@ type CaptureCanvas() as this =
         let hitTestBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(0uy, 0uy, 150uy, 255uy))
         context.FillRectangle(hitTestBrush, this.Bounds)
 
-        // Flameshot-style: cửa sổ trong suốt, không vẽ screenshot stub đè lên desktop.
-        // Capture result vẫn được lưu để export pipeline sử dụng.
-        // Dimming và annotations được vẽ trên nền trong suốt.
+        // 11.10 Freeze-Frame: vẽ ảnh chụp đóng băng làm lớp nền (Layer 1.1) trải khớp toàn bộ
+        // bề mặt vẽ. Ảnh đã được chụp TRƯỚC khi cửa sổ hiển thị nên các thành phần giao diện
+        // tạm thời (menu Taskbar, context menu) vẫn hiển thị nguyên vẹn dù đã mất tiêu điểm.
         match cachedBitmap with
-        | Some _ ->
-            // Không vẽ screenshot lên overlay; desktop gốc hiển thị phía sau cửa sổ.
-            ()
+        | Some bitmap ->
+            // Khung nguồn = toàn bộ điểm ảnh physical của ảnh chụp; khung đích = toàn bộ bề mặt vẽ.
+            match captureResult with
+            | Some result ->
+                let sourceRect = Rect(0.0, 0.0, float result.Width, float result.Height)
+                context.DrawImage(bitmap, sourceRect, this.Bounds)
+            | None ->
+                let sourceRect = Rect(0.0, 0.0, float bitmap.PixelSize.Width, float bitmap.PixelSize.Height)
+                context.DrawImage(bitmap, sourceRect, this.Bounds)
         | None ->
             // Chưa có capture result: vẽ nền xám nhạt để debug.
             let brush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(32uy, 128uy, 128uy, 128uy))
