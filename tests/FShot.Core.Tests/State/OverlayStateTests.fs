@@ -244,21 +244,21 @@ let ``Selected Shift KeyDown Down mở rộng xuống dưới vùng nhỏ`` () =
         initResult()
         |> update (PointerPressed(point 100.0 100.0))
         |> (fun r -> r.State)
-        |> update (PointerMoved(point 110.0 110.0))
+        |> update (PointerMoved(point 120.0 120.0))
         |> (fun r -> r.State)
         |> update PointerReleased
         |> (fun r -> r.State)
 
     Assert.Equal(SelectionState.Selected, state.Selection.State)
-    Assert.Equal(10.0, state.Selection.Bounds.Width)
-    Assert.Equal(10.0, state.Selection.Bounds.Height)
+    Assert.Equal(20.0, state.Selection.Bounds.Width)
+    Assert.Equal(20.0, state.Selection.Bounds.Height)
 
     let result = state |> update (KeyDown "Shift+Down")
     Assert.Equal(SelectionState.Selected, result.State.Selection.State)
     Assert.Equal(100.0, result.State.Selection.Bounds.X)
     Assert.Equal(100.0, result.State.Selection.Bounds.Y)
-    Assert.Equal(10.0, result.State.Selection.Bounds.Width)
-    Assert.Equal(11.0, result.State.Selection.Bounds.Height)
+    Assert.Equal(20.0, result.State.Selection.Bounds.Width)
+    Assert.Equal(21.0, result.State.Selection.Bounds.Height)
 
 /// Kiểm tra KeyDown không phải mũi tên giữ nguyên trạng thái.
 [<Fact>]
@@ -1996,3 +1996,107 @@ let ``DeleteSelectedAnnotation xóa chú thích đang chọn`` () =
     Assert.True(deleted.SelectedAnnotation.IsNone)
     Assert.Empty(deleted.History.Current.Annotations)
     Assert.True(deleted.History.CanUndo)
+
+// ---------- Select All (FR-SEL-10) ----------
+
+/// Kiểm tra Ctrl+A từ Idle tạo vùng chọn phủ toàn VirtualBounds.
+[<Fact>]
+let ``SelectAll từ Idle phủ toàn màn hình`` () =
+    let result = initResult() |> update SelectAll
+    Assert.Equal(SelectionState.Selected, result.State.Selection.State)
+    Assert.Equal(0.0, result.State.Selection.Bounds.X)
+    Assert.Equal(0.0, result.State.Selection.Bounds.Y)
+    Assert.Equal(1920.0, result.State.Selection.Bounds.Width)
+    Assert.Equal(1080.0, result.State.Selection.Bounds.Height)
+
+/// Kiểm tra Ctrl+A từ Selected mở rộng vùng hiện tại ra toàn màn hình, bảo toàn annotation.
+[<Fact>]
+let ``SelectAll từ Selected bảo toàn annotation`` () =
+    let selected =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool LineTool)
+        |> (fun r -> r.State)
+        |> update (PointerPressed(point 150.0 150.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 250.0 250.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+        |> update (SelectTool SelectionTool)
+        |> (fun r -> r.State)
+
+    let beforeCount = List.length selected.History.Current.Annotations
+    Assert.Equal(1, beforeCount)
+
+    let result = selected |> update SelectAll
+    Assert.Equal(SelectionState.Selected, result.State.Selection.State)
+    Assert.Equal(1920.0, result.State.Selection.Bounds.Width)
+    Assert.Equal(1080.0, result.State.Selection.Bounds.Height)
+    Assert.Equal(beforeCount, List.length result.State.History.Current.Annotations)
+
+// ---------- Co giãn đối xứng bàn phím (FR-SEL-07) ----------
+
+/// Kiểm tra Ctrl+Shift+Right mở rộng đối xứng và giữ tâm.
+[<Fact>]
+let ``Selected Ctrl+Shift+Right co giãn đối xứng`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 100.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+    let beforeCenter = state.Selection.Bounds.X + state.Selection.Bounds.Width / 2.0
+    let result = state |> update (KeyDown "Ctrl+Shift+Right")
+    Assert.Equal(SelectionState.Selected, result.State.Selection.State)
+    let afterCenter = result.State.Selection.Bounds.X + result.State.Selection.Bounds.Width / 2.0
+    Assert.Equal(beforeCenter, afterCenter)
+    Assert.Equal(202.0, result.State.Selection.Bounds.Width)
+
+// ---------- Z-order (FR-UNDO-006) ----------
+
+/// Kiểm tra BringForward thay đổi thứ tự và đẩy snapshot undo.
+[<Fact>]
+let ``BringForward đẩy snapshot undo`` () =
+    let selected = stateWithLine |> update (PointerPressed(point 180.0 180.0)) |> (fun r -> r.State) |> update PointerReleased |> (fun r -> r.State)
+    let before = selected.History.UndoStack.Length
+    let result = selected |> update BringForward
+    Assert.Equal(before + 1, result.State.History.UndoStack.Length)
+    Assert.True(result.State.History.CanUndo)
+
+/// Kiểm tra SendToBack đẩy snapshot undo và Undo khôi phục thứ tự.
+[<Fact>]
+let ``SendToBack rồi Undo khôi phục thứ tự`` () =
+    let selected = stateWithLine |> update (PointerPressed(point 180.0 180.0)) |> (fun r -> r.State) |> update PointerReleased |> (fun r -> r.State)
+    let result = selected |> update SendToBack
+    let undone = result.State |> update Undo |> (fun r -> r.State)
+    Assert.Equal(selected.History.Current.Annotations.Length, undone.History.Current.Annotations.Length)
+
+// ---------- Geometry badge (FR-SEL-12) ----------
+
+/// Kiểm tra RenderModel GeometryText có định dạng WxH+X+Y.
+[<Fact>]
+let ``RenderModel GeometryText hiển thị WxH+X+Y`` () =
+    let state =
+        initResult()
+        |> update (PointerPressed(point 100.0 80.0))
+        |> (fun r -> r.State)
+        |> update (PointerMoved(point 300.0 200.0))
+        |> (fun r -> r.State)
+        |> update PointerReleased
+        |> (fun r -> r.State)
+    let model = buildRenderModel state
+    Assert.Equal(Some "200 × 120 + 100 + 80", model.GeometryText)
+
+/// Kiểm tra RenderModel GeometryText là None ở trạng thái Idle.
+[<Fact>]
+let ``RenderModel GeometryText None ở Idle`` () =
+    let model = buildRenderModel (initResult())
+    Assert.Equal(None, model.GeometryText)

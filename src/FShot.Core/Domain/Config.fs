@@ -40,6 +40,15 @@ type ConfigSnapshot = {
     /// Có hiển thị thông báo khi hủy thao tác chụp không.
     ShowAbortNotification: bool
 
+    /// Có copy vào clipboard khi double-click vùng chọn không (FR-CFG-014).
+    CopyOnDoubleClick: bool
+
+    /// Có tự động lưu file sau khi copy thành công không (FR-OUT-07).
+    SaveAfterCopy: bool
+
+    /// Có copy đường dẫn file vào clipboard sau khi lưu không (FR-OUT-08).
+    CopyPathAfterSave: bool
+
     /// Màu accent chính của giao diện, dùng cho viền/handle vùng chọn (FR-CFG-100).
     UiColor: Color
 
@@ -61,6 +70,9 @@ type ConfigSnapshot = {
         SaveOptions = SaveOptions.Default
         ShowDesktopNotification = true
         ShowAbortNotification = false
+        CopyOnDoubleClick = false
+        SaveAfterCopy = false
+        CopyPathAfterSave = false
         UiColor = { R = 56uy; G = 189uy; B = 248uy; A = 255uy }   // #38BDF8
         ContrastUiColor = { R = 15uy; G = 23uy; B = 42uy; A = 255uy } // #0F172A
         ContrastOpacity = 190uy
@@ -176,6 +188,15 @@ type AppConfig = {
     /// Copy vào clipboard khi double-click vùng chọn (FR-CFG-014).
     CopyOnDoubleClick: bool
 
+    /// Tự động lưu file sau khi copy thành công (FR-OUT-07).
+    SaveAfterCopy: bool
+
+    /// Copy đường dẫn file vào clipboard sau khi lưu (FR-OUT-08).
+    CopyPathAfterSave: bool
+
+    /// Giới hạn số bước lưu lịch sử Undo/Redo (FR-UNDO-003), clamp [10..500].
+    UndoLimit: int
+
     /// Dùng lại vùng chọn từ lần chụp trước (FR-CFG-015).
     SaveLastRegion: bool
 
@@ -241,6 +262,9 @@ type AppConfig = {
         SaveAsFileExtension = ConfigDefaults.defaultSaveAsFileExtension
         JpegQuality = 90
         CopyOnDoubleClick = false
+        SaveAfterCopy = false
+        CopyPathAfterSave = false
+        UndoLimit = HistoryStack.DefaultLimit
         SaveLastRegion = false
         AllowMultipleGuiInstances = false
         CaptureBackend = ConfigDefaults.defaultCaptureBackend
@@ -331,6 +355,9 @@ type AppConfig = {
             SaveAsFileExtension = ConfigDefaults.normalizeExtension this.SaveAsFileExtension
             JpegQuality = ConfigDefaults.clampInt 1 100 this.JpegQuality
             CopyOnDoubleClick = this.CopyOnDoubleClick
+            SaveAfterCopy = this.SaveAfterCopy
+            CopyPathAfterSave = this.CopyPathAfterSave
+            UndoLimit = ConfigDefaults.clampInt HistoryStack.MinLimit 500 this.UndoLimit
             SaveLastRegion = this.SaveLastRegion
             AllowMultipleGuiInstances = this.AllowMultipleGuiInstances
             CaptureBackend = ConfigDefaults.normalizeCaptureBackend this.CaptureBackend
@@ -407,11 +434,14 @@ type AppConfig = {
             DefaultStrokeWidth = strokeWidth
             DefaultFontSize = norm.DrawFontSize
             DrawCircleCounterSize = norm.DrawCircleCounterSize
-            HistoryLimit = HistoryStack.DefaultLimit
+            HistoryLimit = norm.UndoLimit
             CloseAfterExport = norm.CloseAfterExport
             SaveOptions = saveOptions
             ShowDesktopNotification = norm.ShowDesktopNotification
             ShowAbortNotification = norm.ShowAbortNotification
+            CopyOnDoubleClick = norm.CopyOnDoubleClick
+            SaveAfterCopy = norm.SaveAfterCopy
+            CopyPathAfterSave = norm.CopyPathAfterSave
             UiColor = uiColor
             ContrastUiColor = contrastUiColor
             ContrastOpacity = norm.ContrastOpacity
@@ -444,6 +474,9 @@ type AppConfig = {
         StartupLaunch = false
         ShowDesktopNotification = snapshot.ShowDesktopNotification
         ShowAbortNotification = snapshot.ShowAbortNotification
+        CopyOnDoubleClick = snapshot.CopyOnDoubleClick
+        SaveAfterCopy = snapshot.SaveAfterCopy
+        CopyPathAfterSave = snapshot.CopyPathAfterSave
         DisabledTrayIcon = false
         Hotkeys = HotkeyConfig.Defaults
         SavePathFixed = false
@@ -452,7 +485,7 @@ type AppConfig = {
             | Jpg -> "jpg"
             | Png -> "png"
         JpegQuality = snapshot.SaveOptions.JpegQuality
-        CopyOnDoubleClick = false
+        UndoLimit = snapshot.HistoryLimit
         SaveLastRegion = false
         AllowMultipleGuiInstances = false
         CaptureBackend = ConfigDefaults.defaultCaptureBackend
@@ -575,6 +608,9 @@ and AppConfigJsonConverter() =
             SaveAsFileExtension = getString "saveAsFileExtension" def.SaveAsFileExtension
             JpegQuality = getInt "jpegQuality" def.JpegQuality
             CopyOnDoubleClick = getBool "copyOnDoubleClick" def.CopyOnDoubleClick
+            SaveAfterCopy = getBool "saveAfterCopy" def.SaveAfterCopy
+            CopyPathAfterSave = getBool "copyPathAfterSave" def.CopyPathAfterSave
+            UndoLimit = getInt "undoLimit" def.UndoLimit
             SaveLastRegion = getBool "saveLastRegion" def.SaveLastRegion
             AllowMultipleGuiInstances = getBool "allowMultipleGuiInstances" def.AllowMultipleGuiInstances
             CaptureBackend = getString "captureBackend" def.CaptureBackend
@@ -618,6 +654,9 @@ and AppConfigJsonConverter() =
         writer.WriteString("saveAsFileExtension", norm.SaveAsFileExtension)
         writer.WriteNumber("jpegQuality", norm.JpegQuality)
         writer.WriteBoolean("copyOnDoubleClick", norm.CopyOnDoubleClick)
+        writer.WriteBoolean("saveAfterCopy", norm.SaveAfterCopy)
+        writer.WriteBoolean("copyPathAfterSave", norm.CopyPathAfterSave)
+        writer.WriteNumber("undoLimit", norm.UndoLimit)
         writer.WriteBoolean("saveLastRegion", norm.SaveLastRegion)
         writer.WriteBoolean("allowMultipleGuiInstances", norm.AllowMultipleGuiInstances)
         writer.WriteString("captureBackend", norm.CaptureBackend)

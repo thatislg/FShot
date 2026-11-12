@@ -66,7 +66,7 @@ let ``GeometryString đúng định dạng`` () =
           CaptureResult = captureResult 1.0
           SelectionBounds = rect 100.0 80.0 300.0 200.0
           Annotations = []
-          Target = PrintGeometry
+          Target = ExportTarget.PrintGeometry
           SaveOptions = SaveOptions.Default
         }
     Assert.Equal("300x200+100+80", request.GeometryString)

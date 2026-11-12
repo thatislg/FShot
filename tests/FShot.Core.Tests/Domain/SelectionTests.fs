@@ -102,7 +102,7 @@ let ``Vùng chọn quá nhỏ bị hủy`` () =
 [<Fact>]
 let ``Vùng chọn nhỏ hơn tối thiểu một pixel bị hủy`` () =
     let sel = Selection.StartSelecting(point 100.0 100.0)
-    let updated = sel.UpdateSelecting(point 109.0 109.0)
+    let updated = sel.UpdateSelecting(point 119.0 119.0)
     let finished = updated.FinishSelecting()
     Assert.Equal(Idle, finished.State)
 
@@ -110,13 +110,13 @@ let ``Vùng chọn nhỏ hơn tối thiểu một pixel bị hủy`` () =
 [<Fact>]
 let ``Vùng chọn đúng kích thước tối thiểu được giữ`` () =
     let sel = Selection.StartSelecting(point 100.0 100.0)
-    let updated = sel.UpdateSelecting(point 110.0 110.0)
+    let updated = sel.UpdateSelecting(point 120.0 120.0)
     let finished = updated.FinishSelecting()
     Assert.Equal(Selected, finished.State)
     Assert.Equal(100.0, finished.Bounds.X)
     Assert.Equal(100.0, finished.Bounds.Y)
-    Assert.Equal(10.0, finished.Bounds.Width)
-    Assert.Equal(10.0, finished.Bounds.Height)
+    Assert.Equal(20.0, finished.Bounds.Width)
+    Assert.Equal(20.0, finished.Bounds.Height)
 
 /// Kiểm tra vùng chọn tại biên trái/trên của capture area.
 [<Fact>]
@@ -411,7 +411,7 @@ let ``Co giãn vùng chọn BottomLeft`` () =
     Assert.Equal(350.0, finished.Bounds.Width)
     Assert.Equal(270.0, finished.Bounds.Height)
 
-/// Kiểm tra hit-test tất cả 8 handle tại trung tâm.
+/// Kiểm tra hit-test tất cả 8 handle tại tâm lệch ngoài (Flameshot outward pins).
 [<Fact>]
 let ``Hit-test tất cả 8 handle`` () =
     let sel =
@@ -421,14 +421,14 @@ let ``Hit-test tất cả 8 handle`` () =
 
     let cases =
         [
-            (point 100.0 80.0, TopLeft)
-            (point 250.0 80.0, Top)
-            (point 400.0 80.0, TopRight)
-            (point 100.0 180.0, Left)
-            (point 400.0 180.0, Right)
-            (point 100.0 280.0, BottomLeft)
-            (point 250.0 280.0, Bottom)
-            (point 400.0 280.0, BottomRight)
+            (point 96.0 76.0, TopLeft)
+            (point 250.0 76.0, Top)
+            (point 404.0 76.0, TopRight)
+            (point 96.0 180.0, Left)
+            (point 404.0 180.0, Right)
+            (point 96.0 284.0, BottomLeft)
+            (point 250.0 284.0, Bottom)
+            (point 404.0 284.0, BottomRight)
         ]
 
     for (p, expected) in cases do
@@ -443,9 +443,9 @@ let ``Hit-test tolerance mở rộng vùng hiệu lực`` () =
             State = Selected
             Bounds = rect 100.0 80.0 300.0 200.0 }
 
-    // BottomRight center (400, 280), halfSize = 4, tolerance = 6 => effective radius = 10
-    let inside = point 405.0 285.0
-    let outside = point 411.0 281.0
+    // BottomRight center (404, 284), halfSize = 4, tolerance = 5 => effective radius = 9
+    let inside = point 409.0 289.0
+    let outside = point 414.0 284.0
 
     Assert.Equal(Some BottomRight, sel.HitTestHandle inside)
     Assert.Equal(None, sel.HitTestHandle outside)
@@ -458,13 +458,13 @@ let ``Hit-test ưu tiên góc trước cạnh`` () =
             State = Selected
             Bounds = rect 100.0 80.0 300.0 200.0 }
 
-    // Điểm (100, 80) nằm trong vùng hiệu lực của cả TopLeft, Top và Left
-    // Nhưng HandleCenters duyệt TopLeft đầu tiên nên phải trả về TopLeft.
+    // Góc vật lý (100, 80) nằm trong vùng bắt mở rộng của pin TopLeft lệch ngoài
+    // (tâm (96, 76), bán kính hiệu dụng 9) nên vẫn bắt dính TopLeft ngay tại đỉnh góc.
     Assert.Equal(Some TopLeft, sel.HitTestHandle(point 100.0 80.0))
 
 /// Kiểm tra resize vùng chọn quá nhỏ bị hủy khi hoàn tất.
 [<Fact>]
-let ``Resize quá nhỏ bị hủy khi hoàn tất`` () =
+let ``Resize quá nhỏ được clamp về kích thước tối thiểu`` () =
     let sel =
         { Selection.Empty with
             State = Selected
@@ -472,7 +472,9 @@ let ``Resize quá nhỏ bị hủy khi hoàn tất`` () =
     let resizing = sel.StartResizing Right (point 400.0 180.0)
     let updated = resizing.UpdateResizing(point 105.0 180.0)
     let finished = updated.FinishInteraction()
-    Assert.Equal(Idle, finished.State)
+    Assert.Equal(Selected, finished.State)
+    Assert.Equal(20.0, finished.Bounds.Width)
+    Assert.Equal(200.0, finished.Bounds.Height)
 
 /// Kiểm tra resize ra ngoài capture area bị clamp.
 [<Fact>]
@@ -665,3 +667,144 @@ let ``Keyboard resize nhiều lần cộng dồn`` () =
     Assert.Equal(80.0, resized.Bounds.Y)
     Assert.Equal(302.0, resized.Bounds.Width)
     Assert.Equal(201.0, resized.Bounds.Height)
+
+// ---------- Co giãn đối xứng bàn phím (FR-SEL-07) ----------
+
+/// Kiểm tra Ctrl+Shift+Right mở rộng đối xứng +2px quanh tâm.
+[<Fact>]
+let ``KeyboardSymmetricResize Right giữ tâm cố định`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let before = (sel.Bounds.X + sel.Bounds.Width / 2.0, sel.Bounds.Y + sel.Bounds.Height / 2.0)
+    let resized = sel.KeyboardSymmetricResize(2.0, 0.0)
+    let after = (resized.Bounds.X + resized.Bounds.Width / 2.0, resized.Bounds.Y + resized.Bounds.Height / 2.0)
+    Assert.Equal(fst before, fst after)
+    Assert.Equal(snd before, snd after)
+    Assert.Equal(99.0, resized.Bounds.X)
+    Assert.Equal(302.0, resized.Bounds.Width)
+    Assert.Equal(80.0, resized.Bounds.Y)
+    Assert.Equal(200.0, resized.Bounds.Height)
+
+/// Kiểm tra Ctrl+Shift+Left thu nhỏ đối xứng -2px quanh tâm.
+[<Fact>]
+let ``KeyboardSymmetricResize Left thu nhỏ đối xứng`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let before = (sel.Bounds.X + sel.Bounds.Width / 2.0, sel.Bounds.Y + sel.Bounds.Height / 2.0)
+    let resized = sel.KeyboardSymmetricResize(-2.0, 0.0)
+    let after = (resized.Bounds.X + resized.Bounds.Width / 2.0, resized.Bounds.Y + resized.Bounds.Height / 2.0)
+    Assert.Equal(fst before, fst after)
+    Assert.Equal(snd before, snd after)
+    Assert.Equal(101.0, resized.Bounds.X)
+    Assert.Equal(298.0, resized.Bounds.Width)
+
+/// Kiểm tra Ctrl+Shift+Down mở rộng đối xứng +2px chiều dọc.
+[<Fact>]
+let ``KeyboardSymmetricResize Down giữ tâm cố định`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let resized = sel.KeyboardSymmetricResize(0.0, 2.0)
+    Assert.Equal(100.0, resized.Bounds.X)
+    Assert.Equal(79.0, resized.Bounds.Y)
+    Assert.Equal(300.0, resized.Bounds.Width)
+    Assert.Equal(202.0, resized.Bounds.Height)
+
+/// Kiểm tra Ctrl+Shift+Up thu nhỏ đối xứng -2px chiều dọc.
+[<Fact>]
+let ``KeyboardSymmetricResize Up thu nhỏ đối xứng`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let resized = sel.KeyboardSymmetricResize(0.0, -2.0)
+    Assert.Equal(100.0, resized.Bounds.X)
+    Assert.Equal(81.0, resized.Bounds.Y)
+    Assert.Equal(300.0, resized.Bounds.Width)
+    Assert.Equal(198.0, resized.Bounds.Height)
+
+/// Kiểm tra symmetric resize không nhỏ hơn kích thước tối thiểu.
+[<Fact>]
+let ``KeyboardSymmetricResize không nhỏ hơn tối thiểu`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 30.0 30.0 }
+    let resized = sel.KeyboardSymmetricResize(-100.0, -100.0)
+    Assert.Equal(20.0, resized.Bounds.Width)
+    Assert.Equal(20.0, resized.Bounds.Height)
+
+// ---------- Select All (FR-SEL-10) ----------
+
+/// Kiểm tra SelectAll tạo vùng chọn phủ trọn virtual bounds.
+[<Fact>]
+let ``SelectAll phủ trọn virtual bounds`` () =
+    let sel = Selection.SelectAll(rect 0.0 0.0 1920.0 1080.0)
+    Assert.Equal(Selected, sel.State)
+    Assert.Equal(0.0, sel.Bounds.X)
+    Assert.Equal(0.0, sel.Bounds.Y)
+    Assert.Equal(1920.0, sel.Bounds.Width)
+    Assert.Equal(1080.0, sel.Bounds.Height)
+
+/// Kiểm tra SelectAll với virtual bounds có gốc khác 0.
+[<Fact>]
+let ``SelectAll tôn trọng gốc virtual bounds`` () =
+    let sel = Selection.SelectAll(rect 1920.0 0.0 1920.0 1080.0)
+    Assert.Equal(Selected, sel.State)
+    Assert.Equal(1920.0, sel.Bounds.X)
+    Assert.Equal(0.0, sel.Bounds.Y)
+    Assert.Equal(1920.0, sel.Bounds.Width)
+    Assert.Equal(1080.0, sel.Bounds.Height)
+
+// ---------- Mirror resize đối xứng (FR-SEL-16) ----------
+
+/// Kiểm tra mirror-resize BottomRight giữ tâm C cố định.
+[<Fact>]
+let ``UpdateResizingSymmetric BottomRight giữ tâm`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let center = (100.0 + 150.0, 80.0 + 100.0)
+    let resizing = sel.StartResizing BottomRight (point 400.0 280.0)
+    let updated = resizing.UpdateResizingSymmetric BottomRight (point 450.0 350.0)
+    let newCenter = (updated.Bounds.X + updated.Bounds.Width / 2.0, updated.Bounds.Y + updated.Bounds.Height / 2.0)
+    Assert.Equal(fst center, fst newCenter)
+    Assert.Equal(snd center, snd newCenter)
+    Assert.Equal(450.0, updated.Bounds.Right)
+    Assert.Equal(350.0, updated.Bounds.Bottom)
+
+/// Kiểm tra mirror-resize Right giữ tâm cố định.
+[<Fact>]
+let ``UpdateResizingSymmetric Right giữ tâm`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let center = 100.0 + 150.0
+    let resizing = sel.StartResizing Right (point 400.0 180.0)
+    let updated = resizing.UpdateResizingSymmetric Right (point 450.0 180.0)
+    let newCenter = updated.Bounds.X + updated.Bounds.Width / 2.0
+    Assert.Equal(center, newCenter)
+    Assert.Equal(450.0, updated.Bounds.Right)
+
+/// Kiểm tra mirror-resize TopLeft giữ tâm cố định.
+[<Fact>]
+let ``UpdateResizingSymmetric TopLeft giữ tâm`` () =
+    let sel =
+        { Selection.Empty with
+            State = Selected
+            Bounds = rect 100.0 80.0 300.0 200.0 }
+    let center = (100.0 + 150.0, 80.0 + 100.0)
+    let resizing = sel.StartResizing TopLeft (point 100.0 80.0)
+    let updated = resizing.UpdateResizingSymmetric TopLeft (point 50.0 30.0)
+    let newCenter = (updated.Bounds.X + updated.Bounds.Width / 2.0, updated.Bounds.Y + updated.Bounds.Height / 2.0)
+    Assert.Equal(fst center, fst newCenter)
+    Assert.Equal(snd center, snd newCenter)
+    Assert.Equal(50.0, updated.Bounds.X)
+    Assert.Equal(30.0, updated.Bounds.Y)

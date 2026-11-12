@@ -57,6 +57,9 @@ type RenderModel = {
 
     /// Thông tin TextBox tạm, nếu đang nhập text.
     TextInput: TextInputInfo option
+
+    /// Chuỗi hình học vùng chọn `W × H + X + Y` để UI/Renderer vẽ badge (FR-SEL-12).
+    GeometryText: string option
 }
 
 /// Các sự kiện đầu vào mà OverlayState xử lý.
@@ -83,6 +86,17 @@ type OverlayEvent =
     /// Trạng thái phím Ctrl (modifier khóa tỉ lệ 1:1 cho Circle, FR-ANN-05).
     /// Lưu trạng thái riêng thay vì đọc từ KeyDown string để tránh bị bộ gõ chặn mất Ctrl.
     | CtrlModifier of bool
+    /// Trạng thái phím Shift (modifier mirror-resize khi kéo handle, FR-SEL-16).
+    | ShiftModifier of bool
+    /// Chọn toàn bộ màn hình chụp (Ctrl+A, FR-SEL-10).
+    | SelectAll
+    /// Điều chỉnh Z-order của chú thích đang chọn (FR-UNDO-006).
+    | BringForward
+    | SendBackward
+    | BringToFront
+    | SendToBack
+    /// Mở ảnh bằng ứng dụng ngoài (Ctrl+O, FR-OUT-11).
+    | OpenWithExternalApp
 
 /// Các lệnh UI cần thực hiện sau khi xử lý sự kiện.
 /// Xem 08_06_Integration.md.
@@ -117,6 +131,9 @@ type OverlayState = {
     /// Lưu ý: trạng thái này phụ thuộc vào UI gửi đúng CtrlModifier true/false;
     /// nếu window mất focus trong khi Ctrl đang giữ thì trạng thái có thể cũ (chấp nhận cho MVP).
     CtrlPressed: bool
+
+    /// Trạng thái Shift đang được giữ; dùng cho mirror-resize khi kéo handle (FR-SEL-16).
+    ShiftPressed: bool
 
     /// Chỉ số đếm CircleCounter tiếp theo sẽ được dùng khi đặt huy hiệu mới (FR-ANN-10).
     CurrentCounterIndex: int
@@ -293,19 +310,24 @@ module OverlayStateLogic =
         | None ->
             { state with AnnotationInteraction = NoAnnotation }
 
+    /// Phục hồi chỉ số đếm và chú thích đang chọn từ một snapshot (FR-UNDO-004/005).
+    let private restoreFromSnapshot (current: Snapshot) (state: OverlayState) : OverlayState =
+        let selected =
+            current.SelectedId
+            |> Option.bind (fun id -> current.Annotations |> List.tryFind (fun a -> a.Id = id))
+        { state with
+            CurrentCounterIndex = current.CounterIndex
+            SelectedAnnotation = selected }
+
     /// Xử lý Undo.
     let private performUndo (state: OverlayState) : OverlayState =
         let newHistory, current = state.History.Undo()
-        { state with
-            History = newHistory
-            CurrentCounterIndex = current.CounterIndex }
+        restoreFromSnapshot current { state with History = newHistory }
 
     /// Xử lý Redo.
     let private performRedo (state: OverlayState) : OverlayState =
         let newHistory, current = state.History.Redo()
-        { state with
-            History = newHistory
-            CurrentCounterIndex = current.CounterIndex }
+        restoreFromSnapshot current { state with History = newHistory }
 
     /// Hủy thao tác annotation đang diễn ra.
     let private cancelAnnotation (state: OverlayState) : OverlayState =
@@ -352,6 +374,14 @@ module OverlayStateLogic =
                 }
             | _ -> None
 
+        // Chuỗi hình học vùng chọn: hiển thị khi vùng chọn đang tương tác (FR-SEL-12).
+        let geometryText =
+            match state.Selection.State with
+            | SelectionState.Idle -> None
+            | _ ->
+                let b = state.Selection.Bounds
+                Some (sprintf "%.0f × %.0f + %.0f + %.0f" b.Width b.Height b.X b.Y)
+
         {
           VirtualBounds = state.Capture.VirtualBounds
           Selection =
@@ -364,6 +394,7 @@ module OverlayStateLogic =
           CanRedo = state.History.CanRedo
           Cursor = cursor
           TextInput = textInput
+          GeometryText = geometryText
         }
 
     /// Bắt đầu xuất ảnh với target tương ứng.
@@ -394,6 +425,7 @@ module OverlayStateLogic =
           CurrentTool = config.DefaultTool
           CurrentStyle = style
           CtrlPressed = false
+          ShiftPressed = false
           CurrentCounterIndex = 1
           SelectedAnnotation = None
         }
@@ -409,6 +441,16 @@ module OverlayStateLogic =
     /// Tạo OverlayResult không có commands.
     let private emptyResult (state: OverlayState) : OverlayResult =
         result [] state
+
+    /// Áp dụng thao tác Z-order lên chú thích đang chọn và đẩy snapshot mới (FR-UNDO-006).
+    let private reorderSelected (reorder: Guid -> Annotation list -> Annotation list) (state: OverlayState) : OverlayState =
+        match state.SelectedAnnotation with
+        | Some selected ->
+            let newAnnotations = reorder selected.Id (committedAnnotations state)
+            let snapshot = Snapshot.CreateWithSelection(newAnnotations, state.CurrentCounterIndex, Some selected.Id)
+            let newHistory = state.History.Push snapshot
+            { state with History = newHistory }
+        | None -> state
 
     /// Xử lý một sự kiện và trả về OverlayResult.
     /// Xem 08_04_Transitions.md.
@@ -450,6 +492,30 @@ module OverlayStateLogic =
         // Cập nhật trực tiếp CtrlPressed, không sinh command hoặc thay đổi trạng thái khác.
         | _, _, CtrlModifier ctrl ->
             emptyResult { state with CtrlPressed = ctrl }
+
+        // Shift modifier được xử lý ở mọi trạng thái cho mirror-resize (FR-SEL-16).
+        | _, _, ShiftModifier shift ->
+            emptyResult { state with ShiftPressed = shift }
+
+        // Chọn toàn màn hình (Ctrl+A, FR-SEL-10): hoạt động ở Idle và Selected.
+        // Bảo toàn toàn bộ annotations đã vẽ.
+        | (SelectionState.Idle | SelectionState.Selected), _, SelectAll ->
+            emptyResult { state with Selection = Selection.SelectAll state.Capture.VirtualBounds }
+
+        // Z-order của chú thích đang chọn (FR-UNDO-006).
+        | SelectionState.Selected, _, BringForward ->
+            emptyResult (reorderSelected AnnotationZOrder.bringForward state)
+        | SelectionState.Selected, _, SendBackward ->
+            emptyResult (reorderSelected AnnotationZOrder.sendBackward state)
+        | SelectionState.Selected, _, BringToFront ->
+            emptyResult (reorderSelected AnnotationZOrder.bringToFront state)
+        | SelectionState.Selected, _, SendToBack ->
+            emptyResult (reorderSelected AnnotationZOrder.sendToBack state)
+
+        // Mở ảnh bằng ứng dụng ngoài (Ctrl+O, FR-OUT-11).
+        // Đường dẫn tạm được tính ở UI layer; target dùng chuỗi rỗng làm sentinel.
+        | SelectionState.Selected, _, OpenWithExternalApp ->
+            startExport (ExportTarget.OpenWithDefaultApp "") state
 
         // --- Selecting ---
         | SelectionState.Selecting, _, PointerMoved point ->
@@ -530,6 +596,7 @@ module OverlayStateLogic =
 
         | SelectionState.Selected, NoAnnotation, KeyDown key ->
             let isShift = key.IndexOf("Shift", StringComparison.OrdinalIgnoreCase) >= 0
+            let isCtrl = key.IndexOf("Ctrl", StringComparison.OrdinalIgnoreCase) >= 0
 
             let arrowDxDy =
                 match key.ToLowerInvariant() with
@@ -542,7 +609,10 @@ module OverlayStateLogic =
             match arrowDxDy with
             | Some(dx, dy) ->
                 let rawSelection =
-                    if isShift then
+                    if isCtrl && isShift then
+                        // Ctrl+Shift+Arrow: co giãn đối xứng 2px quanh tâm (FR-SEL-07).
+                        state.Selection.KeyboardSymmetricResize(dx * 2.0, dy * 2.0)
+                    elif isShift then
                         state.Selection.KeyboardResize(dx, dy)
                     else
                         state.Selection.Nudge(dx, dy)
@@ -645,7 +715,13 @@ module OverlayStateLogic =
             emptyResult { state with Selection = restored }
 
         | SelectionState.Resizing _, _, PointerMoved point ->
-            let newSelection = state.Selection.UpdateResizing point
+            let newSelection =
+                match state.Selection.State with
+                | SelectionState.Resizing handle when state.ShiftPressed ->
+                    // Giữ Shift khi kéo handle: mirror-resize đối xứng qua tâm (FR-SEL-16).
+                    state.Selection.UpdateResizingSymmetric handle point
+                | _ ->
+                    state.Selection.UpdateResizing point
             let clamped = newSelection.ApplyConstraints state.Capture.VirtualBounds
             emptyResult { state with Selection = clamped }
 
@@ -693,7 +769,7 @@ module OverlayStateLogic =
                 let newAnnotations =
                     committedAnnotations state
                     |> List.map (fun a -> if a.Id = moved.Id then moved else a)
-                let snapshot = Snapshot.CreateWithCounter(newAnnotations, state.CurrentCounterIndex)
+                let snapshot = Snapshot.CreateWithSelection(newAnnotations, state.CurrentCounterIndex, Some moved.Id)
                 let newHistory = state.History.Push snapshot
                 emptyResult
                     { state with
@@ -739,12 +815,10 @@ module OverlayStateLogic =
 
         // --- Undo / Redo (bắt kỳ trạng thái nào, nhưng ưu tiên hủy annotation tạm nếu có) ---
         | _, NoAnnotation, Undo when state.History.CanUndo ->
-            let newHistory, _ = state.History.Undo()
-            emptyResult { state with History = newHistory }
+            emptyResult (performUndo state)
 
         | _, NoAnnotation, Redo when state.History.CanRedo ->
-            let newHistory, _ = state.History.Redo()
-            emptyResult { state with History = newHistory }
+            emptyResult (performRedo state)
 
         | _, (DrawingPreview _ | FreehandDrawing _), (Undo | Redo) ->
             // Nếu đang vẽ, Undo/Redo không tác dụng; hủy preview để tránh xung đột.

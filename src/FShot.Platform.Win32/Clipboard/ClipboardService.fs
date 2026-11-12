@@ -59,6 +59,40 @@ module ClipboardService =
 
     let private GMEM_MOVEABLE = 0x0002u
     let private CF_DIB = 8u
+    let private CF_UNICODETEXT = 13u
+
+    /// Sao chép chuỗi văn bản Unicode vào Windows Clipboard (FR-OUT-08).
+    /// Dùng GlobalAlloc để chuyển giao quyền sở hữu bộ nhớ cho OS; dữ liệu tồn tại sau khi tiến trình đóng.
+    let copyTextToClipboard (text: string) : bool =
+        if String.IsNullOrEmpty text then
+            false
+        else
+            let bytes = System.Text.Encoding.Unicode.GetBytes(text + "\u0000")
+            let hGlobal = Native.GlobalAlloc(GMEM_MOVEABLE, unativeint bytes.Length)
+            if hGlobal = IntPtr.Zero then
+                false
+            else
+                let ptr = Native.GlobalLock(hGlobal)
+                if ptr = IntPtr.Zero then
+                    Native.GlobalFree(hGlobal) |> ignore
+                    false
+                else
+                    Marshal.Copy(bytes, 0, ptr, bytes.Length)
+                    Native.GlobalUnlock(hGlobal) |> ignore
+                    if not (Native.OpenClipboard(IntPtr.Zero)) then
+                        Native.GlobalFree(hGlobal) |> ignore
+                        false
+                    else
+                        try
+                            Native.EmptyClipboard() |> ignore
+                            Native.SetClipboardData(CF_UNICODETEXT, hGlobal) |> ignore
+                            Native.CloseClipboard() |> ignore
+                            try Native.OleFlushClipboard() |> ignore with _ -> ()
+                            true
+                        with _ ->
+                            Native.CloseClipboard() |> ignore
+                            Native.GlobalFree(hGlobal) |> ignore
+                            false
 
     /// Sao chép ảnh vào Windows Clipboard với cả định dạng PNG và CF_DIB.
     let copyImageToClipboard (width: int) (height: int) (pngBytes: byte[]) (bgraPixels: byte[]) : bool =

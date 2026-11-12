@@ -122,3 +122,34 @@ let ``parse config import-flameshot có đường dẫn``() =
 let ``parse config import-flameshot không đường dẫn``() =
     let request = CliParser.parse [| "config"; "--import-flameshot" |]
     Assert.True(request.ImportFlameshotPath.IsNone)
+
+[<Fact>]
+let ``parse full with raw maps to stdout``() =
+    let request = CliParser.parse [| "full"; "-r" |]
+    Assert.Equal(FullScreen, request.Mode)
+    Assert.Equal(OutputTarget.Stdout, request.OutputTarget)
+
+[<Fact>]
+let ``parse full with raw long form maps to stdout``() =
+    let request = CliParser.parse [| "full"; "--raw" |]
+    Assert.Equal(OutputTarget.Stdout, request.OutputTarget)
+
+[<Fact>]
+let ``parse full with print-geometry maps to PrintGeometry``() =
+    let request = CliParser.parse [| "full"; "--print-geometry" |]
+    Assert.Equal(OutputTarget.PrintGeometry, request.OutputTarget)
+
+[<Fact>]
+let ``parse screen with print-geometry maps to PrintGeometry``() =
+    let request = CliParser.parse [| "screen"; "0"; "--print-geometry" |]
+    Assert.Equal(OutputTarget.PrintGeometry, request.OutputTarget)
+
+[<Fact>]
+let ``parse raw overrides clipboard when both present``() =
+    let request = CliParser.parse [| "full"; "-c"; "-r" |]
+    Assert.Equal(OutputTarget.Stdout, request.OutputTarget)
+
+[<Fact>]
+let ``parse print-geometry overrides raw when both present``() =
+    let request = CliParser.parse [| "full"; "-r"; "--print-geometry" |]
+    Assert.Equal(OutputTarget.PrintGeometry, request.OutputTarget)

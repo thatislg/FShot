@@ -9,17 +9,23 @@ open FShot.Core.Domain
 /// Subcommand "gui": mở overlay tương tác để người dùng chọn vùng và chú thích.
 type GuiArgs =
     | [<AltCommandLine("-d")>] Delay_Ms of int
+    | [<AltCommandLine("-r")>] Raw
+    | Print_Geometry
 
     interface IArgParserTemplate with
         member this.Usage =
             match this with
             | Delay_Ms _ -> "Độ trễ trước khi chụp (mili-giây)."
+            | Raw -> "Xuất ảnh PNG dạng byte thô ra stdout (FR-OUT-09)."
+            | Print_Geometry -> "In tọa độ hình học vùng chọn ra stdout (FR-OUT-10)."
 
 /// Subcommand "full": chụp toàn bộ màn hình hiện tại (headless/direct).
 type FullArgs =
     | [<AltCommandLine("-p")>] Path of string
     | [<AltCommandLine("-c")>] Clipboard
     | [<AltCommandLine("-d")>] Delay_Ms of int
+    | [<AltCommandLine("-r")>] Raw
+    | Print_Geometry
 
     interface IArgParserTemplate with
         member this.Usage =
@@ -27,6 +33,8 @@ type FullArgs =
             | Path _ -> "Đường dẫn file để lưu ảnh."
             | Clipboard -> "Sao chép ảnh vào clipboard thay vì lưu file."
             | Delay_Ms _ -> "Độ trễ trước khi chụp (mili-giây)."
+            | Raw -> "Xuất ảnh PNG dạng byte thô ra stdout (FR-OUT-09)."
+            | Print_Geometry -> "In tọa độ hình học vùng chọn ra stdout (FR-OUT-10)."
 
 /// Subcommand "screen": chụp một màn hình chỉ định theo chỉ số.
 /// Chỉ số màn hình được parse thủ công từ raw args để hỗ trợ dạng positional `screen 0`.
@@ -34,6 +42,8 @@ type ScreenArgs =
     | [<AltCommandLine("-p")>] Path of string
     | [<AltCommandLine("-c")>] Clipboard
     | [<AltCommandLine("-d")>] Delay_Ms of int
+    | [<AltCommandLine("-r")>] Raw
+    | Print_Geometry
 
     interface IArgParserTemplate with
         member this.Usage =
@@ -41,6 +51,8 @@ type ScreenArgs =
             | Path _ -> "Đường dẫn file để lưu ảnh."
             | Clipboard -> "Sao chép ảnh vào clipboard thay vì lưu file."
             | Delay_Ms _ -> "Độ trễ trước khi chụp (mili-giây)."
+            | Raw -> "Xuất ảnh PNG dạng byte thô ra stdout (FR-OUT-09)."
+            | Print_Geometry -> "In tọa độ hình học vùng chọn ra stdout (FR-OUT-10)."
 
 /// Subcommand "config": mở cửa sổ cài đặt hoặc nhập cấu hình Flameshot.
 type ConfigArgs =
@@ -146,7 +158,11 @@ module CliParser =
             elif results.Contains Full then
                 let full = results.GetResult Full
                 let outputTarget =
-                    if full.Contains <@ FullArgs.Clipboard @> then
+                    if full.Contains <@ FullArgs.Print_Geometry @> then
+                        OutputTarget.PrintGeometry
+                    elif full.Contains <@ FullArgs.Raw @> then
+                        OutputTarget.Stdout
+                    elif full.Contains <@ FullArgs.Clipboard @> then
                         OutputTarget.Clipboard
                     else
                         match tryGetValue full <@ FullArgs.Path @> with
@@ -166,7 +182,11 @@ module CliParser =
                 let screen = results.GetResult Screen
                 let screenIndex = parseScreenIndex filteredArgs |> Option.defaultValue 0
                 let outputTarget =
-                    if screen.Contains <@ ScreenArgs.Clipboard @> then
+                    if screen.Contains <@ ScreenArgs.Print_Geometry @> then
+                        OutputTarget.PrintGeometry
+                    elif screen.Contains <@ ScreenArgs.Raw @> then
+                        OutputTarget.Stdout
+                    elif screen.Contains <@ ScreenArgs.Clipboard @> then
                         OutputTarget.Clipboard
                     else
                         match tryGetScreenValue screen <@ ScreenArgs.Path @> with

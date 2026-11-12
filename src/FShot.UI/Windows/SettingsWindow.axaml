@@ -48,6 +48,14 @@
                         <ToggleSwitch x:Name="ShowDesktopNotificationToggle" OnContent="Thông báo khi chụp/lưu thành công" OffContent="Không thông báo khi thành công" />
                         <ToggleSwitch x:Name="ShowAbortToggle" OnContent="Thông báo khi hủy thao tác" OffContent="Không thông báo khi hủy" />
                         <ToggleSwitch x:Name="CopyOnDoubleClickToggle" OnContent="Sao chép khi double-click" OffContent="Không sao chép khi double-click" />
+                        <ToggleSwitch x:Name="SaveAfterCopyToggle" OnContent="Tự động lưu sau khi copy" OffContent="Không tự động lưu sau khi copy" />
+                        <ToggleSwitch x:Name="CopyPathAfterSaveToggle" OnContent="Copy đường dẫn sau khi lưu" OffContent="Không copy đường dẫn sau khi lưu" />
+
+                        <TextBlock Text="Giới hạn lịch sử Undo/Redo" FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Slider x:Name="UndoLimitSlider" Minimum="10" Maximum="500" Width="300" />
+                            <TextBlock x:Name="UndoLimitLabel" VerticalAlignment="Center" />
+                        </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
             </TabItem>

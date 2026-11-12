@@ -136,9 +136,9 @@ let ``Push vượt giới hạn cắt snapshot cũ nhất`` () =
     Assert.Equal(2, List.length afterUndo.UndoStack)
     Assert.Equal(1, List.length afterUndo.Current.Annotations)
 
-/// Kiểm tra SetLimit không cắt ngay stack hiện tại.
+/// Kiểm tra SetLimit cắt ngay lập tức các snapshot cũ nhất khi vượt ngưỡng mới.
 [<Fact>]
-let ``SetLimit chỉ cắt ở lần Push tiếp theo`` () =
+let ``SetLimit cắt ngay stack khi vượt ngưỡng mới`` () =
     let s1 = buildSnapshot [ lineAnnotation 0.0 0.0 1.0 1.0 ]
     let s2 = buildSnapshot [ lineAnnotation 0.0 0.0 2.0 2.0 ]
     let s3 = buildSnapshot [ lineAnnotation 0.0 0.0 3.0 3.0 ]
@@ -149,16 +149,23 @@ let ``SetLimit chỉ cắt ở lần Push tiếp theo`` () =
             .Push(s2)
             .Push(s3)
 
+    // Stack trước khi SetLimit: [Empty, s1, s2, s3] = 4 phần tử.
     let smaller = history.SetLimit 2
-    // SetLimit không cắt ngay stack hiện tại.
-    Assert.Equal(4, List.length smaller.UndoStack)
+    // Cắt ngay: giữ lại 2 snapshot mới nhất [s2, s3].
+    Assert.Equal(2, List.length smaller.UndoStack)
     Assert.Equal(2, smaller.Limit)
+    Assert.Equal(1, List.length smaller.Current.Annotations)
+    Assert.True(smaller.CanUndo)
 
-    let s4 = buildSnapshot [ lineAnnotation 0.0 0.0 4.0 4.0 ]
-    let afterPush = smaller.Push s4
-    // UndoStack: [Empty, s1, s2, s3, s4] -> limit 2 -> [s3, s4]
-    Assert.Equal(2, List.length afterPush.UndoStack)
-    Assert.Equal(1, List.length afterPush.Current.Annotations)
+/// Kiểm tra SetLimit không bao giờ để stack rỗng.
+[<Fact>]
+let ``SetLimit giữ ít nhất một snapshot`` () =
+    let s1 = buildSnapshot [ lineAnnotation 0.0 0.0 1.0 1.0 ]
+    let history = (HistoryStack.Empty 5).Push(s1)
+    let smaller = history.SetLimit 1
+    Assert.Equal(1, List.length smaller.UndoStack)
+    Assert.Equal(1, smaller.Limit)
+    Assert.False(smaller.CanUndo)
 
 /// Kiểm tra Undo không thực hiện khi chỉ có snapshot ban đầu.
 [<Fact>]

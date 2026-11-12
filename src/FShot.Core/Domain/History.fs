@@ -11,16 +11,25 @@ type Snapshot = {
     /// Chỉ số đếm CircleCounter tiếp theo tại thời điểm snapshot (FR-UNDO-005).
     /// Dùng để khôi phục đúng chỉ số khi Undo/Redo.
     CounterIndex: int
+
+    /// ID của chú thích đang được chọn tại thời điểm snapshot (FR-UNDO-004).
+    /// Dùng để phục hồi trạng thái focus sau khi Undo/Redo việc sửa nét vẽ.
+    SelectedId: Guid option
 } with
     /// Tạo snapshot ban đầu với danh sách chú thích rỗng.
-    static member Empty = { Annotations = []; CounterIndex = 1 }
+    static member Empty = { Annotations = []; CounterIndex = 1; SelectedId = None }
 
     /// Tạo snapshot mới từ danh sách chú thích (chỉ số đếm giữ mặc định 1).
-    static member Create(annotations: Annotation list) = { Annotations = annotations; CounterIndex = 1 }
+    static member Create(annotations: Annotation list) =
+        { Annotations = annotations; CounterIndex = 1; SelectedId = None }
 
     /// Tạo snapshot mới kèm chỉ số đếm CircleCounter.
     static member CreateWithCounter(annotations: Annotation list, counterIndex: int) =
-        { Annotations = annotations; CounterIndex = counterIndex }
+        { Annotations = annotations; CounterIndex = counterIndex; SelectedId = None }
+
+    /// Tạo snapshot mới kèm chỉ số đếm và ID chú thích đang chọn.
+    static member CreateWithSelection(annotations: Annotation list, counterIndex: int, selectedId: Guid option) =
+        { Annotations = annotations; CounterIndex = counterIndex; SelectedId = selectedId }
 
 /// Stack lịch sử bất biến phục vụ hoàn tác và làm lại.
 /// Xem tài liệu 05_03_HistoryStack.md.
@@ -111,7 +120,19 @@ type HistoryStack = {
         | [] ->
             this, this.Current
 
-    /// Thay đổi giới hạn stack. Cắt bớt chỉ xảy ra ở lần Push tiếp theo.
+    /// Thay đổi giới hạn stack và cắt ngay lập tức các snapshot cũ nhất
+    /// nếu số lượng hiện tại vượt quá giới hạn mới (FR-UNDO-003).
+    /// Luôn giữ ít nhất snapshot hiện tại để stack không bị rỗng.
     /// Xem 05_04_Integration.md, mục 6.
     member this.SetLimit(limit: int) : HistoryStack =
-        { this with Limit = HistoryStack.NormalizeLimit limit }
+        let newLimit = HistoryStack.NormalizeLimit limit
+        let current = List.length this.UndoStack
+        let trimmed =
+            if current > newLimit then
+                let skipCount = current - newLimit
+                this.UndoStack |> List.skip skipCount
+            else
+                this.UndoStack
+        // Bảo đảm không bao giờ rỗng: giữ lại snapshot hiện tại.
+        let undoStack = if List.isEmpty trimmed then [ Snapshot.Empty ] else trimmed
+        { this with Limit = newLimit; UndoStack = undoStack; RedoStack = [] }

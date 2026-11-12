@@ -128,14 +128,29 @@ module Program =
                             printfn "Copied to clipboard"
                             0
 
+                        | OutputTarget.Stdout ->
+                            use data = exportBitmap.Encode(SKEncodedImageFormat.Png, 100)
+                            let bytes = data.ToArray()
+                            use stdout = Console.OpenStandardOutput()
+                            stdout.Write(bytes, 0, bytes.Length)
+                            stdout.Flush()
+                            FShotLog.write (sprintf "Headless raw PNG to stdout: %d bytes" bytes.Length)
+                            0
+
+                        | OutputTarget.PrintGeometry ->
+                            let g = sprintf "%dx%d+%.0f+%.0f"
+                                        (int virtualBounds.Width)
+                                        (int virtualBounds.Height)
+                                        virtualBounds.X
+                                        virtualBounds.Y
+                            Console.Out.WriteLine(g)
+                            FShotLog.write (sprintf "Headless print geometry: %s" g)
+                            0
+
                         | OutputTarget.OpenGui ->
                             FShotLog.write "Headless mode requires -p or -c. Falling back to GUI."
                             // Không thể gọi return! trong expression, nên chạy GUI ở ngoài.
                             -1
-
-                        | _ ->
-                            FShotLog.write (sprintf "Unsupported headless output target: %A" request.OutputTarget)
-                            1
 
                     if exitCode = -1 then
                         return runGui { request with OutputTarget = OutputTarget.OpenGui }

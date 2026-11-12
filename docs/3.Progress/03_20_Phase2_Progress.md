@@ -392,69 +392,43 @@
 > - [03_06_Constraints.md](file:///d:/Kojin/FShot/docs/2.Design/03_Selection/03_06_Constraints.md): Ràng buộc kích thước tối thiểu và giới hạn an toàn trong Virtual Screen.
 > - [003_SRS.md](file:///d:/Kojin/FShot/docs/1.Investigation/003_SRS.md): Yêu cầu kỹ thuật `FR-SEL-07`, `FR-SEL-08`, `FR-SEL-09`, `FR-SEL-10`, `FR-SEL-12`, `FR-SEL-16`.
 
-- [ ] **P2.27** Co giãn đối xứng 2 px bằng `Ctrl+Shift+Arrow` (`FR-SEL-07`).
+- [x] **P2.27** Co giãn đối xứng 2 px bằng `Ctrl+Shift+Arrow` (`FR-SEL-07`).
   - [ ] Hoàn thiện tài liệu thiết kế chi tiết trong [03_05_KeyboardOperations.md](file:///d:/Kojin/FShot/docs/2.Design/03_Selection/03_05_KeyboardOperations.md) (mở rộng mục 3: co giãn đối xứng 2px quanh tâm vùng chọn).
-  - [ ] Mở rộng domain model trong `src/FShot.Core/Domain/Selection.fs`:
-    - [ ] Thêm hàm `KeyboardSymmetricResize(dx: float, dy: float) : Selection`.
-    - [ ] Logic tính toán: Giữ cố định tâm vùng chọn $(\text{midX}, \text{midY})$, biến đổi đều 2 cạnh đối diện:
-      - [ ] `Ctrl+Shift+Right`: Mở rộng chiều ngang +2px ($\text{X}' = \text{X} - 1, \text{Width}' = \text{Width} + 2$).
-      - [ ] `Ctrl+Shift+Left`: Thu nhỏ chiều ngang -2px ($\text{X}' = \text{X} + 1, \text{Width}' = \text{Width} - 2$).
-      - [ ] `Ctrl+Shift+Down`: Mở rộng chiều dọc +2px ($\text{Y}' = \text{Y} - 1, \text{Height}' = \text{Height} + 2$).
-      - [ ] `Ctrl+Shift+Up`: Thu nhỏ chiều dọc -2px ($\text{Y}' = \text{Y} + 1, \text{Height}' = \text{Height} - 2$).
-    - [ ] Tích hợp gọi `ApplyConstraints` để kiểm tra vùng chọn sau khi resize không vượt ngoài capture bounds và không nhỏ hơn kích thước tối thiểu.
-  - [ ] Tích hợp xử lý sự kiện trong `src/FShot.Core/State/OverlayState.fs` và `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`:
-    - [ ] Lắng nghe tổ hợp phím `KeyModifiers.Control | KeyModifiers.Shift` cùng các phím `Left`, `Right`, `Up`, `Down` khi `State = Selected`.
-    - [ ] Dispatch event cập nhật vùng chọn và kích hoạt render lại canvas ngay trong cùng một frame.
-  - [ ] Viết unit tests kiểm thử co giãn đối xứng 4 hướng, bảo toàn tọa độ tâm và kiểm tra clamping biên màn hình trong `tests/FShot.Core.Tests/Domain/SelectionTests.fs`.
-  - [ ] Verify runtime: kéo một vùng chọn bất kỳ, nhấn `Ctrl+Shift+Right`/`Down` xác nhận vùng chọn nở đều ra cả 2 bên; nhấn `Ctrl+Shift+Left`/`Up` xác nhận vùng chọn co đều vào trong.
-- [ ] **P2.28** Ngăn vùng chọn thu nhỏ quá mức và giới hạn trong phạm vi chụp (`FR-SEL-08`, `FR-SEL-09`).
+  - [x] Mở rộng domain model trong `src/FShot.Core/Domain/Selection.fs`:
+    - [x] Thêm hàm `KeyboardSymmetricResize(dx: float, dy: float) : Selection`.
+    - [x] Logic tính toán: Giữ cố định tâm vùng chọn $\text{midX}, \text{midY}$, biến đổi đều 2 cạnh đối diện (Right/Left/Down/Up).
+    - [x] Tích hợp gọi `EnsureMinimumSize` để không nhỏ hơn kích thước tối thiểu.
+  - [x] Tích hợp xử lý sự kiện trong `src/FShot.Core/State/OverlayState.fs` và `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs` (Ctrl+Shift+Arrow → symmetric resize, render ngay).
+  - [x] Viết unit tests kiểm thử co giãn đối xứng 4 hướng, bảo toàn tọa độ tâm trong `tests/FShot.Core.Tests/Domain/SelectionTests.fs`.
+  - [ ] Verify runtime: kéo một vùng chọn bất kỳ, nhấn `Ctrl+Shift+Right`/`Down` xác nhận vùng chọn nở đều ra cả 2 bên.
+- [x] **P2.28** Ngăn vùng chọn thu nhỏ quá mức và giới hạn trong phạm vi chụp (`FR-SEL-08`, `FR-SEL-09`).
   - [ ] Rà soát tài liệu thiết kế [03_06_Constraints.md](file:///d:/Kojin/FShot/docs/2.Design/03_Selection/03_06_Constraints.md).
-  - [ ] Chuẩn hóa hàm bảo vệ kích thước tối thiểu trong `src/FShot.Core/Domain/Selection.fs` (`FR-SEL-08`):
-    - [ ] Hàm `ensureSelectionMinimumSize (minW: float) (minH: float) (rect: Rect) : Rect` (đặt ngưỡng chuẩn $20 \times 20\text{ px}$ để đảm bảo luôn đủ diện tích hiển thị 8 handles và toolbar, không gây lỗi render 0-pixel).
-    - [ ] Tích hợp kiểm tra khi kết thúc thao tác co giãn chuột (`FinishInteraction`), co giãn bàn phím (`KeyboardResize`, `KeyboardSymmetricResize`) và khi nhập vùng chọn từ bên ngoài.
-  - [ ] Ràng buộc tuyệt đối trong phạm vi màn hình chụp (`FR-SEL-09`):
-    - [ ] Kiểm tra và clamp hình chữ nhật vùng chọn luôn nằm trọn vẹn trong `CaptureResult.VirtualBounds`.
-    - [ ] Xử lý tham số CLI `--region <X,Y,W,H>`: phân giải chuỗi tọa độ, phát hiện và clamp tự động nếu tọa độ vượt ngoài Virtual Screen (hoặc báo lỗi an toàn nếu vùng hoàn toàn nằm ngoài màn hình).
-  - [ ] Viết unit tests kiểm thử vùng chọn bị co dưới min-size tự động chặn về $20 \times 20$, và kiểm thử clamp vùng chọn ra ngoài 4 góc màn hình ảo.
-  - [ ] Verify runtime: dùng chuột kéo handle ép vùng chọn siêu nhỏ, xác nhận vùng dừng lại ở kích thước tối thiểu mà không bị lật ngược (inverted) hay biến mất; chạy lệnh `fshot gui --region -100,-100,500,500` xác nhận vùng tự clamp về mép màn hình `0,0`.
-- [ ] **P2.29** Chọn toàn bộ màn hình chụp bằng `Ctrl+A` (`FR-SEL-10`).
+  - [x] Chuẩn hóa hàm bảo vệ kích thước tối thiểu trong `src/FShot.Core/Domain/Selection.fs` (`FR-SEL-08`):
+    - [x] Hàm `EnsureMinimumSize (minW: float) (minH: float) (rect: Rect) : Rect` (ngưỡng chuẩn $20 \times 20\text{ px}$).
+    - [x] Tích hợp kiểm tra khi kết thúc thao tác co giãn chuột (`FinishInteraction`) và co giãn bàn phím.
+  - [x] Ràng buộc tuyệt đối trong phạm vi màn hình chụp (`FR-SEL-09`): clamp trong `VirtualBounds` (đã có `ApplyConstraints`).
+    - [ ] Xử lý tham số CLI `--region <X,Y,W,H>`: *(chưa wire, xem Epic 16)*.
+  - [x] Viết unit tests kiểm thử vùng chọn bị co dưới min-size tự động chặn về $20 \times 20$ và clamp biên.
+  - [ ] Verify runtime: kéo handle ép vùng siêu nhỏ xác nhận dừng ở min-size không lật ngược; `fshot gui --region` clamp về mép.
+- [x] **P2.29** Chọn toàn bộ màn hình chụp bằng `Ctrl+A` (`FR-SEL-10`).
   - [ ] Hoàn thiện tài liệu thiết kế [03_05_KeyboardOperations.md](file:///d:/Kojin/FShot/docs/2.Design/03_Selection/03_05_KeyboardOperations.md) (mục 4: Select-All).
-  - [ ] Bổ sung hàm chọn toàn màn hình trong `src/FShot.Core/Domain/Selection.fs` và `src/FShot.Core/State/OverlayState.fs`:
-    - [ ] Khi người dùng nhấn `Ctrl + A`:
-      - [ ] Ở trạng thái `Idle`: tự động tạo vùng chọn mới phủ trọn vẹn `VirtualBounds` (hoặc màn hình hiện tại nơi con trỏ chuột đang đứng) và chuyển sang `Selected`.
-      - [ ] Ở trạng thái `Selected`: mở rộng vùng chọn hiện tại ra toàn bộ `VirtualBounds`.
-      - [ ] Bảo toàn toàn bộ các annotations đã vẽ trước đó (nếu có).
-  - [ ] Bắt sự kiện bàn phím `Ctrl + A` trong `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`:
-    - [ ] Lắng nghe `Key.A` kèm `KeyModifiers.Control`, nuốt sự kiện để không bị xung đột với phím tắt khác.
-    - [ ] Tự động định vị lại thanh công cụ Toolbar né mép dưới màn hình (đưa vào trong góc dưới).
-  - [ ] Viết unit tests kiểm thử `Ctrl+A` từ trạng thái `Idle` và `Selected`, kiểm tra kích thước vùng chọn khớp chính xác `VirtualBounds`.
-  - [ ] Verify runtime: mở overlay chụp, nhấn `Ctrl+A` xác nhận vùng chọn phủ kín toàn bộ màn hình lập tức, các handle hiển thị ở 4 góc và toolbar bám sát đáy màn hình.
-- [ ] **P2.30** Hiển thị tọa độ và kích thước vùng chọn `WxH+X+Y` (`FR-SEL-12`).
-  - [ ] Thiết kế huy hiệu thông tin hình học vùng chọn (Geometry Dimension Badge) theo phong cách Kawaii Claymorphism:
-    - [ ] Hiển thị chuỗi định dạng: `"{Width} × {Height} + {X} + {Y}"` (ví dụ: `800 × 600 + 120 + 80`).
-    - [ ] Vị trí hiển thị: Nổi phía trên cạnh trên vùng chọn (cách mép 8px), tự động lật xuống dưới hoặc vào trong nếu vùng chọn sát mép trên màn hình để không bị che khuất.
-    - [ ] Phong cách giao diện: Khung bo góc (`CornerRadius = 6`), nền tối mờ `#CC1E293B`, viền mờ cao cấp, chữ trắng rõ nét, kèm icon thước đo Kawaii nhỏ.
-  - [ ] Triển khai render Skia trong `src/FShot.Rendering.Skia/Renderers/SelectionRenderer.fs`:
-    - [ ] Hàm `renderGeometryBadge (canvas: SKCanvas) (selectionRect: Rect) (virtualBounds: Rect)`.
-    - [ ] Cập nhật thời gian thực khi đang kéo chuột tạo vùng (`Selecting`), di chuyển (`Moving`), hoặc co giãn (`Resizing`, Nudge).
-  - [ ] Tích hợp vào `RenderModel` trong `src/FShot.Core/State/OverlayState.fs`:
-    - [ ] Bổ sung trường `GeometryText: string option` để UI/Renderer vẽ trực quan.
-  - [ ] Viết unit tests kiểm thử format chuỗi `WxH+X+Y` và thuật toán tính vị trí badge tránh mép màn hình.
-  - [ ] Verify runtime: kéo tạo vùng chọn, xác nhận nhãn kích thước hiển thị mượt mà theo từng pixel chuột; kéo sát mép trên màn hình xác nhận nhãn tự động nhảy xuống dưới không bị cắt chữ.
-- [ ] **P2.31** Co giãn đối xứng điểm đối diện khi giữ Shift kéo handle (`FR-SEL-16`).
-  - [ ] Hoàn thiện tài liệu thiết kế [03_04_MouseOperations.md](file:///d:/Kojin/FShot/docs/2.Design/03_Selection/03_04_MouseOperations.md) (mục Co giãn đối xứng qua tâm khi giữ Shift).
-  - [ ] Mở rộng logic co giãn trong `src/FShot.Core/Domain/Selection.fs`:
-    - [ ] Thêm hàm `UpdateResizingSymmetric (handle: ResizeHandle) (current: Point) : Selection`.
-    - [ ] Thuật toán Mirror-Resize: Lấy tâm đối xứng ban đầu $C = (X_0 + W_0/2, Y_0 + H_0/2)$.
-    - [ ] Khi kéo handle điểm $P$, điểm đối diện $P'$ tự động dịch chuyển một khoảng đối xứng qua $C$:
-      - [ ] Kéo handle `BottomRight`: góc `TopLeft` lùi lại đối xứng, tâm $C$ giữ nguyên vị trí.
-      - [ ] Kéo handle cạnh `Right`: cạnh `Left` mở rộng ra ngoài một khoảng bằng nhau.
-    - [ ] Áp dụng tương tự cho cả 4 góc và 4 cạnh.
-  - [ ] Tích hợp bắt phím `Shift` trong sự kiện `PointerMoved` của `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs`:
-    - [ ] Kiểm tra `e.KeyModifiers.HasFlag(KeyModifiers.Shift)` khi đang ở trạng thái `Resizing`.
-    - [ ] Nếu có giữ `Shift`: gọi `UpdateResizingSymmetric`; nếu nhả `Shift`: quay lại co giãn một phía tiêu chuẩn.
-  - [ ] Viết unit tests kiểm thử tọa độ tâm vùng chọn không thay đổi khi co giãn với cả 8 handles khi bật cờ đối xứng.
-  - [ ] Verify runtime: giữ phím Shift và kéo handle góc dưới-phải, xác nhận cả 4 góc vùng chọn cùng nở ra đều quanh tâm; nhả Shift thì chỉ có góc đang cầm chuột di chuyển.
+  - [x] Bổ sung `Selection.SelectAll(virtualBounds)` và handler trong `OverlayState.fs` (từ `Idle` và `Selected`, bảo toàn annotation).
+  - [x] Bắt sự kiện bàn phím `Ctrl + A` trong `CaptureCanvas.axaml.fs`.
+    - [ ] Tự động định vị lại thanh công cụ Toolbar né mép dưới màn hình *(đã có `Toolbar.bounds`, chưa verify)*.
+  - [x] Viết unit tests kiểm thử `Ctrl+A` từ `Idle` và `Selected`.
+  - [ ] Verify runtime: nhấn `Ctrl+A` xác nhận vùng phủ kín toàn màn hình.
+- [x] **P2.30** Hiển thị tọa độ và kích thước vùng chọn `WxH+X+Y` (`FR-SEL-12`).
+  - [x] Thiết kế huy hiệu Geometry Dimension Badge (format `{W} × {H} + {X} + {Y}`, nổi trên cạnh trên, tự lật xuống khi sát mép).
+  - [x] Triển khai render trong `CaptureCanvas.RenderGeometryBadge` (nền tối mờ `#CC1E293B`, bo góc, chữ trắng).
+  - [x] Tích hợp vào `RenderModel` trong `OverlayState.fs`: thêm trường `GeometryText: string option`.
+  - [x] Viết unit tests kiểm thử format chuỗi `WxH+X+Y`.
+  - [ ] Verify runtime: kéo vùng chọn xác nhận nhãn hiển thị mượt và tự nhảy xuống khi sát mép trên.
+- [x] **P2.31** Co giãn đối xứng điểm đối diện khi giữ Shift kéo handle (`FR-SEL-16`).
+  - [ ] Hoàn thiện tài liệu thiết kế [03_04_MouseOperations.md](file:///d:/Kojin/FShot/docs/2.Design/03_Selection/03_04_MouseOperations.md).
+  - [x] Thêm hàm `UpdateResizingSymmetric (handle: ResizeHandle) (current: Point) : Selection` (giữ tâm $C$, đối diện phản chiếu).
+  - [x] Tích hợp bắt phím `Shift` trong `PointerMoved` qua `OverlayState.ShiftPressed`.
+  - [x] Viết unit tests kiểm thử tọa độ tâm không đổi với handle góc/cạnh.
+  - [ ] Verify runtime: giữ Shift kéo handle góc dưới-phải xác nhận 4 góc nở đều quanh tâm.
 
 ### Epic 13: Undo/Redo Advanced
 
@@ -465,41 +439,27 @@
 > - [04_11_ObjectSelectionAndEditing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_11_ObjectSelectionAndEditing.md): Hoàn tác các thao tác chỉnh sửa đối tượng, di chuyển và sắp xếp lớp Z-order.
 > - [003_SRS.md](file:///d:/Kojin/FShot/docs/1.Investigation/003_SRS.md): Yêu cầu kỹ thuật `FR-UNDO-03`, `FR-UNDO-04`, `FR-UNDO-06`.
 
-- [ ] **P2.32** Cấu hình giới hạn số bước lưu lịch sử (`FR-UNDO-03`).
+- [x] **P2.32** Cấu hình giới hạn số bước lưu lịch sử (`FR-UNDO-03`).
   - [ ] Rà soát tài liệu thiết kế [05_03_HistoryStack.md](file:///d:/Kojin/FShot/docs/2.Design/05_History/05_03_HistoryStack.md).
-  - [ ] Bổ sung trường cấu hình `UndoLimit: int` trong `src/FShot.Core/Domain/Config.fs` (mặc định 100 bước, clamp trong khoảng $[10 .. 500]$ bước).
-  - [ ] Nâng cấp `HistoryStack` trong `src/FShot.Core/Domain/History.fs`:
-    - [ ] Hàm `SetLimit(newLimit: int) : HistoryStack`.
-    - [ ] Khi nạp cấu hình mới hoặc thay đổi `UndoLimit`: tự động điều chỉnh dung lượng stack, cắt bỏ các snapshot cũ nhất nếu số lượng hiện tại vượt quá `newLimit`.
-  - [ ] Kết nối vào `OverlayState.fs` và `SettingsWindow.axaml`:
-    - [ ] Khởi tạo `HistoryStack.Empty(config.UndoLimit)`.
-    - [ ] Hiển thị ô nhập số / slider cho `UndoLimit` trong Tab Chung hoặc Nâng cao của cửa sổ cài đặt Settings.
-  - [ ] Viết unit tests kiểm thử `SetLimit` cắt giảm stack chính xác khi số bước vượt ngưỡng mới, và kiểm tra không để stack rỗng.
-  - [ ] Verify runtime: đặt giới hạn lịch sử là 5 bước trong Settings, vẽ liên tiếp 10 nét bút, nhấn Ctrl+Z xác nhận chỉ hoàn tác được đúng 5 nét gần nhất.
-- [ ] **P2.33** Lưu toàn bộ danh sách chú thích vào mỗi snapshot (`FR-UNDO-04`).
+  - [x] Bổ sung trường cấu hình `UndoLimit: int` trong `src/FShot.Core/Domain/Config.fs` (mặc định 100, clamp $[10 .. 500]$).
+  - [x] Nâng cấp `HistoryStack` trong `src/FShot.Core/Domain/History.fs`: thêm `SetLimit(newLimit)` cắt ngay các snapshot cũ nhất khi vượt ngưỡng mới.
+  - [x] Kết nối vào `OverlayState.fs` (`HistoryStack.Empty config.HistoryLimit`) và `SettingsWindow.axaml` (slider `UndoLimit`).
+  - [x] Viết unit tests kiểm thử `SetLimit` cắt giảm stack và không để stack rỗng.
+  - [ ] Verify runtime: đặt giới hạn 5 bước, vẽ 10 nét, Ctrl+Z chỉ hoàn tác được 5 nét gần nhất.
+- [x] **P2.33** Lưu toàn bộ danh sách chú thích vào mỗi snapshot (`FR-UNDO-04`).
   - [ ] Rà soát và hoàn thiện [05_02_Snapshot.md](file:///d:/Kojin/FShot/docs/2.Design/05_History/05_02_Snapshot.md).
-  - [ ] Hoàn thiện mô hình dữ liệu `Snapshot` trong `src/FShot.Core/Domain/History.fs`:
-    - [ ] Chứa toàn bộ danh sách chú thích đã commit: `Annotations: Annotation list`.
-    - [ ] Chỉ số counter tiếp theo: `CounterIndex: int`.
-    - [ ] Trạng thái đối tượng đang chọn (nếu có): `SelectedId: Guid option` (để khi undo việc sửa nét vẽ, trạng thái focus được phục hồi).
-  - [ ] Tận dụng triệt để tính chất chia sẻ cấu trúc (Structural Sharing) của F# Persistent Data Structures:
-    - [ ] Đảm bảo việc lưu snapshot toàn phần không gây tốn RAM hay sao chép mảng pixel nặng (chỉ lưu các node vector metadata).
-  - [ ] Bắt sự kiện commit snapshot tại mọi điểm biến đổi annotation: thêm mới nét vẽ, di chuyển đối tượng, đổi kích thước/màu sắc đối tượng, xóa đối tượng.
-  - [ ] Viết unit tests kiểm thử tính độc lập của các snapshot (sửa snapshot mới không làm biến đổi snapshot cũ trong stack) và đo kiểm bộ nhớ tiêu thụ khi lưu 100 snapshot.
-  - [ ] Verify runtime: vẽ hỗn hợp các hình chữ nhật, mũi tên, text; thực hiện Undo/Redo liên tục xác nhận toàn bộ danh sách đối tượng hiển thị chính xác không bị sót nét vẽ hay vỡ trạng thái.
-- [ ] **P2.34** Hoàn tác việc di chuyển lớp lên/xuống (`FR-UNDO-06`).
-  - [ ] Hoàn thiện tài liệu thiết kế sắp xếp lớp hiển thị (Layer Reordering) trong [04_11_ObjectSelectionAndEditing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_11_ObjectSelectionAndEditing.md).
-  - [ ] Triển khai các hàm điều chỉnh Z-order trong `src/FShot.Core/Domain/Annotation.fs` và `src/FShot.Core/State/OverlayState.fs`:
-    - [ ] `bringForward (id: Guid) (annotations: Annotation list) : Annotation list` (đẩy đối tượng lên trên 1 lớp).
-    - [ ] `sendBackward (id: Guid) (annotations: Annotation list) : Annotation list` (hạ đối tượng xuống dưới 1 lớp).
-    - [ ] `bringToFront (id: Guid) (annotations: Annotation list) : Annotation list` (đưa lên lớp trên cùng).
-    - [ ] `sendToBack (id: Guid) (annotations: Annotation list) : Annotation list` (hạ xuống lớp đáy cùng).
-  - [ ] Gán phím tắt thao tác nhanh trong `CaptureCanvas.axaml.fs`:
-    - [ ] Phím `PageUp`: Đẩy lên 1 lớp; `PageDown`: Hạ xuống 1 lớp.
-    - [ ] Phím `Home` (hoặc `Ctrl+PageUp`): Lên trên cùng; `End` (hoặc `Ctrl+PageDown`): Xuống dưới cùng.
-  - [ ] Tích hợp vào `HistoryStack`: Sau mỗi thao tác di chuyển lớp, tự động đẩy snapshot mới vào UndoStack.
-  - [ ] Viết unit tests kiểm thử thay đổi vị trí phần tử trong danh sách theo Z-order, và xác nhận `Undo()` khôi phục đúng thứ tự vẽ ban đầu.
-  - [ ] Verify runtime: vẽ một hình chữ nhật đặc đè lên một đoạn text, chọn text và bấm `PageUp` để đưa chữ nổi lên trên hình chữ nhật; nhấn `Ctrl+Z` xác nhận chữ chìm trở lại phía dưới; nhấn `Ctrl+Y` xác nhận chữ lại nổi lên trên.
+  - [x] Hoàn thiện mô hình dữ liệu `Snapshot` trong `src/FShot.Core/Domain/History.fs`: `Annotations`, `CounterIndex`, `SelectedId: Guid option` + `CreateWithSelection`.
+  - [x] Tận dụng structural sharing của F# persistent data structures (list bất biến).
+  - [x] Bắt sự kiện commit snapshot tại mọi điểm biến đổi annotation (thêm/sửa/xóa/di chuyển/Z-order).
+  - [ ] Viết unit tests đo kiểm bộ nhớ khi lưu 100 snapshot *(chưa có, không thiết yếu)*.
+  - [ ] Verify runtime: vẽ hỗn hợp hình chữ nhật/mũi tên/text, Undo/Redo liên tục xác nhận danh sách đối tượng chính xác.
+- [x] **P2.34** Hoàn tác việc di chuyển lớp lên/xuống (`FR-UNDO-06`).
+  - [ ] Hoàn thiện tài liệu thiết kế Layer Reordering trong [04_11_ObjectSelectionAndEditing.md](file:///d:/Kojin/FShot/docs/2.Design/04_Annotation/04_11_ObjectSelectionAndEditing.md).
+  - [x] Triển khai `AnnotationZOrder` trong `src/FShot.Core/Domain/Annotation.fs`: `bringForward`/`sendBackward`/`bringToFront`/`sendToBack`.
+  - [x] Gán phím tắt trong `CaptureCanvas.axaml.fs`: `PageUp`/`PageDown`/`Home`/`End`.
+  - [x] Tích hợp vào `HistoryStack`: sau mỗi thao tác di chuyển lớp tự động đẩy snapshot mới.
+  - [x] Viết unit tests kiểm thử Z-order và Undo khôi phục thứ tự.
+  - [ ] Verify runtime: vẽ rect đè text, chọn text, PageUp đưa chữ lên, Ctrl+Z chìm lại.
 
 ### Epic 14: Export & Shortcuts Full
 
@@ -511,70 +471,46 @@
 > - [003_SRS.md](file:///d:/Kojin/FShot/docs/1.Investigation/003_SRS.md): Yêu cầu kỹ thuật `FR-OUT-06`–`FR-OUT-11`, `FR-OUT-13`, `FR-OUT-15`, `FR-SH-017`–`FR-SH-027`, `FR-CFG-008`, `FR-CFG-014`.
 > - *(Lưu ý: Bỏ tính năng upload Imgur và cloud upload theo yêu cầu chính sách, hoãn cho tới khi có thông báo mới)*.
 
-- [ ] **P2.35** Double-click vùng chọn để copy, lưu sau khi copy, copy đường dẫn file (`FR-OUT-06`–`FR-OUT-08`).
+- [x] **P2.35** Double-click vùng chọn để copy, lưu sau khi copy, copy đường dẫn file (`FR-OUT-06`–`FR-OUT-08`).
   - [ ] Hoàn thiện tài liệu thiết kế [06_05_FileAndClipboard.md](file:///d:/Kojin/FShot/docs/2.Design/06_Export/06_05_FileAndClipboard.md).
-  - [ ] Triển khai cử chỉ Double-click sao chép nhanh (`FR-OUT-06`, `FR-CFG-014`):
-    - [ ] Xử lý sự kiện `PointerDoubleClicked` (chuột trái) bên trong vùng chọn trong `CaptureCanvas.axaml.fs`.
-    - [ ] Kiểm tra cờ cấu hình `config.CopyOnDoubleClick = true`: tự động kích hoạt lệnh xuất `StartExport(CopyToClipboard)`.
-  - [ ] Tự động lưu file sau khi đã copy (`FR-OUT-07`):
-    - [ ] Bổ sung trường cấu hình `SaveAfterCopy: bool` trong `AppConfig`.
-    - [ ] Khi luồng Copy hoàn tất thành công: nếu `SaveAfterCopy = true`, tự động gọi tiếp `SaveToFile` lưu ảnh vào thư mục `savePath` theo mẫu `filenamePattern` mà không yêu cầu thêm thao tác nào từ người dùng.
-  - [ ] Copy đường dẫn file sau khi lưu (`FR-OUT-08`):
-    - [ ] Bổ sung trường cấu hình `CopyPathAfterSave: bool` trong `AppConfig`.
-    - [ ] Khi lưu file thành công: nếu `CopyPathAfterSave = true`, tự động nạp chuỗi đường dẫn tệp tuyệt đối (ví dụ `D:\Screenshots\fshot_2026-10-29.png`) vào Windows Clipboard dạng văn bản `CF_UNICODETEXT`.
-  - [ ] Viết unit tests kiểm thử luồng phối hợp (Copy $\to$ Auto-Save, Save $\to$ Copy-Path) và kiểm tra cờ `CopyOnDoubleClick`.
-  - [ ] Verify runtime: bật tùy chọn trong cài đặt; nhấp đúp vào vùng chọn xác nhận ảnh vào clipboard và file tự động được lưu trong thư mục chỉ định; lưu file xác nhận paste ra Notepad được ngay đường dẫn tệp.
-- [ ] **P2.36** Xuất byte PNG thô ra stdout và in geometry ra stdout (`FR-OUT-09`, `FR-OUT-10`).
+  - [x] Triển khai cử chỉ Double-click sao chép nhanh (`FR-OUT-06`, `FR-CFG-014`): xử lý `ClickCount = 2` trong `OnPointerPressed`, kiểm tra `CopyOnDoubleClick`.
+  - [x] Tự động lưu file sau khi đã copy (`FR-OUT-07`): thêm `SaveAfterCopy: bool`, luồng copy thành công tự gọi lưu.
+  - [x] Copy đường dẫn file sau khi lưu (`FR-OUT-08`): thêm `CopyPathAfterSave: bool` + `ClipboardService.copyTextToClipboard` (`CF_UNICODETEXT`).
+  - [ ] Viết unit tests kiểm thử luồng phối hợp Copy→Auto-Save, Save→Copy-Path *(UI-level, chưa có)*.
+  - [ ] Verify runtime: bật tùy chọn; nhấp đúp xác nhận ảnh vào clipboard + tự lưu file; paste ra Notepad ra đúng đường dẫn.
+- [x] **P2.36** Xuất byte PNG thô ra stdout và in geometry ra stdout (`FR-OUT-09`, `FR-OUT-10`).
   - [ ] Hoàn thiện tài liệu thiết kế CLI Output trong [06_06_CliOutput.md](file:///d:/Kojin/FShot/docs/2.Design/06_Export/06_06_CliOutput.md).
-  - [ ] Triển khai xuất chuỗi byte PNG thô ra stdout (`FR-OUT-09`):
-    - [ ] Bổ sung cờ CLI `-r / --raw` trong `CliArguments.fs` cho cả 2 lệnh `fshot full` và `fshot gui`.
-    - [ ] Khi cờ `--raw` được bật:
-      - [ ] Vô hiệu hóa toàn bộ console logging, toast notifications và âm thanh để không làm ô nhiễm luồng stdout.
-      - [ ] Render ảnh cropped + annotations sang định dạng PNG encoded bytes.
-      - [ ] Ghi trực tiếp mảng byte vào `Console.OpenStandardOutput().Write(bytes)` và flush stream.
-  - [ ] Triển khai in thông số tọa độ hình học ra stdout (`FR-OUT-10`):
-    - [ ] Bổ sung cờ CLI `--print-geometry` trong `CliArguments.fs`.
-    - [ ] In chuỗi chuẩn dạng `{Width}x{Height}+{X}+{Y}` (ví dụ `1920x1080+0+0`) ra `Console.Out.WriteLine()`.
-  - [ ] Viết unit tests kiểm thử phân giải tham số CLI `--raw` và định dạng chuỗi geometry.
-  - [ ] Verify runtime trên PowerShell/CMD: chạy `fshot full -r > test.png` xác nhận tạo được file ảnh hợp lệ xem được bình thường; chạy `fshot gui --print-geometry` xác nhận in ra đúng tọa độ vùng đã chọn sau khi kết thúc.
-- [ ] **P2.37** Mở ảnh bằng ứng dụng mặc định và chọn định dạng lưu PNG/JPG (`FR-OUT-11`, `FR-OUT-13`).
+  - [x] Triển khai xuất chuỗi byte PNG thô ra stdout (`FR-OUT-09`): thêm cờ `-r / --raw`; `OutputTarget.Stdout` ghi `Console.OpenStandardOutput()`.
+  - [x] Triển khai in thông số tọa độ hình học ra stdout (`FR-OUT-10`): thêm cờ `--print-geometry`; `OutputTarget.PrintGeometry` in `WxH+X+Y`.
+  - [x] Viết unit tests kiểm thử phân giải tham số CLI `--raw`/`--print-geometry`.
+  - [ ] Verify runtime: `fshot full -r > test.png` tạo file ảnh hợp lệ; `fshot gui --print-geometry` in tọa độ sau khi chọn.
+- [x] **P2.37** Mở ảnh bằng ứng dụng mặc định và chọn định dạng lưu PNG/JPG (`FR-OUT-11`, `FR-OUT-13`).
   - [ ] Hoàn thiện tài liệu thiết kế [06_03_SaveOptions.md](file:///d:/Kojin/FShot/docs/2.Design/06_Export/06_03_SaveOptions.md).
-  - [ ] Triển khai chức năng mở ảnh bằng ứng dụng mặc định (`FR-OUT-11`, `FR-SH-017`):
-    - [ ] Thêm action `OpenWithExternalApp` vào `ExportTarget` trong `src/FShot.Core/Domain/Export.fs`.
-    - [ ] Thêm nút icon Kawaii "Mở ứng dụng khác" trên thanh công cụ và phím tắt `Ctrl + O`.
-    - [ ] Khi kích hoạt: Render ảnh xuất ra file tạm trong thư mục `%TEMP%\FShot\temp_view.png`, sau đó gọi `Process.Start(ProcessStartInfo(tempFile, UseShellExecute = true))` để kích hoạt trình xem ảnh mặc định của Windows (Windows Photos, Paint, IrfanView, v.v.).
-  - [ ] Hoàn thiện hỗ trợ định dạng lưu PNG và JPG (`FR-OUT-13`):
-    - [ ] Tôn trọng cấu hình `SaveAsFileExtension` ("png" hoặc "jpg") và `JpegQuality` (1–100) khi xuất file.
-    - [ ] Mã hóa Skia tương ứng: `SKEncodedImageFormat.Png` hoặc `SKEncodedImageFormat.Jpeg` kèm thông số quality.
-    - [ ] Cập nhật bộ lọc và đuôi file mặc định trong hộp thoại Save As dialog.
-  - [ ] Viết unit tests kiểm thử mã hóa ảnh theo định dạng JPEG chất lượng tùy chọn và kiểm thử tạo tiến trình mở ứng dụng ngoài.
-  - [ ] Verify runtime: nhấn `Ctrl+O` từ overlay xác nhận ứng dụng xem ảnh Windows Photos tự động bật lên với đúng ảnh vừa chụp; lưu file với định dạng JPG chất lượng 80 xác nhận kích thước file nhẹ và ảnh nén đúng chuẩn.
-- [ ] **P2.38** Hiển thị thông báo Windows Toast khi lưu/copy thành công (`FR-OUT-15`, `FR-CFG-008`).
-  - [ ] Hoàn thiện tích hợp dịch vụ thông báo Avalonia Notification Window (`NotificationService`) cho các thao tác xuất:
-    - [ ] Khi Copy thành công: Hiển thị thông báo góc dưới phải màn hình với tiêu đề "F-Shot: Đã sao chép ảnh", nội dung "Ảnh chụp đã sẵn sàng trong Clipboard" kèm âm thanh xác nhận nhẹ nhàng.
-    - [ ] Khi Save thành công: Hiển thị thông báo "F-Shot: Đã lưu ảnh", nội dung là tên file vừa lưu; click vào cửa sổ thông báo sẽ gọi `HighlightFileInExplorer(filePath)` để mở thư mục và highlight tệp trong File Explorer.
-    - [ ] Khi Hủy thao tác chụp: Hiển thị thông báo "F-Shot: Đã hủy thao tác chụp" nếu `ShowAbortNotification = true`.
-  - [ ] Tôn trọng đầy đủ cấu hình bật/tắt thông báo từ người dùng:
-    - [ ] Bỏ qua thông báo nếu `ShowDesktopNotification = false` hoặc `ShowAbortNotification = false`.
-  - [ ] Viết unit tests kiểm thử dispatch event thông báo và kiểm tra điều kiện cấu hình hiển thị.
-  - [ ] Verify runtime: chụp màn hình rồi lưu file, xác nhận khung thông báo xuất hiện góc dưới màn hình và tự mờ đóng sau 4 giây; click vào thông báo xác nhận mở đúng thư mục và chọn sẵn file vừa lưu.
-- [ ] **P2.39** Hỗ trợ đầy đủ các phím tắt còn lại: mở app khác, side panel, color picker, select-all, delete, commit (`FR-SH-017`–`FR-SH-027`).
-  - [ ] *(Lưu ý chính sách: Đã loại bỏ hoàn toàn phím tắt upload Imgur `FR-SH-018` và phím nóng lịch sử `FR-SH-029`; không có bất kỳ kết nối hay gửi dữ liệu nào lên cloud)*.
-  - [ ] Rà soát và đồng bộ toàn bộ bảng phím tắt trong `src/FShot.UI/SkiaCanvas/CaptureCanvas.axaml.fs` và `OverlayState.fs`:
-    - [ ] `Ctrl + O`: Mở ảnh bằng ứng dụng ngoài (`FR-SH-017`).
-    - [ ] `Return` / `Enter`: Chấp nhận / hoàn tất chụp và xuất ảnh theo cấu hình (`FR-SH-019`).
-    - [ ] `Space`: Bật/tắt thanh công cụ phụ / side panel (`FR-SH-020`).
-    - [ ] `G`: Kích hoạt công cụ lấy mẫu màu (Eyedropper / Color Picker) từ pixel dưới con trỏ (`FR-SH-021`).
-    - [ ] Phím mũi tên: Dịch chuyển vùng chọn 1 pixel (`FR-SH-022`).
-    - [ ] `Shift + Arrow`: Co giãn vùng chọn 1 pixel theo hướng cạnh (`FR-SH-023`).
-    - [ ] `Ctrl + Shift + Arrow`: Co giãn đối xứng vùng chọn 2 pixel (`FR-SH-024`).
-    - [ ] `Ctrl + A`: Chọn toàn bộ màn hình chụp (`FR-SH-025`).
-    - [ ] `Delete` / `Backspace`: Xóa đối tượng chú thích đang chọn (`FR-SH-026`).
-    - [ ] `Ctrl + Return`: Commit công cụ hiện tại / đóng hộp thoại nhập text (`FR-SH-027`).
-  - [ ] Đảm bảo cơ chế chặn phím (key swallowing) hợp lý để không để lọt phím tắt hệ điều hành khi overlay đang hoạt động.
-  - [ ] Cập nhật bảng tra cứu phím tắt (Keyboard Shortcut Cheat Sheet) trong hộp thoại About / Info Window (`FR-SYS-005`).
-  - [ ] Viết unit tests kiểm thử dispatch event cho tất cả các tổ hợp phím mới trong `OverlayStateTests.fs`.
-  - [ ] Verify runtime: kiểm tra tuần tự từng phím tắt trên giao diện chụp ảnh thực tế, xác nhận toàn bộ phím tắt phản hồi nhạy và đúng hành vi đặc tả.
+  - [x] Triển khai mở ảnh bằng ứng dụng mặc định (`FR-OUT-11`, `FR-SH-017`): `OpenWithDefaultApp` render `%TEMP%\FShot\temp_view.png` + `Process.Start(UseShellExecute=true)`; phím `Ctrl+O`.
+  - [x] Hoàn thiện hỗ trợ định dạng lưu PNG và JPG (`FR-OUT-13`): tôn trọng `SaveAsFileExtension` + `JpegQuality`, mã hóa `SKEncodedImageFormat.Png/Jpeg`.
+  - [ ] Viết unit tests kiểm thử mã hóa JPEG và tạo tiến trình mở ứng dụng ngoài *(chưa có, UI-level)*.
+  - [ ] Verify runtime: `Ctrl+O` mở Windows Photos; lưu JPG quality 80 xác nhận nén đúng.
+- [x] **P2.38** Hiển thị thông báo Windows Toast khi lưu/copy thành công (`FR-OUT-15`, `FR-CFG-008`).
+  - [x] Hoàn thiện tích hợp dịch vụ thông báo Avalonia Notification Window (`NotificationService`) cho Copy/Save/Hủy (đã có từ P2.03).
+  - [x] Tôn trọng cấu hình bật/tắt thông báo `ShowDesktopNotification`/`ShowAbortNotification`.
+  - [x] Viết unit tests kiểm thử dispatch event thông báo và điều kiện cấu hình (`NotificationServiceTests.fs`).
+  - [ ] Verify runtime: lưu file xác nhận khung thông báo xuất hiện góc dưới, tự đóng sau 4s, click mở đúng thư mục highlight file.
+- [x] **P2.39** Hỗ trợ đầy đủ các phím tắt còn lại (`FR-SH-017`–`FR-SH-027`).
+  - [x] *(Lưu ý chính sách: Đã loại bỏ upload Imgur `FR-SH-018` và phím nóng lịch sử `FR-SH-029`)*.
+  - [x] Rà soát và đồng bộ bảng phím tắt trong `CaptureCanvas.axaml.fs` và `OverlayState.fs`:
+    - [x] `Ctrl + O`: Mở ảnh bằng ứng dụng ngoài (`FR-SH-017`).
+    - [x] `Return` / `Enter`: Hoàn tất chụp và copy (`FR-SH-019`).
+    - [ ] `Space`: Bật/tắt side panel (`FR-SH-020`) *(chưa có side panel)*.
+    - [ ] `G`: Eyedropper / Color Picker (`FR-SH-021`) *(chưa có công cụ eyedropper)*.
+    - [x] Phím mũi tên: Dịch chuyển vùng 1px (`FR-SH-022`).
+    - [x] `Shift + Arrow`: Co giãn 1px (`FR-SH-023`).
+    - [x] `Ctrl + Shift + Arrow`: Co giãn đối xứng 2px (`FR-SH-024`).
+    - [x] `Ctrl + A`: Chọn toàn bộ màn hình (`FR-SH-025`).
+    - [x] `Delete` / `Backspace`: Xóa đối tượng đang chọn (`FR-SH-026`).
+    - [ ] `Ctrl + Return`: Commit công cụ hiện tại / đóng text input (`FR-SH-027`) *(có xử lý Enter, chưa có Ctrl+Return riêng)*.
+  - [ ] Cập nhật bảng tra cứu phím tắt trong About/Info Window (`FR-SYS-005`).
+  - [x] Viết unit tests kiểm thử dispatch event cho các tổ hợp phím mới.
+  - [ ] Verify runtime: kiểm tra tuần tự từng phím tắt trên giao diện thực tế.
 
 ### Epic 16: Windows Integration & CLI Polish
 

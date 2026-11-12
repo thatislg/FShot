@@ -750,68 +750,53 @@ type CaptureCanvas() as this =
                     FShotLog.write (sprintf "[CaptureCanvas] Starting export: target=%A, selection=%A" target state.Selection.Bounds)
                     use exportBitmap = SceneComposer.renderExport result state.Selection (committedAnnotations state)
                     FShotLog.write (sprintf "[CaptureCanvas] exportBitmap rendered: %dx%d" exportBitmap.Width exportBitmap.Height)
-                    match target with
-                    | SaveToFile (Some specifiedPath) ->
-                        // Lưu tức thì không hiện dialog khi đường dẫn đã được chỉ định (FR-OUT-02)
-                        let defaultFolder =
-                            let pictures = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)
-                            if String.IsNullOrWhiteSpace pictures then
-                                Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
-                            else
-                                Path.Combine(pictures, "Screenshots")
 
-                        let resolvedPath = state.Config.SaveOptions.ResolveSavePath(Some specifiedPath, defaultFolder, DateTime.Now)
+                    let defaultFolder =
+                        let pictures = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)
+                        if String.IsNullOrWhiteSpace pictures then
+                            Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+                        else
+                            Path.Combine(pictures, "Screenshots")
+
+                    // Ghi exportBitmap ra đĩa theo định dạng cấu hình, tạo thư mục cha nếu cần.
+                    let writeToPath (resolvedPath: string) =
                         let dir = Path.GetDirectoryName(resolvedPath)
                         if not (String.IsNullOrEmpty dir) && not (Directory.Exists dir) then
                             Directory.CreateDirectory(dir) |> ignore
-
                         let format =
                             if resolvedPath.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
                                resolvedPath.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) then
                                 SKEncodedImageFormat.Jpeg
                             else
                                 SKEncodedImageFormat.Png
-
                         let quality = state.Config.SaveOptions.NormalizedJpegQuality
                         use data = exportBitmap.Encode(format, quality)
                         use stream = File.Create(resolvedPath)
                         data.SaveTo(stream)
                         stream.Flush()
-                        FShotLog.write (sprintf "[CaptureCanvas] Instant save succeeded: %s" resolvedPath)
+                        resolvedPath
+
+                    // Sau khi lưu thành công: copy đường dẫn vào clipboard nếu CopyPathAfterSave (FR-OUT-08).
+                    let afterSave (resolvedPath: string) =
+                        FShotLog.write (sprintf "[CaptureCanvas] Saved to %s" resolvedPath)
+                        if state.Config.CopyPathAfterSave then
+                            let ok = ClipboardService.copyTextToClipboard resolvedPath
+                            FShotLog.write (sprintf "[CaptureCanvas] Copy path after save: %b" ok)
                         CaptureCanvasEvents.TriggerExportCompleted(Saved resolvedPath)
                         this.Dispatch(ExportCompleted true)
+
+                    match target with
+                    | SaveToFile (Some specifiedPath) ->
+                        // Lưu tức thì không hiện dialog khi đường dẫn đã được chỉ định (FR-OUT-02)
+                        let resolvedPath = state.Config.SaveOptions.ResolveSavePath(Some specifiedPath, defaultFolder, DateTime.Now)
+                        afterSave (writeToPath resolvedPath)
 
                     | SaveToFile None ->
                         // Nếu config đã có sẵn Path cố định thì lưu tức thì (FR-OUT-02)
                         match state.Config.SaveOptions.Path with
                         | Some configuredPath when not (String.IsNullOrWhiteSpace configuredPath) ->
-                            let defaultFolder =
-                                let pictures = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures)
-                                if String.IsNullOrWhiteSpace pictures then
-                                    Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
-                                else
-                                    Path.Combine(pictures, "Screenshots")
-
                             let resolvedPath = state.Config.SaveOptions.ResolveSavePath(Some configuredPath, defaultFolder, DateTime.Now)
-                            let dir = Path.GetDirectoryName(resolvedPath)
-                            if not (String.IsNullOrEmpty dir) && not (Directory.Exists dir) then
-                                Directory.CreateDirectory(dir) |> ignore
-
-                            let format =
-                                if resolvedPath.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                                   resolvedPath.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) then
-                                    SKEncodedImageFormat.Jpeg
-                                else
-                                    SKEncodedImageFormat.Png
-
-                            let quality = state.Config.SaveOptions.NormalizedJpegQuality
-                            use data = exportBitmap.Encode(format, quality)
-                            use stream = File.Create(resolvedPath)
-                            data.SaveTo(stream)
-                            stream.Flush()
-                            FShotLog.write (sprintf "[CaptureCanvas] Instant save (from config) succeeded: %s" resolvedPath)
-                            CaptureCanvasEvents.TriggerExportCompleted(Saved resolvedPath)
-                            this.Dispatch(ExportCompleted true)
+                            afterSave (writeToPath resolvedPath)
 
                         | _ ->
                             // Fallback Save As Dialog (FR-OUT-04)
@@ -842,22 +827,7 @@ type CaptureCanvas() as this =
                                     | null | "" ->
                                         if f.Path.IsFile then f.Path.LocalPath else f.Path.ToString()
                                     | p -> p
-
-                                let format =
-                                    if localPath.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                                       localPath.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) then
-                                        SKEncodedImageFormat.Jpeg
-                                    else
-                                        SKEncodedImageFormat.Png
-
-                                let quality = state.Config.SaveOptions.NormalizedJpegQuality
-                                use data = exportBitmap.Encode(format, quality)
-                                use! stream = f.OpenWriteAsync() |> Async.AwaitTask
-                                data.SaveTo(stream)
-                                stream.Flush()
-                                FShotLog.write (sprintf "[CaptureCanvas] Saved to %s" localPath)
-                                CaptureCanvasEvents.TriggerExportCompleted(Saved localPath)
-                                this.Dispatch(ExportCompleted true)
+                                afterSave (writeToPath localPath)
 
                     | CopyToClipboard ->
                         use data = exportBitmap.Encode(SKEncodedImageFormat.Png, 100)
@@ -876,9 +846,39 @@ type CaptureCanvas() as this =
                         // Phát âm thanh thông báo ngắn gọn xác nhận đã copy thành công
                         ClipboardService.playNotificationSound ()
 
+                        // Tự động lưu file sau khi copy nếu SaveAfterCopy (FR-OUT-07).
+                        if state.Config.SaveAfterCopy then
+                            let resolvedPath = state.Config.SaveOptions.ResolveSavePath(state.Config.SaveOptions.Path, defaultFolder, DateTime.Now)
+                            let savedPath = writeToPath resolvedPath
+                            FShotLog.write (sprintf "[CaptureCanvas] Auto-save after copy: %s" savedPath)
+                            if state.Config.CopyPathAfterSave then
+                                ClipboardService.copyTextToClipboard savedPath |> ignore
+
                         FShotLog.write "[CaptureCanvas] Copy completed successfully, dispatching ExportCompleted true"
                         CaptureCanvasEvents.TriggerExportCompleted(Copied)
                         this.Dispatch(ExportCompleted true)
+
+                    | OpenWithDefaultApp _ ->
+                        // Mở ảnh bằng ứng dụng mặc định (FR-OUT-11, FR-SH-017).
+                        // Render ra file tạm %TEMP%\FShot\temp_view.png rồi Process.Start với UseShellExecute.
+                        let tempDir = Path.Combine(Path.GetTempPath(), "FShot")
+                        if not (Directory.Exists tempDir) then
+                            Directory.CreateDirectory(tempDir) |> ignore
+                        let tempFile = Path.Combine(tempDir, "temp_view.png")
+                        use data = exportBitmap.Encode(SKEncodedImageFormat.Png, 100)
+                        use stream = File.Create(tempFile)
+                        data.SaveTo(stream)
+                        stream.Flush()
+                        FShotLog.write (sprintf "[CaptureCanvas] Open with external app: %s" tempFile)
+                        try
+                            let psi = ProcessStartInfo(tempFile)
+                            psi.UseShellExecute <- true
+                            Process.Start(psi) |> ignore
+                            this.Dispatch(ExportCompleted true)
+                        with ex ->
+                            FShotLog.writeEx "[CaptureCanvas] Failed to open external app" ex
+                            this.Dispatch(ExportCompleted false)
+
                     | _ ->
                         FShotLog.write (sprintf "[CaptureCanvas] Unsupported export target: %A" target)
                         this.Dispatch(ExportCompleted false)
@@ -1153,45 +1153,59 @@ type CaptureCanvas() as this =
             | Some result -> result.ScaleFactor.Value
             | None -> 1.0
 
-        // Ưu tiên kiểm tra click vào toolbar trước.
-        let toolbarBounds =
-            overlayState
-            |> Option.map buildRenderModel
-            |> Option.bind (fun rm -> rm.Selection)
-            |> Option.map (fun sel ->
-                let localBounds = this.ToControlRect sel.Bounds
-                Toolbar.bounds scale localBounds this.Bounds.Width this.Bounds.Height)
+        // Double-click copy (FR-OUT-06, FR-CFG-014): khi bật CopyOnDoubleClick và nhấp đúp chuột trái
+        // bên trong vùng chọn, kích hoạt CopyToClipboard ngay.
+        let isDoubleClickCopy =
+            e.ClickCount = 2
+            && e.GetCurrentPoint(this).Properties.IsLeftButtonPressed
+            && (match overlayState with
+                | Some s -> s.Config.CopyOnDoubleClick
+                | None -> false)
+            && (this.Selection.Contains point)
 
-        match toolbarBounds with
-        | Some tb when tb.Contains avPoint ->
-            this.CommitOrCancelTextInput()
-            match Toolbar.hitTool tb avPoint with
-            | Some hit ->
-                match hit with
-                | Toolbar.ToolHit tool ->
-                    FShotLog.write (sprintf "[CaptureCanvas] Toolbar click at %A -> SelectTool %A" avPoint tool)
-                    this.Dispatch(SelectTool tool)
-                | Toolbar.ActionHit action ->
-                    FShotLog.write (sprintf "[CaptureCanvas] Toolbar click at %A -> ToolbarAction %A" avPoint action)
-                    this.Dispatch(ToolbarAction action)
-            | None ->
-                // Click vào toolbar nhưng không trúng nút; log để debug.
-                FShotLog.write (sprintf "[CaptureCanvas] Toolbar click at %A inside tb=%A but hit no button" avPoint tb)
-                ()
-        | _ ->
-            if textBox.IsSome then
-                // Click ra ngoài text box: kết thúc nhập text trước, không vẽ đè tool mới ngay
+        if isDoubleClickCopy then
+            FShotLog.write (sprintf "[CaptureCanvas] Double-click copy at (%.1f, %.1f)" point.X point.Y)
+            this.Dispatch(Copy)
+        else
+            // Ưu tiên kiểm tra click vào toolbar trước.
+            let toolbarBounds =
+                overlayState
+                |> Option.map buildRenderModel
+                |> Option.bind (fun rm -> rm.Selection)
+                |> Option.map (fun sel ->
+                    let localBounds = this.ToControlRect sel.Bounds
+                    Toolbar.bounds scale localBounds this.Bounds.Width this.Bounds.Height)
+
+            match toolbarBounds with
+            | Some tb when tb.Contains avPoint ->
                 this.CommitOrCancelTextInput()
-            else
-                // Đảm bảo control có focus để nhận phím tắt.
-                this.Focus() |> ignore
+                match Toolbar.hitTool tb avPoint with
+                | Some hit ->
+                    match hit with
+                    | Toolbar.ToolHit tool ->
+                        FShotLog.write (sprintf "[CaptureCanvas] Toolbar click at %A -> SelectTool %A" avPoint tool)
+                        this.Dispatch(SelectTool tool)
+                    | Toolbar.ActionHit action ->
+                        FShotLog.write (sprintf "[CaptureCanvas] Toolbar click at %A -> ToolbarAction %A" avPoint action)
+                        this.Dispatch(ToolbarAction action)
+                | None ->
+                    // Click vào toolbar nhưng không trúng nút; log để debug.
+                    FShotLog.write (sprintf "[CaptureCanvas] Toolbar click at %A inside tb=%A but hit no button" avPoint tb)
+                    ()
+            | _ ->
+                if textBox.IsSome then
+                    // Click ra ngoài text box: kết thúc nhập text trước, không vẽ đè tool mới ngay
+                    this.CommitOrCancelTextInput()
+                else
+                    // Đảm bảo control có focus để nhận phím tắt.
+                    this.Focus() |> ignore
 
-                FShotLog.write (sprintf "[CaptureCanvas] PointerPressed at (%.1f, %.1f)" point.X point.Y)
+                    FShotLog.write (sprintf "[CaptureCanvas] PointerPressed at (%.1f, %.1f)" point.X point.Y)
 
-                // Capture pointer để nhận sự kiện moved/released ngay cả khi chuột ra ngoài control.
-                e.Pointer.Capture(this) |> ignore
+                    // Capture pointer để nhận sự kiện moved/released ngay cả khi chuột ra ngoài control.
+                    e.Pointer.Capture(this) |> ignore
 
-                this.Dispatch(PointerPressed(point))
+                    this.Dispatch(PointerPressed(point))
 
     override this.OnPointerMoved(e: PointerEventArgs) =
         base.OnPointerMoved(e)
@@ -1303,6 +1317,10 @@ type CaptureCanvas() as this =
                 this.Dispatch(Copy)
             | Key.S when e.KeyModifiers.HasFlag(KeyModifiers.Control) ->
                 this.Dispatch(Save)
+            | Key.A when e.KeyModifiers.HasFlag(KeyModifiers.Control) ->
+                this.Dispatch(SelectAll)
+            | Key.O when e.KeyModifiers.HasFlag(KeyModifiers.Control) ->
+                this.Dispatch(OpenWithExternalApp)
             | Key.P -> this.Dispatch(SelectTool PencilTool)
             | Key.L -> this.Dispatch(SelectTool LineTool)
             | Key.A -> this.Dispatch(SelectTool ArrowTool)
@@ -1319,10 +1337,22 @@ type CaptureCanvas() as this =
                 this.Dispatch(Undo)
             | Key.Y when e.KeyModifiers.HasFlag(KeyModifiers.Control) ->
                 this.Dispatch(Redo)
+            // Chấp nhận / hoàn tất chụp và copy vào clipboard (FR-SH-019).
+            | Key.Enter
+            | Key.Return ->
+                this.Dispatch(Copy)
+            // Z-order của chú thích đang chọn (FR-UNDO-006).
+            | Key.PageUp -> this.Dispatch(BringForward)
+            | Key.PageDown -> this.Dispatch(SendBackward)
+            | Key.Home -> this.Dispatch(BringToFront)
+            | Key.End -> this.Dispatch(SendToBack)
             // Ctrl modifier được gửi riêng để state machine biết khi nào đang khóa tỉ lệ.
             // Sử dụng e.Key thay vì modifier string để tránh IME nuốt mất sự kiện Ctrl khi đang gõ tiếng Việt.
             | Key.LeftCtrl
             | Key.RightCtrl -> this.Dispatch(CtrlModifier true)
+            // Shift modifier cho mirror-resize (FR-SEL-16).
+            | Key.LeftShift
+            | Key.RightShift -> this.Dispatch(ShiftModifier true)
             // Xóa chú thích đang chọn bằng Delete/Backspace (FR-ANN-20).
             // Backspace giữ Ctrl được giữ nguyên để đi qua KeyDown → isCancelKey (Ctrl+Backspace hủy).
             | Key.Delete -> this.Dispatch(DeleteSelectedAnnotation)
@@ -1351,10 +1381,12 @@ type CaptureCanvas() as this =
 
     override this.OnKeyUp(e: KeyEventArgs) =
         base.OnKeyUp(e)
-        // Chỉ cần reset Ctrl modifier; các phím tắt tool đã xử lý ở OnKeyDown.
+        // Reset modifier; các phím tắt tool đã xử lý ở OnKeyDown.
         match e.Key with
         | Key.LeftCtrl
         | Key.RightCtrl -> this.Dispatch(CtrlModifier false)
+        | Key.LeftShift
+        | Key.RightShift -> this.Dispatch(ShiftModifier false)
         | _ -> ()
 
     override this.OnPointerWheelChanged(e: PointerWheelEventArgs) =
@@ -1499,7 +1531,8 @@ type CaptureCanvas() as this =
                 let tb = Toolbar.bounds scale localBounds this.Bounds.Width this.Bounds.Height
                 Toolbar.draw context tb renderModel.CurrentTool renderModel.CanUndo renderModel.CanRedo
 
-    /// Vẽ vùng chọn và các handle lên overlay theo thiết kế Claymorphism / SVG Knob.
+    /// Vẽ vùng chọn và các handle lên overlay theo thiết kế Single Thin Border + Outward Pins.
+    /// Xem 03_08_SelectionBorderAndHandles.md.
     member private this.RenderSelectionOverlay(context: DrawingContext, selection: Selection) =
         match captureResult with
         | Some result ->
@@ -1518,75 +1551,132 @@ type CaptureCanvas() as this =
             let innerBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(0uy, 0uy, 150uy, 255uy))
             context.FillRectangle(innerBrush, selectionRect)
 
-            // Viền ngoài nét liền theo màu accent chính (FR-CFG-100), độ dày 2.0px.
-            // Mặc định pastel #5FA8D3.
+            // Màu accent chính (uiColor), mặc định pastel #5FA8D3.
             let uiColor =
                 overlayState
                 |> Option.map (fun s -> s.Config.UiColor)
                 |> Option.defaultValue { R = 95uy; G = 168uy; B = 211uy; A = 255uy }
 
-            // Pha màu với trắng (t > 0) hoặc đen (t < 0) để tạo các sắc độ cho knob.
-            let lerpByte (a: byte) (b: byte) (t: float) =
-                byte (Math.Round(float a + (float b - float a) * t))
-
-            let shade (c: FShot.Core.Geometry.Color) (t: float) : FShot.Core.Geometry.Color =
-                let target =
-                    if t >= 0.0 then { c with R = 255uy; G = 255uy; B = 255uy }
-                    else { c with R = 0uy; G = 0uy; B = 0uy }
-                let amt = abs t
-                { R = lerpByte c.R target.R amt; G = lerpByte c.G target.G amt; B = lerpByte c.B target.B amt; A = 255uy }
-
             let toAv (c: FShot.Core.Geometry.Color) =
                 Avalonia.Media.Color.FromArgb(c.A, c.R, c.G, c.B)
 
             let borderColor = toAv uiColor
-            let knobLight = toAv (shade uiColor 0.5)
-            let knobDark = toAv (shade uiColor -0.15)
-            let shadowColor = toAv (shade uiColor -0.35)
+            let borderBrush = new SolidColorBrush(borderColor)
 
-            let outerPen = new Pen(new SolidColorBrush(borderColor), 2.0)
-            context.DrawRectangle(null, outerPen, selectionRect)
+            // Đường viền đơn mảnh căn nửa pixel ra ngoài biên (BorderRect = Inflate(0.5)).
+            let borderRect = selectionRect.Inflate(0.5)
 
-            // Viền trong nét đứt: lùi vào 7.0px, nét đứt 10px / 8px bo tròn.
-            if selectionRect.Width > 22.0 && selectionRect.Height > 22.0 then
-                let innerRect = selectionRect.Inflate(-7.0)
-                let dashStyle = new DashStyle([| 10.0; 8.0 |], 0.0)
-                let innerPen = new Pen(new SolidColorBrush(borderColor), 2.0, lineCap = PenLineCap.Round, dashStyle = dashStyle)
-                context.DrawRectangle(null, innerPen, innerRect)
+            // Kích thước màn hình physical (để kẹp biên pin khi vùng chọn chạm sát mép).
+            let screenW = result.VirtualBounds.Width * scale
+            let screenH = result.VirtualBounds.Height * scale
+            let pinRadius = Selection.HandleRadius
 
-            // Vẽ 8 knob handle khi vùng đã chọn hoặc đang tương tác.
-            let shouldDrawHandles =
-                match selection.State with
-                | Selected
-                | Moving
-                | Resizing _ -> true
-                | _ -> false
+            let clampVal (v: float) (minV: float) (maxV: float) =
+                if v < minV then minV
+                elif v > maxV then maxV
+                else v
 
-            if shouldDrawHandles then
-                let knobRadius = 6.5
-                let shadowBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(90uy, shadowColor.R, shadowColor.G, shadowColor.B))
-                let knobBrush =
-                    let b = new LinearGradientBrush()
-                    b.StartPoint <- RelativePoint(0.2, 0.2, RelativeUnit.Relative)
-                    b.EndPoint <- RelativePoint(0.8, 0.8, RelativeUnit.Relative)
-                    b.GradientStops.Add(GradientStop(knobLight, 0.0))
-                    b.GradientStops.Add(GradientStop(knobDark, 1.0))
-                    b
-                let knobPen = new Pen(Brushes.White, 2.5)
-                let highlightBrush = Brushes.White
+            match selection.State with
+            | SelectionState.Selecting ->
+                // Giai đoạn quét chuột (AoE IV Marquee): tô sáng nhẹ 2% + khung dây đơn mảnh + 4 góc chữ L.
+                let tintBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(0x06uy, 0xFFuy, 0xFFuy, 0xFFuy))
+                context.FillRectangle(tintBrush, selectionRect)
 
-                for (_, center) in selection.HandleCenters do
-                    let localCenter = this.ToControlPoint center
-                    let cx = localCenter.X * scale
-                    let cy = localCenter.Y * scale
+                let wirePen = new Pen(borderBrush, 1.2)
+                context.DrawRectangle(null, wirePen, borderRect)
 
-                    // Drop shadow dưới knob
-                    context.DrawEllipse(shadowBrush, null, Avalonia.Point(cx, cy + 1.8), knobRadius, knobRadius)
-                    // Thân knob gradient có viền trắng 2.5px
-                    context.DrawEllipse(knobBrush, knobPen, Avalonia.Point(cx, cy), knobRadius, knobRadius)
-                    // Điểm phản chiếu ánh sáng trắng (specular highlight)
-                    context.DrawEllipse(highlightBrush, null, Avalonia.Point(cx - 2.0, cy - 2.0), 1.8, 1.8)
+                let bracketPen = new Pen(Brushes.White, 2.0, lineCap = PenLineCap.Round)
+                let l = 6.0
+                let x = selectionRect.X
+                let y = selectionRect.Y
+                let rgt = selectionRect.Right
+                let btm = selectionRect.Bottom
+                // 4 dấu ngoặc chữ L ôm sát mép ngoài 4 góc.
+                context.DrawLine(bracketPen, Avalonia.Point(x, y), Avalonia.Point(x - l, y))
+                context.DrawLine(bracketPen, Avalonia.Point(x, y), Avalonia.Point(x, y - l))
+                context.DrawLine(bracketPen, Avalonia.Point(rgt, y), Avalonia.Point(rgt + l, y))
+                context.DrawLine(bracketPen, Avalonia.Point(rgt, y), Avalonia.Point(rgt, y - l))
+                context.DrawLine(bracketPen, Avalonia.Point(x, btm), Avalonia.Point(x - l, btm))
+                context.DrawLine(bracketPen, Avalonia.Point(x, btm), Avalonia.Point(x, btm + l))
+                context.DrawLine(bracketPen, Avalonia.Point(rgt, btm), Avalonia.Point(rgt + l, btm))
+                context.DrawLine(bracketPen, Avalonia.Point(rgt, btm), Avalonia.Point(rgt, btm + l))
+
+            | SelectionState.Selected
+            | SelectionState.Moving
+            | SelectionState.Resizing _ ->
+                // Đường viền đơn mảnh 1.5px.
+                let outerPen = new Pen(borderBrush, 1.5)
+                context.DrawRectangle(null, outerPen, borderRect)
+
+                // 8 điểm Pin tròn phẳng lệch ngoài (Flameshot slim pin).
+                let pinFill = new SolidColorBrush(borderColor)
+                let pinPen = new Pen(Brushes.White, 1.0)
+
+                // Ngưỡng ẩn pin cạnh khi vùng chọn quá nhỏ (mục 3.4).
+                let minW = 32.0
+                let minH = 32.0
+
+                for (handle, center) in selection.HandleCenters do
+                    let visible =
+                        match handle with
+                        | Top
+                        | Bottom -> selection.Bounds.Width >= minW
+                        | Left
+                        | Right -> selection.Bounds.Height >= minH
+                        | _ -> true
+
+                    if visible then
+                        let localCenter = this.ToControlPoint center
+                        let cx = localCenter.X * scale
+                        let cy = localCenter.Y * scale
+                        let cxClamped = clampVal cx pinRadius (screenW - pinRadius)
+                        let cyClamped = clampVal cy pinRadius (screenH - pinRadius)
+                        context.DrawEllipse(pinFill, pinPen, Avalonia.Point(cxClamped, cyClamped), pinRadius, pinRadius)
+
+            | SelectionState.Idle -> ()
         | None -> ()
+
+    /// Vẽ huy hiệu thông tin hình học vùng chọn `W × H + X + Y` (FR-SEL-12).
+    member private this.RenderGeometryBadge(context: DrawingContext, renderModel: RenderModel) =
+        match renderModel.Selection, renderModel.GeometryText with
+        | Some selection, Some text ->
+            match captureResult with
+            | Some result ->
+                let scale = result.ScaleFactor.Value
+                let localBounds = this.ToControlRect selection.Bounds
+                let selRect =
+                    Rect(
+                        localBounds.X * scale,
+                        localBounds.Y * scale,
+                        localBounds.Width * scale,
+                        localBounds.Height * scale
+                    )
+
+                let badgeText =
+                    new FormattedText(
+                        text,
+                        System.Globalization.CultureInfo.CurrentCulture,
+                        FlowDirection.LeftToRight,
+                        new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.SemiBold),
+                        13.0,
+                        new SolidColorBrush(Avalonia.Media.Color.FromArgb(0xFFuy, 0xFFuy, 0xFFuy, 0xFFuy))
+                    )
+                let paddingX = 8.0
+                let paddingY = 4.0
+                let badgeW = badgeText.Width + paddingX * 2.0
+                let badgeH = badgeText.Height + paddingY * 2.0
+
+                // Mặc định nổi trên cạnh trên, cách mép 8px; lật xuống dưới nếu sát mép trên màn hình.
+                let aboveY = selRect.Y - badgeH - 8.0
+                let badgeY = if aboveY < 0.0 then selRect.Bottom + 8.0 else aboveY
+                let badgeX = selRect.X + 8.0
+
+                let badgeRect = Rect(badgeX, badgeY, badgeW, badgeH)
+                let bgBrush = new SolidColorBrush(Avalonia.Media.Color.FromArgb(0xCCuy, 0x1Euy, 0x29uy, 0x3Buy))
+                context.FillRectangle(bgBrush, badgeRect, 6.0f)
+                context.DrawText(badgeText, Avalonia.Point(badgeRect.X + paddingX, badgeRect.Y + paddingY))
+            | None -> ()
+        | _ -> ()
 
     /// Vẽ khung chọn + 4 handle góc cho chú thích đang được chọn (FR-ANN-18).
     /// Khung đứt nét Kawaii Blue #38BDF8 bao quanh bounding box, handle nền trắng viền xanh.
@@ -1659,6 +1749,7 @@ type CaptureCanvas() as this =
                 CanRedo = false
                 Cursor = CursorHint.Crosshair
                 TextInput = None
+                GeometryText = None
             }
 
         // Vẽ dimming layer.
@@ -1666,6 +1757,9 @@ type CaptureCanvas() as this =
 
         // Vẽ vùng chọn nếu có.
         renderModel.Selection |> Option.iter (fun sel -> this.RenderSelectionOverlay(context, sel))
+
+        // Vẽ huy hiệu thông tin hình học vùng chọn (FR-SEL-12).
+        this.RenderGeometryBadge(context, renderModel)
 
         // Xác định hệ số phóng to từ CaptureResult.
         let scale =

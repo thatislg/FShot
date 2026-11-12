@@ -30,6 +30,9 @@ type OutputTarget =
     /// Gửi ảnh dưới dạng binary ra stdout.
     | Stdout
 
+    /// In thông số tọa độ hình học vùng chọn ra stdout (FR-OUT-10).
+    | PrintGeometry
+
     /// Mở overlay GUI để tiếp tục chỉnh sửa.
     | OpenGui
 

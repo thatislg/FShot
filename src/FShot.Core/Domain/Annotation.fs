@@ -198,3 +198,54 @@ type Annotation = {
               Width = width
               Height = height
             }
+
+/// Các hàm điều chỉnh thứ tự Z-order của danh sách chú thích (FR-UNDO-006).
+/// Danh sách được vẽ theo thứ tự: phần tử đầu ở dưới cùng (đáy), phần tử cuối ở trên cùng (đỉnh).
+[<RequireQualifiedAccess>]
+module AnnotationZOrder =
+    /// Tìm vị trí của chú thích theo Id trong danh sách.
+    let private indexOf (id: Guid) (annotations: Annotation list) : int option =
+        annotations |> List.tryFindIndex (fun a -> a.Id = id)
+
+    /// Di chuyển phần tử tại vị trí `i` đến vị trí `j` trong danh sách (giữ nguyên thứ tự các phần tử còn lại).
+    let private move (i: int) (j: int) (annotations: Annotation list) : Annotation list =
+        let n = List.length annotations
+        if i < 0 || i >= n || j < 0 || j >= n || i = j then
+            annotations
+        else
+            let item = List.item i annotations
+            let without = annotations |> List.mapi (fun idx a -> if idx = i then None else Some a) |> List.choose id
+            // Phần tử cần đặt ở vị trí cuối cùng `j`: `j` phần tử đứng trước nó, còn lại đứng sau.
+            let prefix = List.take j without
+            let suffix = List.skip j without
+            prefix @ [ item ] @ suffix
+
+    /// Đẩy đối tượng lên trên 1 lớp (tiến về cuối danh sách).
+    let bringForward (id: Guid) (annotations: Annotation list) : Annotation list =
+        match indexOf id annotations with
+        | Some i when i + 1 < List.length annotations -> move i (i + 1) annotations
+        | _ -> annotations
+
+    /// Hạ đối tượng xuống dưới 1 lớp (lùi về đầu danh sách).
+    let sendBackward (id: Guid) (annotations: Annotation list) : Annotation list =
+        match indexOf id annotations with
+        | Some i when i > 0 -> move i (i - 1) annotations
+        | _ -> annotations
+
+    /// Đưa đối tượng lên lớp trên cùng (cuối danh sách).
+    let bringToFront (id: Guid) (annotations: Annotation list) : Annotation list =
+        match indexOf id annotations with
+        | Some i ->
+            let item = List.item i annotations
+            let rest = annotations |> List.filter (fun a -> a.Id <> id)
+            rest @ [ item ]
+        | None -> annotations
+
+    /// Hạ đối tượng xuống lớp đáy cùng (đầu danh sách).
+    let sendToBack (id: Guid) (annotations: Annotation list) : Annotation list =
+        match indexOf id annotations with
+        | Some i ->
+            let item = List.item i annotations
+            let rest = annotations |> List.filter (fun a -> a.Id <> id)
+            item :: rest
+        | None -> annotations

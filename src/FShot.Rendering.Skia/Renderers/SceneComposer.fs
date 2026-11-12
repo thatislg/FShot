@@ -29,7 +29,7 @@ module SceneComposer =
         =
 
         let rect = DomainToSkia.rectToSkPhysical captureResult.ScaleFactor selection.Bounds
-        use paint = DomainToSkia.createStrokePaint FShot.Core.Geometry.Color.White 2.0f
+        use paint = DomainToSkia.createStrokePaint FShot.Core.Geometry.Color.White 1.5f
         canvas.DrawRect(rect, paint)
 
     /// Vẽ 8 handles của vùng chọn.

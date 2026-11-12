@@ -98,6 +98,9 @@ type SettingsWindow() as this =
         this.SetToggle "ShowDesktopNotificationToggle" c.ShowDesktopNotification
         this.SetToggle "ShowAbortToggle" c.ShowAbortNotification
         this.SetToggle "CopyOnDoubleClickToggle" c.CopyOnDoubleClick
+        this.SetToggle "SaveAfterCopyToggle" c.SaveAfterCopy
+        this.SetToggle "CopyPathAfterSaveToggle" c.CopyPathAfterSave
+        this.SetSlider "UndoLimitSlider" "UndoLimitLabel" (float c.UndoLimit) " bước"
 
         (this.FindControl<ColorSelector>("UiColorSelector")).Color <- c.UiColor
         (this.FindControl<ColorSelector>("ContrastUiColorSelector")).Color <- c.ContrastUiColor
@@ -148,6 +151,9 @@ type SettingsWindow() as this =
                 ShowDesktopNotification = this.ToggleValue "ShowDesktopNotificationToggle"
                 ShowAbortNotification = this.ToggleValue "ShowAbortToggle"
                 CopyOnDoubleClick = this.ToggleValue "CopyOnDoubleClickToggle"
+                SaveAfterCopy = this.ToggleValue "SaveAfterCopyToggle"
+                CopyPathAfterSave = this.ToggleValue "CopyPathAfterSaveToggle"
+                UndoLimit = int (this.SliderValue "UndoLimitSlider")
                 UiColor = (this.FindControl<ColorSelector>("UiColorSelector")).Color
                 ContrastUiColor = (this.FindControl<ColorSelector>("ContrastUiColorSelector")).Color
                 ContrastOpacity = byte (int (this.SliderValue "ContrastOpacitySlider"))

@@ -144,3 +144,54 @@ let ``Bounding box của CircleCounter`` () =
     Assert.Equal(86.0, box.Y)
     Assert.Equal(28.0, box.Width)
     Assert.Equal(28.0, box.Height)
+
+// ---------- Z-order (FR-UNDO-006) ----------
+
+let private makeAnnotation id =
+    let style = defaultStyle Color.Black (StrokeWidth.Create 2.0)
+    { Annotation.FromPreview(Line(point 0.0 0.0, point 10.0 10.0), style) with Id = id }
+
+/// Kiểm tra bringForward đẩy đối tượng lên trên 1 lớp.
+[<Fact>]
+let ``bringForward đẩy đối tượng lên trên 1 lớp`` () =
+    let a = makeAnnotation (System.Guid.NewGuid())
+    let b = makeAnnotation (System.Guid.NewGuid())
+    let c = makeAnnotation (System.Guid.NewGuid())
+    let result = AnnotationZOrder.bringForward b.Id [ a; b; c ]
+    Assert.Equal<System.Guid>([ a.Id; c.Id; b.Id ], result |> List.map (fun x -> x.Id))
+
+/// Kiểm tra sendBackward hạ đối tượng xuống dưới 1 lớp.
+[<Fact>]
+let ``sendBackward hạ đối tượng xuống dưới 1 lớp`` () =
+    let a = makeAnnotation (System.Guid.NewGuid())
+    let b = makeAnnotation (System.Guid.NewGuid())
+    let c = makeAnnotation (System.Guid.NewGuid())
+    let result = AnnotationZOrder.sendBackward b.Id [ a; b; c ]
+    Assert.Equal<System.Guid>([ b.Id; a.Id; c.Id ], result |> List.map (fun x -> x.Id))
+
+/// Kiểm tra bringToFront đưa đối tượng lên trên cùng.
+[<Fact>]
+let ``bringToFront đưa đối tượng lên trên cùng`` () =
+    let a = makeAnnotation (System.Guid.NewGuid())
+    let b = makeAnnotation (System.Guid.NewGuid())
+    let c = makeAnnotation (System.Guid.NewGuid())
+    let result = AnnotationZOrder.bringToFront a.Id [ a; b; c ]
+    Assert.Equal<System.Guid>([ b.Id; c.Id; a.Id ], result |> List.map (fun x -> x.Id))
+
+/// Kiểm tra sendToBack hạ đối tượng xuống đáy cùng.
+[<Fact>]
+let ``sendToBack hạ đối tượng xuống đáy cùng`` () =
+    let a = makeAnnotation (System.Guid.NewGuid())
+    let b = makeAnnotation (System.Guid.NewGuid())
+    let c = makeAnnotation (System.Guid.NewGuid())
+    let result = AnnotationZOrder.sendToBack c.Id [ a; b; c ]
+    Assert.Equal<System.Guid>([ c.Id; a.Id; b.Id ], result |> List.map (fun x -> x.Id))
+
+/// Kiểm tra Z-order khi id không tồn tại trả về danh sách gốc.
+[<Fact>]
+let ``Z-order id không tồn tại giữ nguyên danh sách`` () =
+    let a = makeAnnotation (System.Guid.NewGuid())
+    let b = makeAnnotation (System.Guid.NewGuid())
+    let missing = System.Guid.NewGuid()
+    Assert.Equal<System.Guid>([ a.Id; b.Id ], AnnotationZOrder.bringForward missing [ a; b ] |> List.map (fun x -> x.Id))
+    Assert.Equal<System.Guid>([ a.Id; b.Id ], AnnotationZOrder.sendToBack missing [ a; b ] |> List.map (fun x -> x.Id))
