@@ -38,12 +38,12 @@ module Program =
         try
             if NativeConsole.AttachConsole(ATTACH_PARENT_PROCESS) then
                 let stdout = Console.OpenStandardOutput()
-                let outWriter = new StreamWriter(stdout, Text.Encoding.UTF8)
+                let outWriter = new StreamWriter(stdout, Text.UTF8Encoding(false))
                 outWriter.AutoFlush <- true
                 Console.SetOut(outWriter)
 
                 let stderr = Console.OpenStandardError()
-                let errWriter = new StreamWriter(stderr, Text.Encoding.UTF8)
+                let errWriter = new StreamWriter(stderr, Text.UTF8Encoding(false))
                 errWriter.AutoFlush <- true
                 Console.SetError(errWriter)
                 true
