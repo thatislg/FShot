@@ -69,3 +69,12 @@ nunit-*.xml
 # Flameshot src (ignore whole embedded repo)
 flameshot
 .fake
+
+# F-Shot packaging & publish output (Phase 3)
+dist/
+AppPackages/
+*.msix
+*.msixbundle
+*.msixupload
+*.appx
+*.appxbundle

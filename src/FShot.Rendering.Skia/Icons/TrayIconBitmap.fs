@@ -3,68 +3,71 @@ namespace FShot.Rendering.Skia.Icons
 open System.IO
 open SkiaSharp
 
-/// Render biểu tượng F-Shot Kawaii dạng vector sang bitmap bằng SkiaSharp.
+/// Render biểu tượng F-Shot dạng vector sang bitmap bằng SkiaSharp.
+/// Thiết kế: "Khung vùng chọn + Ống kính máy ảnh" (Selection Frame + Camera Aperture),
+/// phản ánh đúng bản chất công cụ chụp/khoanh vùng màn hình của F-Shot.
 /// Dùng làm icon cho system tray; kích thước tùy chỉnh để hỗ trợ mọi DPI.
 module TrayIconBitmap =
 
-    let private headColor = SKColor.Parse("#7BD5F5")
+    let private blueColor = SKColor.Parse("#7BD5F5")
     let private strokeColor = SKColor.Parse("#3D2B1F")
-    let private beakColor = SKColor.Parse("#FB923C")
+    let private orangeColor = SKColor.Parse("#FB923C")
     let private highlightColor = SKColor.Parse("#FFFFFF")
+    let private tintColor = new SKColor(0x7Buy, 0xD5uy, 0xF5uy, 0x30uy)
 
-    /// Vẽ icon tray với kích thước `size x size` pixel, nền trong suốt.
+    /// Vẽ icon với kích thước `size x size` pixel, nền trong suốt.
+    /// SVG gốc dùng viewBox 32x32; scale theo tỷ lệ mong muốn.
     let create (size: int) : SKBitmap =
         let bitmap = new SKBitmap(size, size, SKColorType.Bgra8888, SKAlphaType.Premul)
         use canvas = new SKCanvas(bitmap)
         canvas.Clear(SKColors.Transparent)
 
-        // SVG gốc có viewBox 32x32; scale theo tỷ lệ mong muốn.
         let scale = float32 size / 32.0f
         canvas.Scale(scale)
 
         use paint = new SKPaint()
         paint.IsAntialias <- true
 
-        // Đầu chim: hình tròn.
-        paint.Color <- headColor
+        // --- Khung vùng chọn (Selection Frame): viền nâu đậm + nền xanh nhạt. ---
+        let frameRect = SKRect(2.5f, 2.5f, 29.5f, 29.5f)
+        let cornerRadius = 4.5f
+        paint.Color <- tintColor
         paint.Style <- SKPaintStyle.Fill
-        canvas.DrawCircle(16.0f, 16.0f, 12.0f, paint)
+        canvas.DrawRoundRect(frameRect, cornerRadius, cornerRadius, paint)
 
         paint.Color <- strokeColor
         paint.Style <- SKPaintStyle.Stroke
-        paint.StrokeWidth <- 2.5f
-        canvas.DrawCircle(16.0f, 16.0f, 12.0f, paint)
+        paint.StrokeWidth <- 2.2f
+        canvas.DrawRoundRect(frameRect, cornerRadius, cornerRadius, paint)
 
-        // Mỏ: ellipse.
-        let beakRect = SKRect(12.5f, 15.8f, 19.5f, 20.2f)
-        paint.Color <- beakColor
+        // --- Ống kính máy ảnh (Camera Aperture) ở tâm. ---
+        // Thân kính ngoài: xanh nhạt + viền nâu.
+        paint.Color <- blueColor
         paint.Style <- SKPaintStyle.Fill
-        paint.StrokeWidth <- 0.0f
-        canvas.DrawOval(beakRect, paint)
+        canvas.DrawCircle(16.0f, 16.0f, 6.4f, paint)
 
         paint.Color <- strokeColor
         paint.Style <- SKPaintStyle.Stroke
         paint.StrokeWidth <- 1.8f
-        canvas.DrawOval(beakRect, paint)
+        canvas.DrawCircle(16.0f, 16.0f, 6.4f, paint)
 
-        // Mắt trái.
-        paint.Color <- strokeColor
+        // Vành kính trong: cam.
+        paint.Color <- orangeColor
         paint.Style <- SKPaintStyle.Fill
-        paint.StrokeWidth <- 0.0f
-        canvas.DrawCircle(11.5f, 14.0f, 1.8f, paint)
+        canvas.DrawCircle(16.0f, 16.0f, 3.4f, paint)
 
-        // Mắt phải.
-        canvas.DrawCircle(20.5f, 14.0f, 1.8f, paint)
+        // Khẩu độ (aperture opening): nâu đậm.
+        paint.Color <- strokeColor
+        canvas.DrawCircle(16.0f, 16.0f, 1.4f, paint)
 
-        // Điểm sáng mắt.
+        // Điểm sáng ống kính (glint): trắng, lệch góc trên-trái.
         paint.Color <- highlightColor
-        canvas.DrawCircle(10.8f, 13.3f, 0.6f, paint)
-        canvas.DrawCircle(19.8f, 13.3f, 0.6f, paint)
+        canvas.DrawCircle(13.6f, 13.6f, 0.7f, paint)
 
         canvas.Flush()
         bitmap
 
-    /// Tạo PNG stream từ icon tray với kích thước `size x size` pixel.
+    /// Tạo PNG stream từ icon với kích thước `size x size` pixel.
     /// Stream đã được rewind về đầu, sẵn sàng đưa vào `WindowIcon`.
     let createPngStream (size: int) : MemoryStream =
         use bitmap = create size

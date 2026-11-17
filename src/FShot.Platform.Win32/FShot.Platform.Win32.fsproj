@@ -1,8 +1,10 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RuntimeIdentifiers>win-x64;win-arm64;win-x86</RuntimeIdentifiers>
+    <ProjectAssetsFile Condition="!Exists('$(ProjectAssetsFile)') and Exists('$(MSBuildProjectDirectory)\obj\project.assets.json')">$(MSBuildProjectDirectory)\obj\project.assets.json</ProjectAssetsFile>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,0 +1,2 @@
+MainPackage=D:\Kojin\FShot\FShot.Packaging\bin\x64\Debug\FShot.Packaging_0.1.0.0_x64_Debug.msix
+SymbolPackage=D:\Kojin\FShot\FShot.Packaging\obj\x64\Debug\Symbols\FShot.Packaging_0.1.0.0_x64_Debug.appxsym
